@@ -1,5 +1,7 @@
 # Boulder Notes
 
+⚠️ **AI-Generated Code Disclaimer**: The majority of the code in this project was generated with the assistance of AI tools. While the code has been reviewed and tested, please be aware that it may contain unconventional patterns or approaches that differ from traditional hand-written code. Use at your own discretion.
+
 A Progressive Web App (PWA) for tracking bouldering sessions, problems, and progress.
 
 ## Features
