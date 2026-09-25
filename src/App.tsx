@@ -1,12 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Layout from './components/Layout';
-import Home from './pages/Home';
 import Session from './pages/Session';
-import Sessions from './pages/Sessions';
-import Problems from './pages/Problems';
 import Workouts from './pages/Workouts';
 import WorkoutRun from './pages/WorkoutRun';
 
@@ -26,20 +22,18 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppProvider>
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/session" element={<Session />} />
-              <Route path="/sessions" element={<Sessions />} />
-              <Route path="/problems" element={<Problems />} />
-              <Route path="/workouts" element={<Workouts />} />
-              <Route path="/workouts/:id/run" element={<WorkoutRun />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </AppProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/session" replace />} />
+            <Route path="/session" element={<Session />} />
+            <Route path="/sessions" element={<Navigate to="/session" replace />} />
+            <Route path="/problems" element={<Navigate to="/session" replace />} />
+            <Route path="/workouts" element={<Workouts />} />
+            <Route path="/workouts/:id/run" element={<WorkoutRun />} />
+          </Routes>
+        </Layout>
+      </Router>
     </ThemeProvider>
   );
 }

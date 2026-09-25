@@ -2,14 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { AppProvider } from '../../context/AppContext';
 import Session from '../Session';
-import { Session as SessionType, SessionProblem, PreSessionData, AttemptType } from '../../types';
-import { useAppContext } from '../../context/AppContext';
-import * as db from '../../db/index';
+import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
 import { BoulderLogDatabase } from '../../db/index';
 import { useCurrentSession } from '../../db/index';
-import { Problem } from '../../types';
 
 // Mock database functions
 vi.mock('../../db/index', () => {
@@ -17,6 +13,9 @@ vi.mock('../../db/index', () => {
     sessions: {
       add: vi.fn(),
       put: vi.fn(),
+      orderBy: vi.fn().mockReturnThis(),
+      reverse: vi.fn().mockReturnThis(),
+      toArray: vi.fn().mockResolvedValue([]),
     },
     problems: {
       add: vi.fn(),
@@ -29,6 +28,7 @@ vi.mock('../../db/index', () => {
       equals: vi.fn().mockReturnThis(),
       toArray: vi.fn().mockResolvedValue([]),
     },
+    deleteSession: vi.fn(),
   };
   return {
     BoulderLogDatabase: mockDb,
@@ -42,7 +42,8 @@ vi.mock('@mui/material', async () => {
   const actual = await vi.importActual('@mui/material');
   return {
     ...actual,
-    Dialog: ({ children, open }: { children: React.ReactNode, open: boolean }) => open ? <div>{children}</div> : null,
+    Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+      open ? <div>{children}</div> : null,
     DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     DialogActions: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -88,9 +89,7 @@ describe('Session Page', () => {
     vi.mocked(useCurrentSession).mockReturnValue(undefined);
     render(
       <MemoryRouter>
-        <AppProvider>
-          <Session />
-        </AppProvider>
+        <Session />
       </MemoryRouter>
     );
     expect(screen.getByText(/pre-session check-in/i)).toBeInTheDocument();
@@ -102,19 +101,19 @@ describe('Session Page', () => {
 
     render(
       <MemoryRouter>
-        <AppProvider>
-          <Session />
-        </AppProvider>
+        <Session />
       </MemoryRouter>
     );
 
     fireEvent.click(screen.getByText(/start session/i));
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.sessions.add).toHaveBeenCalledWith(expect.objectContaining({
-        startTime: expect.any(String),
-        endTime: null,
-      }));
+      expect(BoulderLogDatabase.sessions.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startTime: expect.any(String),
+          endTime: null,
+        })
+      );
     });
   });
 
@@ -124,9 +123,7 @@ describe('Session Page', () => {
 
     render(
       <MemoryRouter>
-        <AppProvider>
-          <Session />
-        </AppProvider>
+        <Session />
       </MemoryRouter>
     );
 
@@ -138,17 +135,19 @@ describe('Session Page', () => {
     const [frenchGradeSelect] = screen.getAllByRole('combobox');
     fireEvent.mouseDown(frenchGradeSelect);
     fireEvent.click(await screen.findByRole('option', { name: '6a' }));
-    
+
     const addButton = screen.getByRole('button', { name: /^add$/i });
     fireEvent.click(addButton);
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.problems.add).toHaveBeenCalledWith(expect.objectContaining({
-        sessionId: '1',
-        name: 'Test Problem',
-        frenchGrade: '6a',
-        id: expect.any(String),
-      }));
+      expect(BoulderLogDatabase.problems.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: '1',
+          name: 'Test Problem',
+          frenchGrade: '6a',
+          id: expect.any(String),
+        })
+      );
     });
   });
 
@@ -161,14 +160,18 @@ describe('Session Page', () => {
     vi.mocked(BoulderLogDatabase.problems.get).mockResolvedValue(mockProblem);
     vi.mocked(BoulderLogDatabase.problems.put).mockResolvedValue(1);
     vi.mocked(BoulderLogDatabase.attempts.toArray).mockResolvedValue([
-      { id: 'a1', problemId: '1', sessionId: '1', timestamp: new Date().toISOString(), type: AttemptType.ATTEMPT },
+      {
+        id: 'a1',
+        problemId: '1',
+        sessionId: '1',
+        timestamp: new Date().toISOString(),
+        type: AttemptType.ATTEMPT,
+      },
     ]);
 
     render(
       <MemoryRouter>
-        <AppProvider>
-          <Session />
-        </AppProvider>
+        <Session />
       </MemoryRouter>
     );
 
@@ -176,11 +179,13 @@ describe('Session Page', () => {
     fireEvent.click(attemptButton);
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.attempts.add).toHaveBeenCalledWith(expect.objectContaining({
-        problemId: '1',
-        type: AttemptType.ATTEMPT,
-        id: expect.any(String),
-      }));
+      expect(BoulderLogDatabase.attempts.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          problemId: '1',
+          type: AttemptType.ATTEMPT,
+          id: expect.any(String),
+        })
+      );
     });
   });
 
@@ -192,14 +197,18 @@ describe('Session Page', () => {
     vi.mocked(BoulderLogDatabase.problems.get).mockResolvedValue(mockProblem);
     vi.mocked(BoulderLogDatabase.problems.put).mockResolvedValue(1);
     vi.mocked(BoulderLogDatabase.attempts.toArray).mockResolvedValue([
-      { id: 'a1', problemId: '1', sessionId: '1', timestamp: new Date().toISOString(), type: AttemptType.FLASH },
+      {
+        id: 'a1',
+        problemId: '1',
+        sessionId: '1',
+        timestamp: new Date().toISOString(),
+        type: AttemptType.FLASH,
+      },
     ]);
 
     render(
       <MemoryRouter>
-        <AppProvider>
-          <Session />
-        </AppProvider>
+        <Session />
       </MemoryRouter>
     );
 
@@ -207,11 +216,13 @@ describe('Session Page', () => {
     fireEvent.click(flashButton);
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.problems.put).toHaveBeenCalledWith(expect.objectContaining({
-        id: '1',
-        flash: true,
-        send: false,
-      }));
+      expect(BoulderLogDatabase.problems.put).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: '1',
+          flash: true,
+          send: false,
+        })
+      );
     });
   });
 
@@ -221,19 +232,19 @@ describe('Session Page', () => {
 
     render(
       <MemoryRouter>
-        <AppProvider>
-          <Session />
-        </AppProvider>
+        <Session />
       </MemoryRouter>
     );
 
     fireEvent.click(screen.getByText(/end session/i));
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.sessions.put).toHaveBeenCalledWith(expect.objectContaining({
-        ...mockSession,
-        endTime: expect.any(String),
-      }));
+      expect(BoulderLogDatabase.sessions.put).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...mockSession,
+          endTime: expect.any(String),
+        })
+      );
     });
   });
-}); 
+});

@@ -1,4 +1,4 @@
-import { Session, Problem, Attempt, Project } from '../types';
+import { Session, Attempt } from '../types';
 
 /**
  * Google Sheets integration stub.
@@ -21,15 +21,7 @@ class SheetsService {
     return [];
   }
 
-  async getProblems(): Promise<Problem[]> {
-    return [];
-  }
-
   async getAttempts(): Promise<Attempt[]> {
-    return [];
-  }
-
-  async getProjects(): Promise<Project[]> {
     return [];
   }
 
@@ -37,15 +29,7 @@ class SheetsService {
     // Placeholder — OAuth-authenticated write only
   }
 
-  async saveProblem(_problem: Problem): Promise<void> {
-    // Placeholder
-  }
-
   async saveAttempt(_attempt: Attempt): Promise<void> {
-    // Placeholder
-  }
-
-  async saveProject(_project: Project): Promise<void> {
     // Placeholder
   }
 }

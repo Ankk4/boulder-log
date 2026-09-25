@@ -38,34 +38,12 @@ export enum AttemptType {
   SEND = 'send'
 }
 
-export type Problem = {
-  id: string;
-  name: string;
-  frenchGrade: string;
-  colorGrade: string;
-  isProject: boolean;
-  completed: boolean;
-  firstSessionId?: string;
-  lastSessionId?: string;
-  totalAttempts: number;
-  createdAt: string;
-};
-
 export interface Attempt {
   id: string;
   problemId: string;
   sessionId: string;
   timestamp: string;
   type: AttemptType;
-  notes?: string;
-}
-
-export interface Project {
-  id: string;
-  problemId: string;
-  startDate: string;
-  endDate?: string;
-  status: 'active' | 'completed' | 'abandoned';
   notes?: string;
 }
 
