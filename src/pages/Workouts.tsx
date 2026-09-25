@@ -26,35 +26,51 @@ import {
 import { useNavigate } from 'react-router-dom';
 import type { IntervalWorkout } from '../types';
 import { db, useIntervalWorkouts, useRecentIntervalRuns } from '../db';
-import WorkoutFormDialog, { type WorkoutFormValues } from '../components/WorkoutFormDialog';
+import WorkoutFormDialog, {
+  type WorkoutFormInitial,
+  type WorkoutFormValues,
+} from '../components/WorkoutFormDialog';
 import { calculateTotalSeconds, formatDuration } from '../utils/duration';
+import { WORKOUT_PRESETS, type WorkoutPreset } from '../utils/workoutPresets';
 
 const Workouts = () => {
   const navigate = useNavigate();
   const workouts = useIntervalWorkouts();
   const runs = useRecentIntervalRuns(15);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<IntervalWorkout | null>(null);
+  const [formInitial, setFormInitial] = useState<WorkoutFormInitial | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IntervalWorkout | null>(null);
 
   const openCreate = () => {
-    setEditing(null);
+    setFormInitial(null);
     setDialogOpen(true);
   };
 
   const openEdit = (workout: IntervalWorkout) => {
-    setEditing(workout);
+    setFormInitial(workout);
+    setDialogOpen(true);
+  };
+
+  const openPreset = (preset: WorkoutPreset) => {
+    setFormInitial({
+      name: preset.name,
+      workSeconds: preset.workSeconds,
+      restSeconds: preset.restSeconds,
+      intervals: preset.intervals,
+      muted: false,
+    });
     setDialogOpen(true);
   };
 
   const handleSave = async (values: WorkoutFormValues) => {
+    const editingId = formInitial && 'id' in formInitial ? formInitial.id : undefined;
     await db.saveIntervalWorkout({
-      id: editing?.id,
-      createdAt: editing?.createdAt,
+      id: editingId,
+      createdAt: formInitial && 'createdAt' in formInitial ? formInitial.createdAt : undefined,
       ...values,
     });
     setDialogOpen(false);
-    setEditing(null);
+    setFormInitial(null);
   };
 
   const handleDelete = async () => {
@@ -73,6 +89,21 @@ const Workouts = () => {
       </Stack>
 
       <Typography variant="h6" sx={{ mb: 1 }}>
+        Presets
+      </Typography>
+      <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 3 }}>
+        {WORKOUT_PRESETS.map((preset) => (
+          <Chip
+            key={preset.id}
+            label={`${preset.name} (${preset.workSeconds}/${preset.restSeconds}×${preset.intervals})`}
+            onClick={() => openPreset(preset)}
+            clickable
+            variant="outlined"
+          />
+        ))}
+      </Stack>
+
+      <Typography variant="h6" sx={{ mb: 1 }}>
         Workouts
       </Typography>
 
@@ -81,7 +112,7 @@ const Workouts = () => {
       ) : workouts.length === 0 ? (
         <Paper sx={{ p: 2, mb: 3 }}>
           <Typography color="text.secondary">
-            No saved workouts yet. Create one with work, rest, and interval count.
+            No saved workouts yet. Pick a preset or create one with work, rest, and interval count.
           </Typography>
         </Paper>
       ) : (
@@ -165,10 +196,10 @@ const Workouts = () => {
 
       <WorkoutFormDialog
         open={dialogOpen}
-        initial={editing}
+        initial={formInitial}
         onClose={() => {
           setDialogOpen(false);
-          setEditing(null);
+          setFormInitial(null);
         }}
         onSave={handleSave}
       />

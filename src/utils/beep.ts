@@ -1,4 +1,4 @@
-type BeepKind = 'start' | 'end';
+type BeepKind = 'start' | 'end' | 'tick';
 
 let sharedContext: AudioContext | null = null;
 
@@ -58,18 +58,22 @@ function vibrate(pattern: number | number[]): void {
 }
 
 /**
- * Play a distinct start (high) or end (low double) beep.
+ * Play a distinct start (high), end (low double), or prepare tick (mid) beep.
  * When muted, only vibrates if the device supports it.
  */
 export async function playBeep(kind: BeepKind, muted = false): Promise<void> {
   if (muted) {
-    vibrate(kind === 'start' ? 40 : [30, 40, 30]);
+    if (kind === 'start') vibrate(40);
+    else if (kind === 'tick') vibrate(25);
+    else vibrate([30, 40, 30]);
     return;
   }
 
   const ctx = getAudioContext();
   if (!ctx) {
-    vibrate(kind === 'start' ? 40 : [30, 40, 30]);
+    if (kind === 'start') vibrate(40);
+    else if (kind === 'tick') vibrate(25);
+    else vibrate([30, 40, 30]);
     return;
   }
 
@@ -79,6 +83,9 @@ export async function playBeep(kind: BeepKind, muted = false): Promise<void> {
   if (kind === 'start') {
     playTone(ctx, 880, now, 120);
     vibrate(40);
+  } else if (kind === 'tick') {
+    playTone(ctx, 660, now, 80);
+    vibrate(25);
   } else {
     playTone(ctx, 440, now, 100);
     playTone(ctx, 440, now + 0.16, 100);

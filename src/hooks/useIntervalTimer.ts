@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playBeep } from '../utils/beep';
+import { PREPARE_SECONDS } from '../utils/duration';
 
-export type TimerPhase = 'idle' | 'work' | 'rest' | 'done';
+export type TimerPhase = 'idle' | 'prepare' | 'work' | 'rest' | 'done';
 
 export interface IntervalTimerConfig {
   workSeconds: number;
@@ -43,6 +44,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
   const pausedRef = useRef(isPaused);
   const endAtRef = useRef<number | null>(null);
   const remainingMsRef = useRef(config.workSeconds * 1000);
+  const lastPrepareCeilRef = useRef(PREPARE_SECONDS);
   const rafRef = useRef<number | null>(null);
   const configRef = useRef(config);
 
@@ -87,6 +89,18 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     void playBeep('start', mutedRef.current);
   }, []);
 
+  const enterPrepare = useCallback(() => {
+    const prepareMs = PREPARE_SECONDS * 1000;
+    phaseRef.current = 'prepare';
+    setPhase('prepare');
+    setCurrentInterval(0);
+    setSecondsRemaining(PREPARE_SECONDS);
+    remainingMsRef.current = prepareMs;
+    endAtRef.current = performance.now() + prepareMs;
+    lastPrepareCeilRef.current = PREPARE_SECONDS;
+    void playBeep('tick', mutedRef.current);
+  }, []);
+
   const enterRest = useCallback(() => {
     const restMs = configRef.current.restSeconds * 1000;
     phaseRef.current = 'rest';
@@ -128,6 +142,10 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     enterWork(intervalRef.current + 1);
   }, [enterWork]);
 
+  const advanceFromPrepare = useCallback(() => {
+    enterWork(1);
+  }, [enterWork]);
+
   const tick = useCallback(() => {
     if (pausedRef.current || phaseRef.current === 'idle' || phaseRef.current === 'done') {
       return;
@@ -140,8 +158,18 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     remainingMsRef.current = remaining;
     setSecondsRemaining(remaining / 1000);
 
+    if (phaseRef.current === 'prepare') {
+      const ceil = Math.ceil(remaining / 1000);
+      if (ceil < lastPrepareCeilRef.current && ceil >= 1) {
+        lastPrepareCeilRef.current = ceil;
+        void playBeep('tick', mutedRef.current);
+      }
+    }
+
     if (remaining <= 0) {
-      if (phaseRef.current === 'work') {
+      if (phaseRef.current === 'prepare') {
+        advanceFromPrepare();
+      } else if (phaseRef.current === 'work') {
         advanceFromWork();
       } else if (phaseRef.current === 'rest') {
         advanceFromRest();
@@ -151,7 +179,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     if (phaseRef.current !== 'done' && phaseRef.current !== 'idle') {
       rafRef.current = requestAnimationFrame(tick);
     }
-  }, [advanceFromRest, advanceFromWork]);
+  }, [advanceFromPrepare, advanceFromRest, advanceFromWork]);
 
   const startLoop = useCallback(() => {
     stopLoop();
@@ -162,12 +190,16 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     completedRef.current = 0;
     setCompletedIntervals(0);
     setIsPaused(false);
-    enterWork(1);
+    enterPrepare();
     startLoop();
-  }, [enterWork, startLoop]);
+  }, [enterPrepare, startLoop]);
 
   const pause = useCallback(() => {
-    if (phaseRef.current === 'idle' || phaseRef.current === 'done' || pausedRef.current) {
+    if (
+      phaseRef.current === 'idle' ||
+      phaseRef.current === 'done' ||
+      pausedRef.current
+    ) {
       return;
     }
     if (endAtRef.current !== null) {
@@ -194,7 +226,9 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
       setIsPaused(false);
     }
 
-    if (phaseRef.current === 'work') {
+    if (phaseRef.current === 'prepare') {
+      advanceFromPrepare();
+    } else if (phaseRef.current === 'work') {
       advanceFromWork();
     } else {
       advanceFromRest();
@@ -203,7 +237,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     if (phaseRef.current !== 'done') {
       startLoop();
     }
-  }, [advanceFromRest, advanceFromWork, startLoop]);
+  }, [advanceFromPrepare, advanceFromRest, advanceFromWork, startLoop]);
 
   const abort = useCallback(() => {
     stopLoop();

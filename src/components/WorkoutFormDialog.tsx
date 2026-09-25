@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { IntervalWorkout } from '../types';
-import { calculateTotalSeconds, formatDuration } from '../utils/duration';
+import { calculateTotalSeconds, formatDuration, PREPARE_SECONDS } from '../utils/duration';
 
 export type WorkoutFormValues = {
   name: string;
@@ -22,9 +22,16 @@ export type WorkoutFormValues = {
   muted: boolean;
 };
 
+/** Saved workout or draft values used to prefill the form (e.g. presets). */
+export type WorkoutFormInitial = WorkoutFormValues & {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 interface WorkoutFormDialogProps {
   open: boolean;
-  initial?: IntervalWorkout | null;
+  initial?: WorkoutFormInitial | IntervalWorkout | null;
   onClose: () => void;
   onSave: (values: WorkoutFormValues) => void;
 }
@@ -49,6 +56,8 @@ const WorkoutFormDialog = ({
   const [intervals, setIntervals] = useState(defaults.intervals);
   const [muted, setMuted] = useState(defaults.muted);
 
+  const isEditing = Boolean(initial && 'id' in initial && initial.id);
+
   useEffect(() => {
     if (!open) return;
     if (initial) {
@@ -56,7 +65,7 @@ const WorkoutFormDialog = ({
       setWorkSeconds(initial.workSeconds);
       setRestSeconds(initial.restSeconds);
       setIntervals(initial.intervals);
-      setMuted(initial.muted);
+      setMuted(initial.muted ?? false);
     } else {
       setName(defaults.name);
       setWorkSeconds(defaults.workSeconds);
@@ -91,7 +100,7 @@ const WorkoutFormDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>{initial ? 'Edit workout' : 'New interval workout'}</DialogTitle>
+      <DialogTitle>{isEditing ? 'Edit workout' : 'New interval workout'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
@@ -136,7 +145,8 @@ const WorkoutFormDialog = ({
             label="Mute beeps by default"
           />
           <Typography variant="body2" color="text.secondary">
-            Total set length: {formatDuration(totalSeconds)} ({totalSeconds}s)
+            Total set length: {formatDuration(totalSeconds)} ({totalSeconds}s), includes{' '}
+            {PREPARE_SECONDS}s prepare
           </Typography>
         </Stack>
       </DialogContent>

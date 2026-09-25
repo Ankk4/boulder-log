@@ -21,11 +21,13 @@ import {
 } from '@mui/icons-material';
 import { db, useIntervalWorkout } from '../db';
 import { useIntervalTimer } from '../hooks/useIntervalTimer';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { unlockAudio } from '../utils/beep';
 import {
   calculateTotalSeconds,
   formatCountdown,
   formatDuration,
+  PREPARE_SECONDS,
 } from '../utils/duration';
 import type { IntervalRun } from '../types';
 
@@ -43,6 +45,8 @@ const WorkoutRun = () => {
     intervals: workout?.intervals ?? 1,
     muted: workout?.muted ?? false,
   });
+
+  useWakeLock(hasStarted && timer.phase !== 'done');
 
   useEffect(() => {
     if (workout && !hasStarted) {
@@ -116,24 +120,28 @@ const WorkoutRun = () => {
   );
 
   const phaseLabel =
-    timer.phase === 'work'
-      ? 'WORK'
-      : timer.phase === 'rest'
-        ? 'REST'
-        : timer.phase === 'done'
-          ? timer.completedIntervals >= workout.intervals
-            ? 'DONE'
-            : 'STOPPED'
-          : 'READY';
+    timer.phase === 'prepare'
+      ? 'PREPARE'
+      : timer.phase === 'work'
+        ? 'WORK'
+        : timer.phase === 'rest'
+          ? 'REST'
+          : timer.phase === 'done'
+            ? timer.completedIntervals >= workout.intervals
+              ? 'DONE'
+              : 'STOPPED'
+            : 'READY';
 
   const phaseColor =
-    timer.phase === 'work'
-      ? 'error.main'
-      : timer.phase === 'rest'
-        ? 'info.main'
-        : timer.phase === 'done'
-          ? 'success.main'
-          : 'text.primary';
+    timer.phase === 'prepare'
+      ? 'warning.main'
+      : timer.phase === 'work'
+        ? 'error.main'
+        : timer.phase === 'rest'
+          ? 'info.main'
+          : timer.phase === 'done'
+            ? 'success.main'
+            : 'text.primary';
 
   const progress =
     workout.intervals > 0
@@ -156,6 +164,9 @@ const WorkoutRun = () => {
     navigate('/workouts');
   };
 
+  const isRunning =
+    timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest';
+
   return (
     <Box sx={{ p: 2 }}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
@@ -166,7 +177,7 @@ const WorkoutRun = () => {
           <Typography variant="h5">{workout.name}</Typography>
           <Typography variant="body2" color="text.secondary">
             {workout.workSeconds}s / {workout.restSeconds}s · {workout.intervals} intervals ·{' '}
-            {formatDuration(totalSeconds)}
+            {formatDuration(totalSeconds)} (incl. {PREPARE_SECONDS}s prepare)
           </Typography>
         </Box>
         <IconButton
@@ -183,11 +194,13 @@ const WorkoutRun = () => {
           textAlign: 'center',
           mb: 3,
           bgcolor:
-            timer.phase === 'work'
-              ? 'rgba(211, 47, 47, 0.06)'
-              : timer.phase === 'rest'
-                ? 'rgba(2, 136, 209, 0.06)'
-                : 'background.paper',
+            timer.phase === 'prepare'
+              ? 'rgba(237, 108, 2, 0.08)'
+              : timer.phase === 'work'
+                ? 'rgba(211, 47, 47, 0.06)'
+                : timer.phase === 'rest'
+                  ? 'rgba(2, 136, 209, 0.06)'
+                  : 'background.paper',
         }}
       >
         <Typography variant="overline" sx={{ color: phaseColor, letterSpacing: 2 }}>
@@ -207,9 +220,11 @@ const WorkoutRun = () => {
             : formatCountdown(timer.secondsRemaining)}
         </Typography>
         <Typography variant="h6" color="text.secondary">
-          {timer.phase === 'idle'
-            ? `0 / ${workout.intervals}`
-            : `${Math.min(timer.currentInterval, workout.intervals)} / ${workout.intervals}`}
+          {timer.phase === 'prepare'
+            ? 'Get ready'
+            : timer.phase === 'idle'
+              ? `0 / ${workout.intervals}`
+              : `${Math.min(timer.currentInterval, workout.intervals)} / ${workout.intervals}`}
         </Typography>
         <LinearProgress
           variant="determinate"
@@ -224,7 +239,7 @@ const WorkoutRun = () => {
         </Button>
       )}
 
-      {(timer.phase === 'work' || timer.phase === 'rest') && (
+      {isRunning && (
         <Stack direction="row" spacing={1} justifyContent="center">
           {timer.isPaused ? (
             <Button

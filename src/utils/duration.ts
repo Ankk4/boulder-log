@@ -1,11 +1,23 @@
+/** Seconds of 3-2-1 prepare countdown before the first work interval. */
+export const PREPARE_SECONDS = 3;
+
+export type TotalDurationOptions = {
+  /** Include one-time prepare countdown (default true). */
+  includePrepare?: boolean;
+};
+
 /** Total set length: work for each interval + rest between (no rest after last). */
 export function calculateTotalSeconds(
   workSeconds: number,
   restSeconds: number,
-  intervals: number
+  intervals: number,
+  options: TotalDurationOptions = {}
 ): number {
+  const { includePrepare = true } = options;
   if (intervals <= 0) return 0;
-  return intervals * workSeconds + Math.max(0, intervals - 1) * restSeconds;
+  const setSeconds =
+    intervals * workSeconds + Math.max(0, intervals - 1) * restSeconds;
+  return setSeconds + (includePrepare ? PREPARE_SECONDS : 0);
 }
 
 /** Format seconds as "Xm Ys" or "Ys" when under a minute. */
