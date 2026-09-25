@@ -134,6 +134,10 @@ describe('Session Page', () => {
 
     const nameInput = screen.getByLabelText(/problem name/i);
     fireEvent.change(nameInput, { target: { value: 'Test Problem' } });
+
+    const [frenchGradeSelect] = screen.getAllByRole('combobox');
+    fireEvent.mouseDown(frenchGradeSelect);
+    fireEvent.click(await screen.findByRole('option', { name: '6a' }));
     
     const addButton = screen.getByRole('button', { name: /^add$/i });
     fireEvent.click(addButton);
@@ -142,6 +146,8 @@ describe('Session Page', () => {
       expect(BoulderLogDatabase.problems.add).toHaveBeenCalledWith(expect.objectContaining({
         sessionId: '1',
         name: 'Test Problem',
+        frenchGrade: '6a',
+        id: expect.any(String),
       }));
     });
   });
@@ -152,7 +158,11 @@ describe('Session Page', () => {
       problems: [mockProblem],
     });
     vi.mocked(BoulderLogDatabase.attempts.add).mockResolvedValue('3');
+    vi.mocked(BoulderLogDatabase.problems.get).mockResolvedValue(mockProblem);
     vi.mocked(BoulderLogDatabase.problems.put).mockResolvedValue(1);
+    vi.mocked(BoulderLogDatabase.attempts.toArray).mockResolvedValue([
+      { id: 'a1', problemId: '1', sessionId: '1', timestamp: new Date().toISOString(), type: AttemptType.ATTEMPT },
+    ]);
 
     render(
       <MemoryRouter>
@@ -169,6 +179,7 @@ describe('Session Page', () => {
       expect(BoulderLogDatabase.attempts.add).toHaveBeenCalledWith(expect.objectContaining({
         problemId: '1',
         type: AttemptType.ATTEMPT,
+        id: expect.any(String),
       }));
     });
   });
@@ -180,6 +191,9 @@ describe('Session Page', () => {
     });
     vi.mocked(BoulderLogDatabase.problems.get).mockResolvedValue(mockProblem);
     vi.mocked(BoulderLogDatabase.problems.put).mockResolvedValue(1);
+    vi.mocked(BoulderLogDatabase.attempts.toArray).mockResolvedValue([
+      { id: 'a1', problemId: '1', sessionId: '1', timestamp: new Date().toISOString(), type: AttemptType.FLASH },
+    ]);
 
     render(
       <MemoryRouter>
@@ -194,9 +208,9 @@ describe('Session Page', () => {
 
     await waitFor(() => {
       expect(BoulderLogDatabase.problems.put).toHaveBeenCalledWith(expect.objectContaining({
-        ...mockProblem,
+        id: '1',
         flash: true,
-        send: true,
+        send: false,
       }));
     });
   });

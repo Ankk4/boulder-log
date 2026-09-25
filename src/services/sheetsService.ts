@@ -1,50 +1,53 @@
 import { Session, Problem, Attempt, Project } from '../types';
 
+/**
+ * Google Sheets integration stub.
+ *
+ * Do NOT pass API keys or other secrets into the browser. Any value shipped
+ * in client bundles (including VITE_* env vars) is extractable from GitHub Pages.
+ * Future implementation must use OAuth user consent (or a backend proxy),
+ * with only a public spreadsheet ID stored client-side.
+ */
 class SheetsService {
   private spreadsheetId: string = '';
-  private apiKey: string = '';
 
-  constructor(spreadsheetId: string, apiKey: string) {
+  constructor(spreadsheetId: string) {
     this.spreadsheetId = spreadsheetId;
-    this.apiKey = apiKey;
   }
 
-  // TODO: Implement actual Google Sheets API integration
+  // TODO: Implement Google Sheets API via OAuth user tokens (never API keys)
   async getSessions(): Promise<Session[]> {
-    // Placeholder implementation
+    void this.spreadsheetId;
     return [];
   }
 
   async getProblems(): Promise<Problem[]> {
-    // Placeholder implementation
     return [];
   }
 
   async getAttempts(): Promise<Attempt[]> {
-    // Placeholder implementation
     return [];
   }
 
   async getProjects(): Promise<Project[]> {
-    // Placeholder implementation
     return [];
   }
 
-  async saveSession(session: Session): Promise<void> {
-    // Placeholder implementation
+  async saveSession(_session: Session): Promise<void> {
+    // Placeholder — OAuth-authenticated write only
   }
 
-  async saveProblem(problem: Problem): Promise<void> {
-    // Placeholder implementation
+  async saveProblem(_problem: Problem): Promise<void> {
+    // Placeholder
   }
 
-  async saveAttempt(attempt: Attempt): Promise<void> {
-    // Placeholder implementation
+  async saveAttempt(_attempt: Attempt): Promise<void> {
+    // Placeholder
   }
 
-  async saveProject(project: Project): Promise<void> {
-    // Placeholder implementation
+  async saveProject(_project: Project): Promise<void> {
+    // Placeholder
   }
 }
 
-export default SheetsService; 
+export default SheetsService;

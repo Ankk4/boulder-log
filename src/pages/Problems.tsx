@@ -22,6 +22,11 @@ import {
 import { DeleteIcon, StarIcon, CheckIcon } from '@chakra-ui/icons';
 import { useAppContext } from '../context/AppContext';
 import type { Problem } from '../types';
+import {
+  LIMITS,
+  sanitizeGrade,
+  sanitizeProblemName,
+} from '../utils/validation';
 
 const Problems: React.FC = () => {
   const { problems, setProblems } = useAppContext();
@@ -36,11 +41,14 @@ const Problems: React.FC = () => {
 
   const handleAddProblem = (e: React.FormEvent) => {
     e.preventDefault();
+    const name = sanitizeProblemName(newProblem.name);
+    if (!name) return;
+
     const problem: Problem = {
-      id: Date.now().toString(),
-      name: newProblem.name,
-      frenchGrade: newProblem.frenchGrade,
-      colorGrade: newProblem.colorGrade,
+      id: crypto.randomUUID(),
+      name,
+      frenchGrade: sanitizeGrade(newProblem.frenchGrade),
+      colorGrade: sanitizeGrade(newProblem.colorGrade),
       isProject: false,
       completed: false,
       totalAttempts: 0,
@@ -103,6 +111,7 @@ const Problems: React.FC = () => {
             <Input
               id="name"
               value={newProblem.name}
+              maxLength={LIMITS.problemName}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                 setNewProblem({ ...newProblem, name: e.target.value })
               }
@@ -114,6 +123,7 @@ const Problems: React.FC = () => {
             <Input
               id="frenchGrade"
               value={newProblem.frenchGrade}
+              maxLength={LIMITS.grade}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                 setNewProblem({ ...newProblem, frenchGrade: e.target.value })
               }
@@ -125,6 +135,7 @@ const Problems: React.FC = () => {
             <Input
               id="colorGrade"
               value={newProblem.colorGrade}
+              maxLength={LIMITS.grade}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                 setNewProblem({ ...newProblem, colorGrade: e.target.value })
               }

@@ -11,6 +11,14 @@ import {
   Stack,
   Chip
 } from '@mui/material';
+import {
+  LIMITS,
+  clampNumber,
+  sanitizeGoals,
+  sanitizeNotes,
+  sanitizeNutrition,
+  sanitizeStress,
+} from '../utils/validation';
 
 interface PreSessionFormProps {
   onChange: (data: PreSessionData) => void;
@@ -43,15 +51,36 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
 
   const [goalInput, setGoalInput] = useState('');
 
-  const handleChange = (field: keyof PreSessionData, value: any) => {
-    const newData = { ...formData, [field]: value };
+  const handleChange = (field: keyof PreSessionData, value: unknown) => {
+    let nextValue = value;
+    if (typeof value === 'number') {
+      if (field === 'restDays') {
+        nextValue = clampNumber(value, 0, 7);
+      } else {
+        nextValue = clampNumber(value, 1, 10);
+      }
+    } else if (field === 'nutrition' && typeof value === 'string') {
+      nextValue = sanitizeNutrition(value);
+    } else if (field === 'stress' && typeof value === 'string') {
+      nextValue = sanitizeStress(value);
+    } else if (field === 'additionalNotes' && typeof value === 'string') {
+      nextValue = sanitizeNotes(value);
+    } else if (field === 'goals' && Array.isArray(value)) {
+      nextValue = sanitizeGoals(value as string[]);
+    }
+
+    const newData = { ...formData, [field]: nextValue } as PreSessionData;
     setFormData(newData);
     onChange(newData);
   };
 
   const handleAddGoal = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && goalInput.trim()) {
-      const newGoals = [...formData.goals, goalInput.trim()];
+      if (formData.goals.length >= LIMITS.maxGoals) {
+        setGoalInput('');
+        return;
+      }
+      const newGoals = sanitizeGoals([...formData.goals, goalInput.trim()]);
       handleChange('goals', newGoals);
       setGoalInput('');
     }
@@ -162,6 +191,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             fullWidth
             placeholder="Add a goal and press Enter"
             value={goalInput}
+            inputProps={{ maxLength: LIMITS.goal }}
             onChange={(e) => setGoalInput(e.target.value)}
             onKeyPress={handleAddGoal}
             sx={{ mb: 1 }}
@@ -186,6 +216,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             rows={3}
             placeholder="Any other notes about your condition or goals..."
             value={formData.additionalNotes}
+            inputProps={{ maxLength: LIMITS.notes }}
             onChange={(e) => handleChange('additionalNotes', e.target.value)}
           />
         </Box>

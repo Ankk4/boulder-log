@@ -5,21 +5,19 @@ import {
   Button, 
   TextField, 
   Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Stack,
-  FormControl,
-  InputLabel
 } from '@mui/material';
-import { Download as DownloadIcon } from '@mui/icons-material';
 import QuickLog from '../components/QuickLog';
 import PreSessionForm from '../components/PreSessionForm';
 import type { Session, SessionProblem, PreSessionData } from '../types';
 import { AttemptType } from '../types';
 import { db, useCurrentSession } from '../db';
+import {
+  sanitizeGoals,
+  sanitizeGrade,
+  sanitizeNotes,
+  sanitizeProblemName,
+  LIMITS,
+} from '../utils/validation';
 
 const defaultPreSessionData: PreSessionData = {
   sleepQuality: 5,
@@ -39,11 +37,16 @@ const SessionPage = () => {
   const [postSessionNotes, setPostSessionNotes] = useState('');
 
   const startSession = async () => {
+    const sanitizedPreSession: PreSessionData = {
+      ...preSessionData,
+      goals: sanitizeGoals(preSessionData.goals),
+      additionalNotes: sanitizeNotes(preSessionData.additionalNotes),
+    };
     const newSession: Session = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       startTime: new Date().toISOString(),
       endTime: null,
-      preSessionData,
+      preSessionData: sanitizedPreSession,
       problems: []
     };
     await db.sessions.add(newSession);
@@ -54,7 +57,7 @@ const SessionPage = () => {
       const updatedSession: Session = {
         ...currentSession,
         endTime: new Date().toISOString(),
-        postSessionNotes: postSessionNotes,
+        postSessionNotes: sanitizeNotes(postSessionNotes, LIMITS.postSessionNotes),
         duration: Math.round(
           (new Date().getTime() - new Date(currentSession.startTime).getTime()) / (1000 * 60)
         ),
@@ -65,19 +68,25 @@ const SessionPage = () => {
 
   const handleAddProblem = async (problemData: Omit<SessionProblem, 'id' | 'attempts'>) => {
     if (currentSession) {
-      console.log('Adding problem to session:', currentSession.id);
-      console.log('Problem data:', problemData);
+      if (import.meta.env.DEV) {
+        console.log('Adding problem to session:', currentSession.id);
+        console.log('Problem data:', problemData);
+      }
       
       const newProblem: SessionProblem = {
         ...problemData,
-        id: Date.now().toString(),
+        name: sanitizeProblemName(problemData.name),
+        frenchGrade: sanitizeGrade(problemData.frenchGrade),
+        colorGrade: sanitizeGrade(problemData.colorGrade),
+        id: crypto.randomUUID(),
         attempts: []
       };
-      console.log('New problem object:', newProblem);
+      if (import.meta.env.DEV) {
+        console.log('New problem object:', newProblem);
+      }
       
       try {
         await db.problems.add(newProblem);
-        console.log('Problem added to database');
         
         // Update the current session's problems array
         const updatedSession: Session = {
@@ -85,7 +94,6 @@ const SessionPage = () => {
           problems: [...currentSession.problems, newProblem]
         };
         await db.sessions.put(updatedSession);
-        console.log('Session updated with new problem');
       } catch (error) {
         console.error('Error adding problem:', error);
       }
@@ -96,11 +104,13 @@ const SessionPage = () => {
 
   const handleAddAttempt = async (problemId: string, type: AttemptType) => {
     if (currentSession) {
-      console.log('Adding attempt to problem:', problemId);
-      console.log('Attempt type:', type);
+      if (import.meta.env.DEV) {
+        console.log('Adding attempt to problem:', problemId);
+        console.log('Attempt type:', type);
+      }
       
       const newAttempt = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         problemId,
         sessionId: currentSession.id,
         timestamp: new Date().toISOString(),
@@ -110,7 +120,6 @@ const SessionPage = () => {
       try {
         // Add the attempt to the database
         await db.attempts.add(newAttempt);
-        console.log('Attempt added to database');
 
         // Update problem flash/send status
         const problem = await db.problems.get(problemId);
@@ -128,7 +137,6 @@ const SessionPage = () => {
           };
           
           await db.problems.put(updatedProblem);
-          console.log('Problem updated in database');
 
           // Update the current session's problems array
           const updatedSession: Session = {
@@ -139,7 +147,6 @@ const SessionPage = () => {
           };
           
           await db.sessions.put(updatedSession);
-          console.log('Session updated with new problem state');
         }
       } catch (error) {
         console.error('Error adding attempt:', error);
@@ -219,6 +226,7 @@ const SessionPage = () => {
               rows={4}
               label="Post-session notes"
               value={postSessionNotes}
+              inputProps={{ maxLength: LIMITS.postSessionNotes }}
               onChange={(e) => setPostSessionNotes(e.target.value)}
               sx={{ mt: 2 }}
             />

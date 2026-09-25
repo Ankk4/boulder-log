@@ -44,22 +44,7 @@ const Sessions = () => {
   const handleDeleteConfirm = async () => {
     if (sessionToDelete) {
       try {
-        // Delete the session
-        await db.sessions.delete(sessionToDelete.id);
-        
-        // Delete associated problems
-        await db.problems
-          .where('sessionId')
-          .equals(sessionToDelete.id)
-          .delete();
-        
-        // Delete associated attempts
-        await db.attempts
-          .where('sessionId')
-          .equals(sessionToDelete.id)
-          .delete();
-        
-        // Update the sessions list
+        await db.deleteSession(sessionToDelete.id);
         setSessions(sessions.filter(s => s.id !== sessionToDelete.id));
       } catch (error) {
         console.error('Error deleting session:', error);

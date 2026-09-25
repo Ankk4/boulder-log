@@ -25,7 +25,12 @@ import {
 } from '@mui/icons-material';
 import DifficultySelect from './DifficultySelect';
 import { AttemptType } from '../types';
-import type { SessionProblem, Attempt } from '../types';
+import type { SessionProblem } from '../types';
+import {
+  LIMITS,
+  sanitizeGrade,
+  sanitizeProblemName,
+} from '../utils/validation';
 
 interface QuickLogProps {
   sessionId: string;
@@ -41,33 +46,34 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
   const [newColorGrade, setNewColorGrade] = useState('');
 
   const handleAddProblem = () => {
-    if (newProblemName && (newFrenchGrade || newColorGrade)) {
-      console.log('QuickLog: Adding new problem');
-      console.log('Name:', newProblemName);
-      console.log('French Grade:', newFrenchGrade);
-      console.log('Color Grade:', newColorGrade);
+    const name = sanitizeProblemName(newProblemName);
+    const frenchGrade = sanitizeGrade(newFrenchGrade);
+    const colorGrade = sanitizeGrade(newColorGrade);
+
+    if (name && (frenchGrade || colorGrade)) {
+      if (import.meta.env.DEV) {
+        console.log('QuickLog: Adding new problem');
+        console.log('Name:', name);
+        console.log('French Grade:', frenchGrade);
+        console.log('Color Grade:', colorGrade);
+      }
       
       onAddProblem({
-        name: newProblemName,
-        frenchGrade: newFrenchGrade,
-        colorGrade: newColorGrade,
+        name,
+        frenchGrade,
+        colorGrade,
         sessionId,
         createdAt: new Date().toISOString(),
         flash: false,
         send: false
       });
       
-      console.log('QuickLog: Problem data sent to parent');
-      
       setNewProblemName('');
       setNewFrenchGrade('');
       setNewColorGrade('');
       setIsAddingProblem(false);
-    } else {
+    } else if (import.meta.env.DEV) {
       console.log('QuickLog: Missing required fields');
-      console.log('Name:', newProblemName);
-      console.log('French Grade:', newFrenchGrade);
-      console.log('Color Grade:', newColorGrade);
     }
   };
 
@@ -174,6 +180,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
             label="Problem Name"
             fullWidth
             value={newProblemName}
+            inputProps={{ maxLength: LIMITS.problemName }}
             onChange={(e) => setNewProblemName(e.target.value)}
             sx={{ mb: 2 }}
           />

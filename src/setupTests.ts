@@ -69,5 +69,6 @@ Object.defineProperty(window, 'matchMedia', {
 Object.defineProperty(window, 'crypto', {
   value: {
     getRandomValues: vi.fn(),
+    randomUUID: vi.fn(() => '00000000-0000-4000-8000-000000000000'),
   },
 }); 

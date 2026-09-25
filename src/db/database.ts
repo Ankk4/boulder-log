@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
-import type { Session, SessionProblem, Attempt, PreSessionData } from '../types';
+import type { Session, SessionProblem, Attempt } from '../types';
+import { csvRow } from '../utils/csv';
 
 export class BoulderLogDatabase extends Dexie {
   sessions!: Table<Session>;
@@ -53,49 +54,45 @@ export class BoulderLogDatabase extends Dexie {
     if (!session) throw new Error('Session not found');
 
     // TODO: Implement Google Sheets export
-    // For now, return CSV format
+    // For now, return CSV format with formula-safe escaping
     const rows: string[] = [];
 
-    // Session info
-    rows.push('Session Details');
-    rows.push(`Start Time,${session.startTime}`);
-    rows.push(`End Time,${session.endTime || ''}`);
-    rows.push(`Duration (minutes),${session.duration || ''}`);
+    rows.push(csvRow(['Session Details']));
+    rows.push(csvRow(['Start Time', session.startTime]));
+    rows.push(csvRow(['End Time', session.endTime || '']));
+    rows.push(csvRow(['Duration (minutes)', session.duration ?? '']));
     
-    // Pre-session data
-    rows.push('\nPre-session Data');
+    rows.push(csvRow(['Pre-session Data']));
     Object.entries(session.preSessionData).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        rows.push(`${key},${value.join('; ')}`);
+        rows.push(csvRow([key, value.join('; ')]));
       } else {
-        rows.push(`${key},${value}`);
+        rows.push(csvRow([key, value]));
       }
     });
 
-    // Problems
-    rows.push('\nProblems');
-    rows.push('Name,French Grade,Color Grade,Flash,Send,Attempts');
+    rows.push(csvRow(['Problems']));
+    rows.push(csvRow(['Name', 'French Grade', 'Color Grade', 'Flash', 'Send', 'Attempts']));
     session.problems.forEach(problem => {
-      rows.push([
+      rows.push(csvRow([
         problem.name,
         problem.frenchGrade,
         problem.colorGrade,
         problem.flash ? 'Yes' : 'No',
         problem.send ? 'Yes' : 'No',
         problem.attempts.length
-      ].join(','));
+      ]));
     });
 
-    // Attempts detail
-    rows.push('\nAttempts');
-    rows.push('Problem Name,Type,Timestamp');
+    rows.push(csvRow(['Attempts']));
+    rows.push(csvRow(['Problem Name', 'Type', 'Timestamp']));
     for (const problem of session.problems) {
       problem.attempts.forEach(attempt => {
-        rows.push([
+        rows.push(csvRow([
           problem.name,
           attempt.type,
           attempt.timestamp
-        ].join(','));
+        ]));
       });
     }
 
@@ -120,4 +117,4 @@ export class BoulderLogDatabase extends Dexie {
         .delete();
     });
   }
-} 
+}
