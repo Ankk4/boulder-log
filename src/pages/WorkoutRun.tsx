@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   Stack,
-  Paper,
   IconButton,
   LinearProgress,
   CircularProgress,
@@ -30,6 +29,39 @@ import {
   PREPARE_SECONDS,
 } from '../utils/duration';
 import type { IntervalRun } from '../types';
+
+const PHASE_STYLES = {
+  idle: {
+    bgcolor: '#f5f5f5',
+    color: '#212121',
+    muted: 'rgba(0, 0, 0, 0.6)',
+    progress: 'rgba(0, 0, 0, 0.2)',
+  },
+  prepare: {
+    bgcolor: '#e65100',
+    color: '#fff',
+    muted: 'rgba(255, 255, 255, 0.85)',
+    progress: 'rgba(255, 255, 255, 0.35)',
+  },
+  work: {
+    bgcolor: '#b71c1c',
+    color: '#fff',
+    muted: 'rgba(255, 255, 255, 0.85)',
+    progress: 'rgba(255, 255, 255, 0.35)',
+  },
+  rest: {
+    bgcolor: '#01579b',
+    color: '#fff',
+    muted: 'rgba(255, 255, 255, 0.85)',
+    progress: 'rgba(255, 255, 255, 0.35)',
+  },
+  done: {
+    bgcolor: '#1b5e20',
+    color: '#fff',
+    muted: 'rgba(255, 255, 255, 0.85)',
+    progress: 'rgba(255, 255, 255, 0.35)',
+  },
+} as const;
 
 const WorkoutRun = () => {
   const { id } = useParams<{ id: string }>();
@@ -132,17 +164,6 @@ const WorkoutRun = () => {
               : 'STOPPED'
             : 'READY';
 
-  const phaseColor =
-    timer.phase === 'prepare'
-      ? 'warning.main'
-      : timer.phase === 'work'
-        ? 'error.main'
-        : timer.phase === 'rest'
-          ? 'info.main'
-          : timer.phase === 'done'
-            ? 'success.main'
-            : 'text.primary';
-
   const progress =
     workout.intervals > 0
       ? Math.min(100, (timer.completedIntervals / workout.intervals) * 100)
@@ -167,15 +188,29 @@ const WorkoutRun = () => {
   const isRunning =
     timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest';
 
+  const theme = PHASE_STYLES[timer.phase];
+
   return (
-    <Box sx={{ p: 2 }}>
+    <Box
+      sx={{
+        minHeight: 'calc(100vh - 56px)',
+        mb: -7,
+        p: 2,
+        pb: 9,
+        bgcolor: theme.bgcolor,
+        color: theme.color,
+        transition: 'background-color 0.25s ease',
+      }}
+    >
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton aria-label="back" onClick={handleBack}>
+        <IconButton aria-label="back" onClick={handleBack} sx={{ color: theme.color }}>
           <BackIcon />
         </IconButton>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h5">{workout.name}</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="h5" sx={{ color: theme.color }}>
+            {workout.name}
+          </Typography>
+          <Typography variant="body2" sx={{ color: theme.muted }}>
             {workout.workSeconds}s / {workout.restSeconds}s · {workout.intervals} intervals ·{' '}
             {formatDuration(totalSeconds)} (incl. {PREPARE_SECONDS}s prepare)
           </Typography>
@@ -183,27 +218,17 @@ const WorkoutRun = () => {
         <IconButton
           aria-label={timer.muted ? 'unmute' : 'mute'}
           onClick={() => timer.setMuted(!timer.muted)}
+          sx={{ color: theme.color }}
         >
           {timer.muted ? <MuteIcon /> : <UnmuteIcon />}
         </IconButton>
       </Stack>
 
-      <Paper
-        sx={{
-          p: 4,
-          textAlign: 'center',
-          mb: 3,
-          bgcolor:
-            timer.phase === 'prepare'
-              ? 'rgba(237, 108, 2, 0.08)'
-              : timer.phase === 'work'
-                ? 'rgba(211, 47, 47, 0.06)'
-                : timer.phase === 'rest'
-                  ? 'rgba(2, 136, 209, 0.06)'
-                  : 'background.paper',
-        }}
-      >
-        <Typography variant="overline" sx={{ color: phaseColor, letterSpacing: 2 }}>
+      <Box sx={{ textAlign: 'center', py: 4, mb: 2 }}>
+        <Typography
+          variant="overline"
+          sx={{ color: theme.color, letterSpacing: 3, fontWeight: 700, fontSize: '1rem' }}
+        >
           {phaseLabel}
           {timer.isPaused ? ' · PAUSED' : ''}
         </Typography>
@@ -212,14 +237,17 @@ const WorkoutRun = () => {
           sx={{
             fontVariantNumeric: 'tabular-nums',
             my: 1,
-            fontSize: { xs: '4rem', sm: '5rem' },
+            fontSize: { xs: '5rem', sm: '6.5rem' },
+            fontWeight: 700,
+            color: theme.color,
+            lineHeight: 1,
           }}
         >
           {timer.phase === 'idle' || timer.phase === 'done'
             ? formatCountdown(workout.workSeconds)
             : formatCountdown(timer.secondsRemaining)}
         </Typography>
-        <Typography variant="h6" color="text.secondary">
+        <Typography variant="h6" sx={{ color: theme.muted }}>
           {timer.phase === 'prepare'
             ? 'Get ready'
             : timer.phase === 'idle'
@@ -229,9 +257,17 @@ const WorkoutRun = () => {
         <LinearProgress
           variant="determinate"
           value={progress}
-          sx={{ mt: 3, height: 8, borderRadius: 1 }}
+          sx={{
+            mt: 3,
+            height: 10,
+            borderRadius: 1,
+            bgcolor: theme.progress,
+            '& .MuiLinearProgress-bar': {
+              bgcolor: theme.color,
+            },
+          }}
         />
-      </Paper>
+      </Box>
 
       {timer.phase === 'idle' && (
         <Button fullWidth size="large" variant="contained" onClick={handleStart}>
@@ -244,23 +280,52 @@ const WorkoutRun = () => {
           {timer.isPaused ? (
             <Button
               variant="contained"
+              color="inherit"
               startIcon={<PlayIcon />}
               onClick={() => {
                 void unlockAudio();
                 timer.resume();
               }}
+              sx={{ bgcolor: 'rgba(255,255,255,0.95)', color: theme.bgcolor }}
             >
               Resume
             </Button>
           ) : (
-            <Button variant="outlined" startIcon={<PauseIcon />} onClick={timer.pause}>
+            <Button
+              variant="outlined"
+              startIcon={<PauseIcon />}
+              onClick={timer.pause}
+              sx={{
+                borderColor: 'rgba(255,255,255,0.7)',
+                color: theme.color,
+                '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
+              }}
+            >
               Pause
             </Button>
           )}
-          <Button variant="outlined" startIcon={<SkipIcon />} onClick={timer.skip}>
+          <Button
+            variant="outlined"
+            startIcon={<SkipIcon />}
+            onClick={timer.skip}
+            sx={{
+              borderColor: 'rgba(255,255,255,0.7)',
+              color: theme.color,
+              '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
             Skip
           </Button>
-          <Button variant="outlined" color="error" startIcon={<StopIcon />} onClick={handleAbort}>
+          <Button
+            variant="outlined"
+            startIcon={<StopIcon />}
+            onClick={handleAbort}
+            sx={{
+              borderColor: 'rgba(255,255,255,0.7)',
+              color: theme.color,
+              '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
             Stop
           </Button>
         </Stack>
@@ -268,12 +333,17 @@ const WorkoutRun = () => {
 
       {timer.phase === 'done' && (
         <Stack spacing={1}>
-          <Typography align="center" color="text.secondary">
+          <Typography align="center" sx={{ color: theme.muted }}>
             {timer.completedIntervals >= workout.intervals
               ? 'Set complete. Saved to history.'
               : `Stopped after ${timer.completedIntervals} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
           </Typography>
-          <Button fullWidth variant="contained" onClick={handleBack}>
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={handleBack}
+            sx={{ bgcolor: 'rgba(255,255,255,0.95)', color: theme.bgcolor }}
+          >
             Back to workouts
           </Button>
           <Button
@@ -284,6 +354,11 @@ const WorkoutRun = () => {
               startedAtRef.current = null;
               setHasStarted(false);
               void handleStart();
+            }}
+            sx={{
+              borderColor: 'rgba(255,255,255,0.7)',
+              color: theme.color,
+              '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
             }}
           >
             Run again

@@ -25,30 +25,45 @@ function playTone(
   ctx: AudioContext,
   frequency: number,
   startAt: number,
-  durationMs: number
+  durationMs: number,
+  peak = 0.75,
+  type: OscillatorType = 'square'
 ): void {
   const oscillator = ctx.createOscillator();
   const gain = ctx.createGain();
 
-  oscillator.type = 'sine';
+  oscillator.type = type;
   oscillator.frequency.value = frequency;
 
   const durationSec = durationMs / 1000;
-  const attack = 0.008;
-  const release = 0.04;
-  const peak = 0.18;
+  const attack = 0.005;
+  const release = 0.05;
 
   gain.gain.setValueAtTime(0.0001, startAt);
   gain.gain.exponentialRampToValueAtTime(peak, startAt + attack);
   gain.gain.exponentialRampToValueAtTime(
     0.0001,
-    startAt + Math.max(attack + 0.01, durationSec - release)
+    startAt + Math.max(attack + 0.02, durationSec - release)
   );
 
   oscillator.connect(gain);
   gain.connect(ctx.destination);
   oscillator.start(startAt);
   oscillator.stop(startAt + durationSec + 0.02);
+}
+
+/** Layer two oscillators so the cue cuts through phone speakers. */
+function playChord(
+  ctx: AudioContext,
+  frequencies: number[],
+  startAt: number,
+  durationMs: number,
+  peak = 0.7
+): void {
+  const perOsc = peak / Math.max(1, frequencies.length);
+  for (const frequency of frequencies) {
+    playTone(ctx, frequency, startAt, durationMs, perOsc, 'square');
+  }
 }
 
 function vibrate(pattern: number | number[]): void {
@@ -63,17 +78,17 @@ function vibrate(pattern: number | number[]): void {
  */
 export async function playBeep(kind: BeepKind, muted = false): Promise<void> {
   if (muted) {
-    if (kind === 'start') vibrate(40);
-    else if (kind === 'tick') vibrate(25);
-    else vibrate([30, 40, 30]);
+    if (kind === 'start') vibrate(80);
+    else if (kind === 'tick') vibrate(40);
+    else vibrate([50, 50, 50]);
     return;
   }
 
   const ctx = getAudioContext();
   if (!ctx) {
-    if (kind === 'start') vibrate(40);
-    else if (kind === 'tick') vibrate(25);
-    else vibrate([30, 40, 30]);
+    if (kind === 'start') vibrate(80);
+    else if (kind === 'tick') vibrate(40);
+    else vibrate([50, 50, 50]);
     return;
   }
 
@@ -81,15 +96,19 @@ export async function playBeep(kind: BeepKind, muted = false): Promise<void> {
   const now = ctx.currentTime;
 
   if (kind === 'start') {
-    playTone(ctx, 880, now, 120);
-    vibrate(40);
+    // Sharp rising cue for work start
+    playChord(ctx, [880, 1320], now, 180, 0.85);
+    playChord(ctx, [988, 1480], now + 0.12, 160, 0.7);
+    vibrate(80);
   } else if (kind === 'tick') {
-    playTone(ctx, 660, now, 80);
-    vibrate(25);
+    // Prepare countdown only (never used during rest)
+    playTone(ctx, 740, now, 100, 0.65, 'square');
+    vibrate(40);
   } else {
-    playTone(ctx, 440, now, 100);
-    playTone(ctx, 440, now + 0.16, 100);
-    vibrate([30, 40, 30]);
+    // Lower double pulse for work→rest / set complete
+    playChord(ctx, [392, 494], now, 160, 0.8);
+    playChord(ctx, [349, 440], now + 0.2, 180, 0.75);
+    vibrate([50, 50, 50]);
   }
 }
 

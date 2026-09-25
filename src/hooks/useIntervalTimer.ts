@@ -138,6 +138,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     enterRest();
   }, [enterRest, enterWork, finish]);
 
+  // Rest ends → next work immediately. No prepare countdown/ticks after rest.
   const advanceFromRest = useCallback(() => {
     enterWork(intervalRef.current + 1);
   }, [enterWork]);
@@ -158,6 +159,8 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     remainingMsRef.current = remaining;
     setSecondsRemaining(remaining / 1000);
 
+    // Countdown ticks only during the one-time prepare phase before the first work.
+    // Rest must stay silent until the work-start beep.
     if (phaseRef.current === 'prepare') {
       const ceil = Math.ceil(remaining / 1000);
       if (ceil < lastPrepareCeilRef.current && ceil >= 1) {
