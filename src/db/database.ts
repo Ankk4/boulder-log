@@ -1,29 +1,42 @@
 import Dexie, { type Table } from 'dexie';
-import type { Session, SessionProblem, Attempt } from '../types';
-import { csvRow } from '../utils/csv';
+import type {
+  Session,
+  SessionProblem,
+  Attempt,
+  IntervalWorkout,
+  IntervalRun,
+} from '../types';
 
 export class BoulderLogDatabase extends Dexie {
   sessions!: Table<Session>;
   problems!: Table<SessionProblem>;
   attempts!: Table<Attempt>;
+  intervalWorkouts!: Table<IntervalWorkout>;
+  intervalRuns!: Table<IntervalRun>;
 
   constructor() {
     super('boulderLog');
-    
+
     this.version(1).stores({
       sessions: 'id, startTime, endTime',
       problems: 'id, sessionId, name, frenchGrade, colorGrade, flash, send, createdAt',
-      attempts: 'id, problemId, sessionId, timestamp, type'
+      attempts: 'id, problemId, sessionId, timestamp, type',
+    });
+
+    this.version(2).stores({
+      sessions: 'id, startTime, endTime',
+      problems: 'id, sessionId, name, frenchGrade, colorGrade, flash, send, createdAt',
+      attempts: 'id, problemId, sessionId, timestamp, type',
+      intervalWorkouts: 'id, name, updatedAt',
+      intervalRuns: 'id, workoutId, startedAt, status',
     });
   }
 
   async getCurrentSession(): Promise<Session | undefined> {
-    // Find sessions that don't have an endTime (i.e., active sessions)
     const activeSessions = await this.sessions
-      .filter(session => session.endTime === null)
+      .filter((session) => session.endTime === null)
       .toArray();
-    
-    // Return the most recent active session if any exist
+
     return activeSessions.length > 0 ? activeSessions[0] : undefined;
   }
 
@@ -45,7 +58,7 @@ export class BoulderLogDatabase extends Dexie {
 
     return {
       ...session,
-      problems
+      problems,
     };
   }
 
@@ -53,46 +66,42 @@ export class BoulderLogDatabase extends Dexie {
     const session = await this.getSessionWithDetails(sessionId);
     if (!session) throw new Error('Session not found');
 
-    // TODO: Implement Google Sheets export
-    // For now, return CSV format with formula-safe escaping
     const rows: string[] = [];
 
-    rows.push(csvRow(['Session Details']));
-    rows.push(csvRow(['Start Time', session.startTime]));
-    rows.push(csvRow(['End Time', session.endTime || '']));
-    rows.push(csvRow(['Duration (minutes)', session.duration ?? '']));
-    
-    rows.push(csvRow(['Pre-session Data']));
+    rows.push('Session Details');
+    rows.push(`Start Time,${session.startTime}`);
+    rows.push(`End Time,${session.endTime || ''}`);
+    rows.push(`Duration (minutes),${session.duration || ''}`);
+
+    rows.push('\nPre-session Data');
     Object.entries(session.preSessionData).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        rows.push(csvRow([key, value.join('; ')]));
+        rows.push(`${key},${value.join('; ')}`);
       } else {
-        rows.push(csvRow([key, value]));
+        rows.push(`${key},${value}`);
       }
     });
 
-    rows.push(csvRow(['Problems']));
-    rows.push(csvRow(['Name', 'French Grade', 'Color Grade', 'Flash', 'Send', 'Attempts']));
-    session.problems.forEach(problem => {
-      rows.push(csvRow([
-        problem.name,
-        problem.frenchGrade,
-        problem.colorGrade,
-        problem.flash ? 'Yes' : 'No',
-        problem.send ? 'Yes' : 'No',
-        problem.attempts.length
-      ]));
+    rows.push('\nProblems');
+    rows.push('Name,French Grade,Color Grade,Flash,Send,Attempts');
+    session.problems.forEach((problem) => {
+      rows.push(
+        [
+          problem.name,
+          problem.frenchGrade,
+          problem.colorGrade,
+          problem.flash ? 'Yes' : 'No',
+          problem.send ? 'Yes' : 'No',
+          problem.attempts.length,
+        ].join(',')
+      );
     });
 
-    rows.push(csvRow(['Attempts']));
-    rows.push(csvRow(['Problem Name', 'Type', 'Timestamp']));
+    rows.push('\nAttempts');
+    rows.push('Problem Name,Type,Timestamp');
     for (const problem of session.problems) {
-      problem.attempts.forEach(attempt => {
-        rows.push(csvRow([
-          problem.name,
-          attempt.type,
-          attempt.timestamp
-        ]));
+      problem.attempts.forEach((attempt) => {
+        rows.push([problem.name, attempt.type, attempt.timestamp].join(','));
       });
     }
 
@@ -101,20 +110,57 @@ export class BoulderLogDatabase extends Dexie {
 
   async deleteSession(sessionId: string): Promise<void> {
     await this.transaction('rw', [this.sessions, this.problems, this.attempts], async () => {
-      await this.attempts
-        .where('sessionId')
-        .equals(sessionId)
-        .delete();
-      
-      await this.problems
-        .where('sessionId')
-        .equals(sessionId)
-        .delete();
-      
-      await this.sessions
-        .where('id')
-        .equals(sessionId)
-        .delete();
+      await this.attempts.where('sessionId').equals(sessionId).delete();
+      await this.problems.where('sessionId').equals(sessionId).delete();
+      await this.sessions.where('id').equals(sessionId).delete();
     });
+  }
+
+  async getIntervalWorkout(id: string): Promise<IntervalWorkout | undefined> {
+    return this.intervalWorkouts.get(id);
+  }
+
+  async getAllIntervalWorkouts(): Promise<IntervalWorkout[]> {
+    return this.intervalWorkouts.orderBy('updatedAt').reverse().toArray();
+  }
+
+  async saveIntervalWorkout(
+    workout: Omit<IntervalWorkout, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: string;
+    }
+  ): Promise<string> {
+    const now = new Date().toISOString();
+    if (workout.id) {
+      await this.intervalWorkouts.put({
+        ...workout,
+        id: workout.id,
+        createdAt: workout.createdAt ?? now,
+        updatedAt: now,
+      });
+      return workout.id;
+    }
+
+    const id = Date.now().toString();
+    await this.intervalWorkouts.add({
+      ...workout,
+      id,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return id;
+  }
+
+  async deleteIntervalWorkout(id: string): Promise<void> {
+    await this.intervalWorkouts.delete(id);
+  }
+
+  async addIntervalRun(run: IntervalRun): Promise<string> {
+    await this.intervalRuns.add(run);
+    return run.id;
+  }
+
+  async getRecentIntervalRuns(limit = 20): Promise<IntervalRun[]> {
+    return this.intervalRuns.orderBy('startedAt').reverse().limit(limit).toArray();
   }
 }

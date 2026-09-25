@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Box, BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import { Home, FitnessCenter, List, History } from '@mui/icons-material';
+import { Home, FitnessCenter, List, History, Timer } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -12,6 +12,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
 
   const getCurrentTab = () => {
+    if (location.pathname.startsWith('/workouts')) return 4;
     switch (location.pathname) {
       case '/':
         return 0;
@@ -33,7 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
         <BottomNavigation
           showLabels
           value={getCurrentTab()}
-          onChange={(event, newValue) => {
+          onChange={(_event, newValue) => {
             switch (newValue) {
               case 0:
                 navigate('/');
@@ -47,6 +48,9 @@ const Layout = ({ children }: LayoutProps) => {
               case 3:
                 navigate('/problems');
                 break;
+              case 4:
+                navigate('/workouts');
+                break;
             }
           }}
         >
@@ -54,10 +58,11 @@ const Layout = ({ children }: LayoutProps) => {
           <BottomNavigationAction label="Session" icon={<FitnessCenter />} />
           <BottomNavigationAction label="Sessions" icon={<History />} />
           <BottomNavigationAction label="Problems" icon={<List />} />
+          <BottomNavigationAction label="Timer" icon={<Timer />} />
         </BottomNavigation>
       </Paper>
     </Box>
   );
 };
 
-export default Layout; 
+export default Layout;

@@ -7,6 +7,8 @@ import Home from './pages/Home';
 import Session from './pages/Session';
 import Sessions from './pages/Sessions';
 import Problems from './pages/Problems';
+import Workouts from './pages/Workouts';
+import WorkoutRun from './pages/WorkoutRun';
 
 const theme = createTheme({
   palette: {
@@ -32,6 +34,8 @@ function App() {
               <Route path="/session" element={<Session />} />
               <Route path="/sessions" element={<Sessions />} />
               <Route path="/problems" element={<Problems />} />
+              <Route path="/workouts" element={<Workouts />} />
+              <Route path="/workouts/:id/run" element={<WorkoutRun />} />
             </Routes>
           </Layout>
         </Router>

@@ -67,4 +67,29 @@ export interface Project {
   endDate?: string;
   status: 'active' | 'completed' | 'abandoned';
   notes?: string;
+}
+
+export interface IntervalWorkout {
+  id: string;
+  name: string;
+  workSeconds: number;
+  restSeconds: number;
+  intervals: number;
+  muted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IntervalRun {
+  id: string;
+  workoutId: string;
+  workoutName: string;
+  workSeconds: number;
+  restSeconds: number;
+  intervals: number;
+  completedIntervals: number;
+  startedAt: string;
+  completedAt?: string;
+  status: 'completed' | 'aborted';
+  notes?: string;
 } 
