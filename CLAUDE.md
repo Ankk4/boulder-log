@@ -1,0 +1,35 @@
+# boulder-log
+
+React 18 + TypeScript + Vite SPA, Dexie (IndexedDB) storage, deployed to GitHub Pages under `/boulder-log/`.
+
+## Verification (definition of done)
+
+A change is done only when `npm run verify` passes. It runs, in order:
+
+1. `npm run typecheck`: `tsc -b` over app, tests, and `vite.config.ts` (project references)
+2. `npm run lint`: ESLint with `--max-warnings=0`
+3. `npm run test:run`: Vitest, once (console output is shown only for failing tests)
+
+`npm run verify:full` also runs the production build and `npm audit` (production deps only).
+
+Narrower loops while iterating:
+- One test file: `npx vitest run src/utils/__tests__/duration.test.ts`
+- One file's lint: `npx eslint src/path/File.tsx`
+
+### Hooks enforce this (`.claude/settings.json`)
+
+- After every Edit/Write to `src/**/*.ts(x)`, ESLint runs on that file. Errors come back to you; fix them before moving on.
+- Before you finish, `npm run verify` runs if source or config changed. If it fails, the stop is blocked and you get the failures. After one retry the hook lets you stop and warns the user, so report what is still failing rather than claiming success.
+
+### Rules
+
+- Fix the cause, never the check. Don't add `eslint-disable`, `@ts-ignore`, `as any`, `.skip`/`.only`, or loosen tsconfig/ESLint rules to get green. If a rule is truly wrong for the project, say so and ask.
+- Don't weaken or delete an existing test to make a change pass. If the behavior change is intended, update the test and say so.
+- New logic in `src/utils/` or `src/hooks/` gets a test under the sibling `__tests__/` folder.
+- Unused parameters that must stay go with a leading `_`.
+- UI changes: tests can't see layout or audio. Say so, or run the app (`npm start`) and check it.
+
+## Testing notes
+
+- `src/setupTests.ts` mocks Dexie, `matchMedia`, and `crypto.randomUUID` globally.
+- Page tests mock `../../db/index` and assert on the typed `db` export (see `src/pages/__tests__/Session.test.tsx`).

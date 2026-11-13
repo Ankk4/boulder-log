@@ -29,15 +29,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
+    // Keep output short: console output is shown only for failing tests.
+    silent: 'passed-only',
     coverage: {
       reporter: ['text', 'json', 'html'],
-    },
-    deps: {
-      optimizer: {
-        web: {
-          include: ['vitest-canvas-mock'],
-        },
-      },
     },
     environmentOptions: {
       jsdom: {

@@ -4,6 +4,10 @@ import { PREPARE_SECONDS } from '../utils/duration';
 
 export type TimerPhase = 'idle' | 'prepare' | 'work' | 'rest' | 'done';
 
+// Takes the phase as a parameter so callers re-read the ref after advanceFrom*()
+// mutates it; inline comparisons would be wrongly narrowed by TypeScript.
+const isActivePhase = (p: TimerPhase) => p !== 'done' && p !== 'idle';
+
 export interface IntervalTimerConfig {
   workSeconds: number;
   restSeconds: number;
@@ -179,7 +183,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
       }
     }
 
-    if (phaseRef.current !== 'done' && phaseRef.current !== 'idle') {
+    if (isActivePhase(phaseRef.current)) {
       rafRef.current = requestAnimationFrame(tick);
     }
   }, [advanceFromPrepare, advanceFromRest, advanceFromWork]);
@@ -237,7 +241,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
       advanceFromRest();
     }
 
-    if (phaseRef.current !== 'done') {
+    if (isActivePhase(phaseRef.current)) {
       startLoop();
     }
   }, [advanceFromPrepare, advanceFromRest, advanceFromWork, startLoop]);
