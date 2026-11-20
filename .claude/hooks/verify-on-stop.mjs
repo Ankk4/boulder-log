@@ -12,6 +12,9 @@ import { ensureDeps } from './lib/ensure-deps.mjs';
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
 const { stop_hook_active = false, cwd = process.cwd(), hook_event_name, agent_type, agent_id } = JSON.parse(input || '{}');
+// SubagentStop fires for every agent type; only the implementer writes code.
+// (A `matcher` on the settings entry didn't fire in practice, so filter here.)
+if (hook_event_name === 'SubagentStop' && agent_type !== 'implementer') process.exit(0);
 ensureDeps(cwd);
 
 // One line per gate run in .claude/logs/agents.jsonl, next to log-agents.mjs entries.

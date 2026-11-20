@@ -50,7 +50,6 @@
         ]
       },
       {
-        "matcher": "implementer",
         "hooks": [
           {
             "type": "command",
