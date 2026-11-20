@@ -24,7 +24,7 @@ Use only if the change touches ≤ 3 source files and the expected behavior is o
 
 ### Phase 2: Draft spec
 - Write `spec.md` from the template with `status: draft`. Every requirement has an ID and a pass/fail check. UI/audio behavior gets a `manual:` check.
-- Run each command-style `_Check:_` once while drafting, so a check that can't work (wrong flag, wrong Node behaviour) is caught before approval.
+- Run each command-style `_Check:_` once while drafting, so a check that can't work (wrong flag, wrong Node behaviour) is caught before approval; it must work on CI's Node (`node-version` in `.github/workflows/ci.yml`) as well as the local one.
 - A requirement about size or layout (e.g. a tab's height) gets a `manual:` check, or a test that asserts a class or style; tests can't see layout.
 - A check for a state transition exercises that transition mid-flow (start, then change mode, then assert), not only the state on mount.
 - For visual choices (colour, spacing, typography), add a `manual:` check by the user; don't pin exact values unless the user chose them.

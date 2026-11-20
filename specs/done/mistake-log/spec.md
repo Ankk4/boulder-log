@@ -42,8 +42,8 @@ Each shipped spec leaves a short `retro.md` that records what went wrong while i
     - `grep foo` and commands that only mention rg in a quoted string, like `echo "rg foo"`.
   - A flag that takes a value (`-g`, `-t`, `-T`, `-m`, `-A`, `-B`, `-C`, `-e`, `-f`, `--glob`, `--type`, `--max-count`, …) does not count as a path, and neither does its value.
   - If the input can't be parsed, allow the call (fail open).
-  _Check:_ `node --test ".claude/hooks/__tests__/*.test.mjs"` passes (Node 25 rejects a bare directory), with one test per example above.
-- **R11** — Hook tests are part of the definition of done. `package.json` gets `"test:hooks": "node --test \".claude/hooks/__tests__/*.test.mjs\""`, and `verify` becomes `typecheck && lint && test:run && test:hooks`. CLAUDE.md's verification list adds the step. _Check:_ `npm run verify` passes, and its output shows the node:test summary.
+  _Check:_ `npm run test:hooks` passes, with one test per example above.
+- **R11** — Hook tests are part of the definition of done. `package.json` gets `"test:hooks": "node --test .claude/hooks/__tests__/*.test.mjs"` (unquoted, so the shell expands it on Node 20 and 25), and `verify` becomes `typecheck && lint && test:run && test:hooks`. CLAUDE.md's verification list adds the step. _Check:_ `npm run verify` passes, and its output shows the node:test summary.
 - **R12** — The orchestrator worked around a denied sandbox command (`cmp`). Fix: a run-spec rule that when a tool call or command is denied, the orchestrator asks the user and doesn't substitute another command. _Check:_ `rg -n "denied" .claude/skills/run-spec/SKILL.md`.
 - **R13** — A focus-mode remount reset the timer; the code fix is in `e397537`. Fixes:
   - a `/spec` rule: a check for a state transition exercises that transition mid-flow, not only the state on mount
