@@ -18,8 +18,7 @@ import { FitnessCenter, Timer } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { FocusModeProvider } from '../hooks/FocusModeProvider';
 import { useFocusMode } from '../hooks/useFocusMode';
-
-export const CONTENT_MAX_WIDTH = 720;
+import { CONTENT_MAX_WIDTH } from '../theme/layout';
 
 interface LayoutProps {
   children: ReactNode;

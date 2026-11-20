@@ -22,7 +22,7 @@ import {
 import { db, useIntervalWorkout } from '../db';
 import { useIntervalTimer } from '../hooks/useIntervalTimer';
 import { useRequestFocusMode } from '../hooks/useFocusMode';
-import { CONTENT_MAX_WIDTH } from '../components/Layout';
+import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { unlockAudio } from '../utils/beep';
 import {
