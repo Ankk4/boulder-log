@@ -1,22 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Layout from './components/Layout';
 import Session from './pages/Session';
 import Workouts from './pages/Workouts';
 import WorkoutRun from './pages/WorkoutRun';
+import { createAppTheme } from './theme/theme';
 
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+const theme = createAppTheme('light');
 
 function App() {
   return (

@@ -1,5 +1,5 @@
 {
-  "name": "boulder-notes",
+  "name": "matside",
   "version": "1.0.0",
   "private": true,
   "license": "GPL-3.0-only",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@resvg/resvg-js": "^2.6.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.3.1",
     "@testing-library/user-event": "^14.6.1",
@@ -47,7 +48,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "verify": "npm run typecheck && npm run lint && npm run test:run",
-    "verify:full": "npm run verify && vite build && npm audit --omit=dev --audit-level=high"
+    "verify:full": "npm run verify && vite build && npm audit --omit=dev --audit-level=high",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "browserslist": {
     "production": [
