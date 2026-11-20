@@ -1,19 +1,19 @@
 ---
 name: run-spec
 description: Execute an approved boulder-log spec task by task with implementer and reviewer subagents, committing each passing task on a feature branch, then run a final spec review. Parallel-safe tasks run in git worktrees.
-argument-hint: "<feature-name>"
+argument-hint: "<feature-name> [--draft-pr]"
 disable-model-invocation: true
 ---
 
-You are the orchestrator (planner model). Running this skill is the user's request to spawn the `implementer` and `reviewer` subagents and to commit each passing task on the feature branch. It is not permission to push, merge to master, or open a PR.
+You are the orchestrator (planner model). Running this skill is the user's request to spawn the `implementer` and `reviewer` subagents and to commit each passing task on the feature branch. It is not permission to push, merge to master, or open a PR, unless `--draft-pr` is given (see step 4). Even then it never merges and never marks a PR ready.
 
-Feature: `$ARGUMENTS`. Folder: `specs/active/$ARGUMENTS/`.
+Arguments: `$ARGUMENTS`. The first word is the feature name, written `<feature>` below. If `--draft-pr` appears after it, the draft-PR wrap-up is on. Folder: `specs/active/<feature>/`.
 
 ## 0. Preflight (stop and report if any fails)
 - `tasks.md` exists. If `spec.md` exists, its frontmatter says `status: approved`. (Quick specs have no spec.md.)
 - `git status --porcelain` shows nothing outside `specs/`. Don't start on a dirty tree.
-- Create or switch to the branch `feature/$ARGUMENTS`: `git switch -c feature/$ARGUMENTS`, or `git switch` if it already exists. Commit the spec files there first (`spec: $ARGUMENTS`).
-- Parse the tasks and build the dependency order. Skip tasks that are already committed: `git log --oneline` has `$ARGUMENTS T<n>:`.
+- Create or switch to the branch `feature/<feature>`: `git switch -c feature/<feature>`, or `git switch` if it already exists. Commit the spec files there first (`spec: <feature>`).
+- Parse the tasks and build the dependency order. Skip tasks that are already committed: `git log --oneline` has `<feature> T<n>:`.
 
 ## 1. Pick the next batch
 - The next batch is the open tasks whose `depends-on` are all committed.
@@ -21,13 +21,13 @@ Feature: `$ARGUMENTS`. Folder: `specs/active/$ARGUMENTS/`.
 - Tell the user one line per batch, e.g. `T1 (sequential)` or `T3+T4 (parallel worktrees)`.
 
 ## 2a. Sequential task (main tree)
-1. Spawn `implementer` with the prompt: `Spec folder: specs/active/$ARGUMENTS/. Task: T<n>.`
+1. Spawn `implementer` with the prompt: `Spec folder: specs/active/<feature>/. Task: T<n>.`
 2. **Verify gate (you enforce it).** When the implementer returns, run `node .claude/hooks/verify-on-stop.mjs --check <tree>` yourself (it runs `npm run verify`, exits 1 with the failing lines). Don't trust the report's "verify passed".
    - The `SubagentStop` hook also runs verify. Its block arrives after a background agent has already handed back, so the hook can't stop the agent. What it does do is leave a pass stamp, which makes your `--check` instant when the tree is green.
    - On failure, send the last ~40 lines of output to the same implementer with SendMessage, so it keeps its context. Wait, then verify again.
-3. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/$ARGUMENTS/. Task: T<n>. Diff: git diff --cached in <repo root>.`
+3. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/<feature>/. Task: T<n>. Diff: git diff --cached in <repo root>.`
 4. Read the implementer report, the reviewer verdict, and `git diff --cached --stat`. Do your own sanity check of the diff; you are the more capable model.
-5. On PASS, commit with message `$ARGUMENTS T<n>: <summary>`, then a blank line, a body listing `covers: R…`, and the attribution trailer.
+5. On PASS, commit with message `<feature> T<n>: <summary>`, then a blank line, a body listing `covers: R…`, and the attribution trailer.
 6. On FAIL, send the numbered findings to the same implementer with SendMessage, then repeat the verify gate and review.
    - Budget: at most 2 follow-ups per task, counting verify and review failures together.
    - Over budget, stop. `git restore --staged .` and leave the changes in place. Report to the user what failed and why. Don't loop.
@@ -37,14 +37,14 @@ Feature: `$ARGUMENTS`. Folder: `specs/active/$ARGUMENTS/`.
 2. Each result names its worktree path and branch (`worktree-agent-<id>`). For each one:
    - Run the verify gate from 2a in that path: `node .claude/hooks/verify-on-stop.mjs --check <path>`. `node_modules` is already linked in by the hooks; if it's missing, run `node .claude/hooks/lib/ensure-deps.mjs <path>`.
    - `git -C <path> add -A`, then spawn `reviewer` (task mode, diff: `git diff --cached` in `<path>`). Reviewers can run in parallel.
-3. Commit each PASS inside its worktree (same message format). Then, one at a time on `feature/$ARGUMENTS`:
+3. Commit each PASS inside its worktree (same message format). Then, one at a time on `feature/<feature>`:
    - `git cherry-pick <worktree-branch-sha>`
    - `npm run verify`. If it fails after a cherry-pick, the tasks weren't really independent. Report it, fix it as its own commit, and mark the spec's tasks to fix the parallel-safe flags.
    - `git worktree remove <path>` and `git branch -D <worktree-branch>`. If the agent has finished but the worktree is still locked, use `git worktree remove -f -f <path>`.
 4. FAIL handling is the same as 2a, inside the worktree. If a task still fails, leave its worktree in place for the user to inspect.
 
 ## 3. Final spec review (skip for quick specs)
-- Spawn `reviewer`: `Spec mode. Spec folder: specs/active/$ARGUMENTS/. Range: master...feature/$ARGUMENTS.`
+- Spawn `reviewer`: `Spec mode. Spec folder: specs/active/<feature>/. Range: master...feature/<feature>.`
 - Show the user:
   - the requirement table (`R…` → PASS/FAIL)
   - the drift list
@@ -52,7 +52,15 @@ Feature: `$ARGUMENTS`. Folder: `specs/active/$ARGUMENTS/`.
   - the `manual:` checks for them to do in `npm start`
 - If the spec is `spec-anchored` and drift is intended, propose spec edits. Don't apply them silently.
 
-## 4. Wrap-up (each step only with the user's OK)
+## 4. Wrap-up
+Without `--draft-pr`, do each step only with the user's OK:
 - Move the spec folder to `specs/done/`. If `spec.md` exists, set its `status: done` (quick specs have no spec.md; the move is enough).
 - Push, then open a PR against `master` with `gh pr create`. The PR body links the spec and lists the requirements and manual checks.
-- Agent activity log: `.claude/logs/agents.jsonl`.
+
+With `--draft-pr`, the command is the user's OK for these steps, but only if every task is committed with a reviewer PASS and the step 3 spec review (if any) has no FAIL rows. Otherwise stop and report as above, and say the PR was skipped and why.
+1. Move the spec folder to `specs/done/` (set `status: done` if `spec.md` exists) and commit it as `<feature>: mark spec done`.
+2. Write the PR body to a file in the scratchpad: the spec link, the requirement table, anything not verified, and the manual checks. End it with the PR attribution line from the system reminder.
+3. Run `node .claude/hooks/lib/open-pr.mjs --title "<title>" --body-file <path>`. It checks the branch, a clean tree, `npm run verify` and the `research/` guard, then pushes and opens a **draft** PR (or prints the one already open). If it refuses, show the reason and stop. Don't work around it.
+4. Show the PR URL. Say it is a draft and that marking it ready or merging is the user's call.
+
+Agent activity log: `.claude/logs/agents.jsonl`.
