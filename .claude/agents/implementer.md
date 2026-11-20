@@ -22,6 +22,7 @@ The prompt gives you a spec folder (e.g. `specs/active/grade-pyramid/`) and a ta
 - Run the task's **check** (narrowest test or command) first, then `npm run verify`, and only report `done` when it passes. The planner re-runs verify on your tree and sends you any failures to fix.
 - Do not commit, branch, stash, or reset. The planner commits after review.
 - Stay small: no drive-by refactors, renames, or dependency changes.
+- Never run a formatter (Prettier etc.) yourself; it rewrites files outside your task.
 
 ## Report (your final message, exactly these headings)
 **Task:** <id> — <summary>
