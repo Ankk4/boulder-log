@@ -43,7 +43,7 @@ describe('phase colours', () => {
   it.each(['light', 'dark'] as const)('%s phase colours reach 4.5:1', (mode) => {
     const phase = createAppTheme(mode).palette.phase;
     expect(phase).toBeDefined();
-    for (const key of ['prepare', 'work', 'rest', 'done'] as const) {
+    for (const key of ['prepare', 'work', 'rest'] as const) {
       expect(contrastRatio(phase[key].text, phase[key].bg)).toBeGreaterThanOrEqual(4.5);
     }
   });

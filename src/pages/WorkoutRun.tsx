@@ -55,10 +55,11 @@ const WorkoutRun = () => {
   useWakeLock(hasStarted && timer.phase !== 'done');
 
   const muiTheme = useTheme();
+  // Only a running phase gets its own colour; idle and done/stopped use the normal page.
   const phaseColors =
-    timer.phase === 'idle'
-      ? { bg: muiTheme.palette.background.default, text: muiTheme.palette.text.primary }
-      : muiTheme.palette.phase[timer.phase];
+    timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest'
+      ? muiTheme.palette.phase[timer.phase]
+      : { bg: muiTheme.palette.background.default, text: muiTheme.palette.text.primary };
   const theme = {
     bgcolor: phaseColors.bg,
     color: phaseColors.text,

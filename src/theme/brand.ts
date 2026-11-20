@@ -12,7 +12,6 @@ export const brand = {
       prepare: { bg: '#BF360C', text: '#FFFFFF' },
       work: { bg: '#1B5E20', text: '#FFFFFF' },
       rest: { bg: '#0D47A1', text: '#FFFFFF' },
-      done: { bg: '#4A148C', text: '#FFFFFF' },
     },
   },
   dark: {
@@ -28,7 +27,6 @@ export const brand = {
       prepare: { bg: '#A82E08', text: '#FFFFFF' },
       work: { bg: '#164A1A', text: '#FFFFFF' },
       rest: { bg: '#0A3A82', text: '#FFFFFF' },
-      done: { bg: '#3C1074', text: '#FFFFFF' },
     },
   },
 } as const;

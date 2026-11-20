@@ -28,7 +28,6 @@ Source of truth: `src/theme/brand.ts`.
 | phase.prepare | `#BF360C` | `#A82E08` | Timer prepare background (text `#FFFFFF`) |
 | phase.work | `#1B5E20` | `#164A1A` | Timer work background (text `#FFFFFF`) |
 | phase.rest | `#0D47A1` | `#0A3A82` | Timer rest background (text `#FFFFFF`) |
-| phase.done | `#4A148C` | `#3C1074` | Timer done background (text `#FFFFFF`) |
 
 Dark is the default mode; the light palette is kept for later.
 

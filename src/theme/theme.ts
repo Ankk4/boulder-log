@@ -11,7 +11,6 @@ interface PhasePalette {
   prepare: PhaseColor;
   work: PhaseColor;
   rest: PhaseColor;
-  done: PhaseColor;
 }
 
 declare module '@mui/material/styles' {
