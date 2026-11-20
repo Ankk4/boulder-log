@@ -41,5 +41,6 @@ The main session (Opus) plans; Sonnet subagents in `.claude/agents/` execute. Ru
 - Specs: `specs/active/<feature>/{spec.md,tasks.md}`, templates in `specs/TEMPLATE/`, shipped specs move to `specs/done/`. Requirements have IDs (`R1`…) with pass/fail checks; tasks list the requirements they `covers`.
 - `implementer` does one task and never commits. `reviewer` is read-only and returns PASS/FAIL. `researcher` writes only to `research/`.
 - `research/` is a separate **private** repo, gitignored here. This repo is public: link research notes by path, never paste competitor detail into specs, commits or PRs.
+- `/run-spec <feature> --draft-pr` pushes the branch and opens a draft PR via `.claude/hooks/lib/open-pr.mjs`, only when every task passed. Without the flag nothing is pushed.
 - Worktrees (`isolation: "worktree"`) only for tasks marked `parallel-safe: yes` with `schema-change: no`. Dexie `version()` bumps always run alone.
 - Hooks: `scope-guard.mjs` limits what each agent may write; `verify-on-stop.mjs` also runs on the implementer's `SubagentStop`, but a background agent has already handed back by then, so `/run-spec` re-runs it with `verify-on-stop.mjs --check <tree>` before review (instant when the hook's pass stamp matches); `log-agents.mjs` and the gate log to `.claude/logs/agents.jsonl`.

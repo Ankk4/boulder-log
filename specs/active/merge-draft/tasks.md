@@ -30,7 +30,7 @@ Quick spec (no `spec.md`). Add an opt-in `--draft-pr` flag to `/run-spec`. When 
       1. Missing `--title`, or the body file is missing or empty.
       2. The current branch is not `feature/*`.
       3. `git status --porcelain --untracked-files=no` is non-empty.
-      4. `node .claude/hooks/verify-on-stop.mjs --check .` fails. This is instant when the pass stamp matches.
+      4. `npm run verify` fails. (Not `verify-on-stop.mjs --check`: it exits 0 without running anything when the tree has no changes, and check 3 guarantees a clean tree here.)
       5. **Public-repo guard**: the body or any commit message in `origin/<base>..HEAD` contains `research/`. The repo is public and `research/` is private (see `CLAUDE.md`). Run `git fetch origin <base>` first so the range is correct.
     - Then: `git push -u origin <branch>`. If `gh pr list --head <branch> --state open --json url` already returns a PR, print its URL and exit 0 without editing it. Otherwise run `gh pr create --draft --base <base> --head <branch> --title … --body-file …` and print the URL.
     - `--dry-run` runs every refusal check, then prints the two commands it would run instead of running them.
@@ -46,4 +46,4 @@ Quick spec (no `spec.md`). Add an opt-in `--draft-pr` flag to `/run-spec`. When 
       4. Show the PR URL. Say that the PR is a draft and that marking it ready or merging is the user's call.
     - Without the flag, step 4 is unchanged.
   - **`CLAUDE.md`**, "Agent workflow" section: one line saying `/run-spec <feature> --draft-pr` opens a draft PR via `open-pr.mjs` when everything passed, and that without the flag nothing is pushed.
-  - Reuse: `verify-on-stop.mjs --check` for the gate. Don't reimplement verify.
+  - Reuse `npm run verify` for the gate. Don't reimplement its steps.
