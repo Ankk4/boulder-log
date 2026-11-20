@@ -4,6 +4,7 @@ Rules for splitting:
 - One task = one implementer run = one commit. Aim for ≤ 3 source files plus tests.
 - Every requirement in `spec.md` appears in at least one task's `covers`.
 - `parallel-safe: yes` only if the task's allowed files overlap no other open task, it has no unmet `depends-on`, and `schema-change: no`.
+- Notes cite R-IDs and don't restate requirements; if a note and `spec.md` conflict, the requirement wins.
 - The `check` is the narrowest thing that proves the task, e.g. `npx vitest run src/utils/__tests__/grades.test.ts`.
 
 ## T1 — <one-line summary>
