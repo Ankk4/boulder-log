@@ -78,21 +78,25 @@ const LayoutShell = ({ children }: LayoutProps) => {
           </Toolbar>
         </AppBar>
       )}
-      {focus ? (
-        children
-      ) : (
-        <Container
-          maxWidth={false}
-          sx={{
-            maxWidth: CONTENT_MAX_WIDTH,
-            px: { xs: 2, md: 3 },
-            py: 2,
-            pb: isDesktop ? 2 : 'calc(56px + env(safe-area-inset-bottom))',
-          }}
-        >
-          {children}
-        </Container>
-      )}
+      {/* Always the same Container element: swapping it out for bare children would
+          remount the page and reset its state (e.g. the running timer). Focus mode
+          only drops the width limit and padding. */}
+      <Container
+        maxWidth={false}
+        disableGutters={focus}
+        sx={
+          focus
+            ? { maxWidth: 'none' }
+            : {
+                maxWidth: CONTENT_MAX_WIDTH,
+                px: { xs: 2, md: 3 },
+                py: 2,
+                pb: isDesktop ? 2 : 'calc(56px + env(safe-area-inset-bottom))',
+              }
+        }
+      >
+        {children}
+      </Container>
       {!focus && !isDesktop && (
         <Paper
           sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, pb: 'env(safe-area-inset-bottom)' }}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -13,7 +14,18 @@ const Focus = () => {
   return <div>focused page</div>;
 };
 
-const renderLayout = (path = '/session', child = <Path />) =>
+// Like WorkoutRun: local state decides when to request focus mode.
+const StatefulFocus = () => {
+  const [running, setRunning] = useState(false);
+  useRequestFocusMode(running);
+  return (
+    <button type="button" onClick={() => setRunning(true)}>
+      {running ? 'running' : 'start'}
+    </button>
+  );
+};
+
+const renderLayout =(path = '/session', child = <Path />) =>
   render(
     <ThemeProvider theme={createAppTheme('light')}>
       <MemoryRouter initialEntries={[path]}>
@@ -99,5 +111,12 @@ describe('Layout', () => {
     expect(screen.getByText('focused page')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Matside' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Session/ })).not.toBeInTheDocument();
+  });
+
+  it('entering focus mode keeps the page mounted and its state', async () => {
+    renderLayout('/workouts/1', <StatefulFocus />);
+    await userEvent.click(screen.getByRole('button', { name: 'start' }));
+    expect(screen.getByRole('button', { name: 'running' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Matside' })).not.toBeInTheDocument();
   });
 });
