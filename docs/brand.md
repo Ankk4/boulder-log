@@ -4,7 +4,7 @@
 
 - Spelled **Matside**, one word, capital M. Never "MatSide" or "Mat Side".
 - `short_name`: Matside.
-- Description: an offline-first PWA for logging bouldering sessions, problems and attempts.
+- Description: an offline-first PWA for logging bouldering sessions, problems, attempts, benchmarks and everything related to the sport.
 - The repo (`boulder-log`), the `/boulder-log/` deploy path and the IndexedDB database name (`boulderLog`) keep the old name. Renaming them would change the app URL and orphan users' stored data.
 
 ## Voice
