@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createAppTheme } from '../theme';
+import { createAppTheme, DEFAULT_THEME_MODE } from '../theme';
 import { brand, contrastRatio } from '../brand';
 
 describe('createAppTheme', () => {
@@ -19,6 +19,10 @@ describe('createAppTheme', () => {
     expect(t.palette.secondary.main).toBe('#E0A574');
     expect(t.palette.background.default).toBe('#1C1F22');
     expect(t.palette.background.paper).toBe('#26292D');
+  });
+
+  it('default mode is dark', () => {
+    expect(DEFAULT_THEME_MODE).toBe('dark');
   });
 
   it('uses the system font stack', () => {

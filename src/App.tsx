@@ -5,9 +5,9 @@ import Layout from './components/Layout';
 import Session from './pages/Session';
 import Workouts from './pages/Workouts';
 import WorkoutRun from './pages/WorkoutRun';
-import { createAppTheme } from './theme/theme';
+import { createAppTheme, DEFAULT_THEME_MODE } from './theme/theme';
 
-const theme = createAppTheme('light');
+const theme = createAppTheme(DEFAULT_THEME_MODE);
 
 function App() {
   return (

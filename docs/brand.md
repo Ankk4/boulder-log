@@ -26,6 +26,8 @@ Source of truth: `src/theme/brand.ts`.
 | textPrimary | `#1C1F22` | `#F7F4EF` | Body text |
 | textSecondary | `#4A545B` | `#B8C0C6` | Secondary text |
 
+Dark is the default mode; the light palette is kept for later.
+
 ## Typography
 
 System font stack set in `src/theme/theme.ts`: `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`. No web fonts.

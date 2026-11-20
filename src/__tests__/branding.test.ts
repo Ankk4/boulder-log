@@ -38,8 +38,8 @@ describe('branding', () => {
     expect(manifest.short_name).toBe('Matside');
     expect(manifest.start_url).toBe('./');
     expect(manifest.scope).toBe('./');
-    expect(manifest.background_color).toBe(brand.light.background);
-    expect(manifest.theme_color).toBe(brand.light.primary);
+    expect(manifest.background_color).toBe(brand.dark.background);
+    expect(manifest.theme_color).toBe(brand.dark.paper);
     for (const icon of manifest.icons) {
       expect(icon.src.startsWith('/')).toBe(false);
       expect(fs.existsSync(path.join(root, 'public', icon.src))).toBe(true);
@@ -59,13 +59,26 @@ describe('branding', () => {
     expect(html).toMatch(/rel="manifest"/);
     expect(html).toMatch(/rel="icon"[^>]*favicon\.svg/);
     expect(html).toMatch(/rel="apple-touch-icon"/);
-    expect(html).toContain('name="theme-color" content="#3F4A52"');
+    expect(html).toContain(`name="theme-color" content="${brand.dark.paper}"`);
     expect(html).toContain('<title>Matside</title>');
     expect(html).toContain(`content="${CSP}"`);
   });
 
   it('database name is unchanged', () => {
     expect(read('src/db/database.ts')).toContain("super('boulderLog')");
+  });
+});
+
+describe('base stylesheet', () => {
+  it('base stylesheet has no starter rules', () => {
+    expect(fs.existsSync(path.join(root, 'src/App.css'))).toBe(false);
+    const cssPath = path.join(root, 'src/index.css');
+    if (fs.existsSync(cssPath)) {
+      const css = fs.readFileSync(cssPath, 'utf8');
+      expect(css).not.toContain('place-items');
+      expect(css).not.toContain('prefers-color-scheme');
+      expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    }
   });
 });
 
