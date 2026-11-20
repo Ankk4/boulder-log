@@ -9,6 +9,7 @@ A change is done only when `npm run verify` passes. It runs, in order:
 1. `npm run typecheck`: `tsc -b` over app, tests, and `vite.config.ts` (project references)
 2. `npm run lint`: ESLint with `--max-warnings=0`
 3. `npm run test:run`: Vitest, once (console output is shown only for failing tests)
+4. `npm run test:hooks`: `node --test` over `.claude/hooks/__tests__/`
 
 `npm run verify:full` also runs the production build and `npm audit` (production deps only).
 
