@@ -5,14 +5,25 @@
 // retried once (stop_hook_active), let it stop and tell the user instead of looping.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ensureDeps } from './lib/ensure-deps.mjs';
 
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
-const { stop_hook_active = false, cwd = process.cwd() } = JSON.parse(input || '{}');
+const { stop_hook_active = false, cwd = process.cwd(), hook_event_name, agent_type, agent_id } = JSON.parse(input || '{}');
 ensureDeps(cwd);
+
+// One line per gate run in .claude/logs/agents.jsonl, next to log-agents.mjs entries.
+const trace = (result) => {
+  try {
+    const dir = join(process.env.CLAUDE_PROJECT_DIR ?? cwd, '.claude', 'logs');
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(join(dir, 'agents.jsonl'), JSON.stringify({
+      ts: new Date().toISOString(), event: `${hook_event_name ?? 'Stop'}:verify`, agent_type, agent_id, cwd, stop_hook_active, result,
+    }) + '\n');
+  } catch { /* logging must never get in the way */ }
+};
 
 const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' });
 
@@ -23,7 +34,7 @@ const changed = git('status', '--porcelain', '--untracked-files=all')
   .filter(Boolean)
   .map((l) => l.slice(3).split(' -> ').pop())
   .filter((p) => relevant.test(p));
-if (changed.length === 0) process.exit(0);
+if (changed.length === 0) { trace('skip-no-changes'); process.exit(0); }
 
 // Skip re-running when this exact tree state already passed.
 const hash = createHash('sha256')
@@ -32,12 +43,13 @@ const hash = createHash('sha256')
   .digest('hex');
 const cacheDir = join(cwd, 'node_modules', '.cache', 'claude-verify');
 const stamp = join(cacheDir, 'last-pass');
-try { if (readFileSync(stamp, 'utf8') === hash) process.exit(0); } catch { /* no stamp yet */ }
+try { if (readFileSync(stamp, 'utf8') === hash) { trace('skip-cached-pass'); process.exit(0); } } catch { /* no stamp yet */ }
 
-const run = spawnSync('npm', ['run', '-s', 'verify'], { cwd, encoding: 'utf8', env: { ...process.env, FORCE_COLOR: '0' } });
+const run = spawnSync('npm', ['run', '-s', 'verify'], { cwd, encoding: 'utf8', env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' } });
 if (run.status === 0) {
   mkdirSync(cacheDir, { recursive: true });
   writeFileSync(stamp, hash);
+  trace('pass');
   process.exit(0);
 }
 
@@ -48,12 +60,14 @@ const output = `${run.stdout}\n${run.stderr}`
   .join('\n');
 
 if (stop_hook_active) {
+  trace('fail-gave-up');
   console.log(JSON.stringify({
     systemMessage: 'npm run verify is still failing after a retry; Claude stopped instead of looping. Run `npm run verify` to see the failures.',
   }));
   process.exit(0);
 }
 
+trace('fail-block');
 console.log(JSON.stringify({
   decision: 'block',
   reason: `npm run verify failed (typecheck, lint, or tests). Fix the cause, not the check, then finish. Last lines:\n${output}`,
