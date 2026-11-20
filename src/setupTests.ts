@@ -22,27 +22,13 @@ const mockIndexedDB = {
 };
 
 // Mock Dexie
-vi.mock('dexie', () => {
-  const mockDb = {
-    version: vi.fn().mockReturnThis(),
-    stores: vi.fn().mockReturnThis(),
-    open: vi.fn(),
-  };
-
-  return {
-    default: class MockDexie {
-      version: any;
-      stores: any;
-      open: any;
-
-      constructor() {
-        this.version = vi.fn().mockReturnThis();
-        this.stores = vi.fn().mockReturnThis();
-        this.open = vi.fn();
-      }
-    }
-  };
-});
+vi.mock('dexie', () => ({
+  default: class MockDexie {
+    version = vi.fn().mockReturnThis();
+    stores = vi.fn().mockReturnThis();
+    open = vi.fn();
+  },
+}));
 
 // Mock window.indexedDB
 Object.defineProperty(window, 'indexedDB', {

@@ -4,8 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
 import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
-import { BoulderLogDatabase } from '../../db/index';
-import { useCurrentSession } from '../../db/index';
+import { db, useCurrentSession } from '../../db/index';
 
 // Mock database functions
 vi.mock('../../db/index', () => {
@@ -31,7 +30,6 @@ vi.mock('../../db/index', () => {
     deleteSession: vi.fn(),
   };
   return {
-    BoulderLogDatabase: mockDb,
     db: mockDb,
     useCurrentSession: vi.fn(),
   };
@@ -97,7 +95,7 @@ describe('Session Page', () => {
 
   it('starts a new session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(undefined);
-    vi.mocked(BoulderLogDatabase.sessions.add).mockResolvedValue('1');
+    vi.mocked(db.sessions.add).mockResolvedValue('1');
 
     render(
       <MemoryRouter>
@@ -108,7 +106,7 @@ describe('Session Page', () => {
     fireEvent.click(screen.getByText(/start session/i));
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.sessions.add).toHaveBeenCalledWith(
+      expect(db.sessions.add).toHaveBeenCalledWith(
         expect.objectContaining({
           startTime: expect.any(String),
           endTime: null,
@@ -119,7 +117,7 @@ describe('Session Page', () => {
 
   it('adds a problem to current session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
-    vi.mocked(BoulderLogDatabase.problems.add).mockResolvedValue('2');
+    vi.mocked(db.problems.add).mockResolvedValue('2');
 
     render(
       <MemoryRouter>
@@ -140,7 +138,7 @@ describe('Session Page', () => {
     fireEvent.click(addButton);
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.problems.add).toHaveBeenCalledWith(
+      expect(db.problems.add).toHaveBeenCalledWith(
         expect.objectContaining({
           sessionId: '1',
           name: 'Test Problem',
@@ -156,10 +154,10 @@ describe('Session Page', () => {
       ...mockSession,
       problems: [mockProblem],
     });
-    vi.mocked(BoulderLogDatabase.attempts.add).mockResolvedValue('3');
-    vi.mocked(BoulderLogDatabase.problems.get).mockResolvedValue(mockProblem);
-    vi.mocked(BoulderLogDatabase.problems.put).mockResolvedValue(1);
-    vi.mocked(BoulderLogDatabase.attempts.toArray).mockResolvedValue([
+    vi.mocked(db.attempts.add).mockResolvedValue('3');
+    vi.mocked(db.problems.get).mockResolvedValue(mockProblem);
+    vi.mocked(db.problems.put).mockResolvedValue(1);
+    vi.mocked(db.attempts.toArray).mockResolvedValue([
       {
         id: 'a1',
         problemId: '1',
@@ -179,7 +177,7 @@ describe('Session Page', () => {
     fireEvent.click(attemptButton);
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.attempts.add).toHaveBeenCalledWith(
+      expect(db.attempts.add).toHaveBeenCalledWith(
         expect.objectContaining({
           problemId: '1',
           type: AttemptType.ATTEMPT,
@@ -194,9 +192,9 @@ describe('Session Page', () => {
       ...mockSession,
       problems: [mockProblem],
     });
-    vi.mocked(BoulderLogDatabase.problems.get).mockResolvedValue(mockProblem);
-    vi.mocked(BoulderLogDatabase.problems.put).mockResolvedValue(1);
-    vi.mocked(BoulderLogDatabase.attempts.toArray).mockResolvedValue([
+    vi.mocked(db.problems.get).mockResolvedValue(mockProblem);
+    vi.mocked(db.problems.put).mockResolvedValue(1);
+    vi.mocked(db.attempts.toArray).mockResolvedValue([
       {
         id: 'a1',
         problemId: '1',
@@ -216,7 +214,7 @@ describe('Session Page', () => {
     fireEvent.click(flashButton);
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.problems.put).toHaveBeenCalledWith(
+      expect(db.problems.put).toHaveBeenCalledWith(
         expect.objectContaining({
           id: '1',
           flash: true,
@@ -228,7 +226,7 @@ describe('Session Page', () => {
 
   it('ends current session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
-    vi.mocked(BoulderLogDatabase.sessions.put).mockResolvedValue(1);
+    vi.mocked(db.sessions.put).mockResolvedValue(1);
 
     render(
       <MemoryRouter>
@@ -239,7 +237,7 @@ describe('Session Page', () => {
     fireEvent.click(screen.getByText(/end session/i));
 
     await waitFor(() => {
-      expect(BoulderLogDatabase.sessions.put).toHaveBeenCalledWith(
+      expect(db.sessions.put).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockSession,
           endTime: expect.any(String),
