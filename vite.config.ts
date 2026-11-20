@@ -29,6 +29,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
+    // Only this checkout's tests: agent worktrees under .claude/worktrees/ hold copies of src/.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     // Keep output short: console output is shown only for failing tests.
     silent: 'passed-only',
     coverage: {

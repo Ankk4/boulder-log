@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 coverage
+
+# Agent workflow
+/research/
+.claude/logs/
+.claude/worktrees/

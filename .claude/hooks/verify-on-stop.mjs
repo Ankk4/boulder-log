@@ -1,16 +1,18 @@
 #!/usr/bin/env node
-// Stop: before Claude ends its turn, run `npm run verify` (typecheck + lint + tests)
-// if the working tree has changes. On failure, block the stop and hand Claude the
-// failing output. If it already retried once (stop_hook_active), let it stop and
-// tell the user instead of looping.
+// Stop (main session) and SubagentStop (implementer): before Claude ends its turn,
+// run `npm run verify` (typecheck + lint + tests) if the working tree has changes.
+// On failure, block the stop and hand Claude the failing output. If it already
+// retried once (stop_hook_active), let it stop and tell the user instead of looping.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ensureDeps } from './lib/ensure-deps.mjs';
 
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
 const { stop_hook_active = false, cwd = process.cwd() } = JSON.parse(input || '{}');
+ensureDeps(cwd);
 
 const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' });
 
