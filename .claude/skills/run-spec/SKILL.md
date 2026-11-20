@@ -53,6 +53,6 @@ Feature: `$ARGUMENTS`. Folder: `specs/active/$ARGUMENTS/`.
 - If the spec is `spec-anchored` and drift is intended, propose spec edits. Don't apply them silently.
 
 ## 4. Wrap-up (each step only with the user's OK)
-- Move the spec folder to `specs/done/` and set `status: done`.
+- Move the spec folder to `specs/done/`. If `spec.md` exists, set its `status: done` (quick specs have no spec.md; the move is enough).
 - Push, then open a PR against `master` with `gh pr create`. The PR body links the spec and lists the requirements and manual checks.
 - Agent activity log: `.claude/logs/agents.jsonl`.
