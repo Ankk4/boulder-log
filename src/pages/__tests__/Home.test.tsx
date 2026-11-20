@@ -21,7 +21,9 @@ describe('Home', () => {
   it('renders heading, description and actions', () => {
     renderHome();
     expect(screen.getByRole('heading', { name: 'Matside' })).toBeInTheDocument();
-    expect(screen.getByText(/offline-first PWA for logging bouldering sessions/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/offline-first PWA for logging bouldering sessions/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Interval timer' })).toBeInTheDocument();
   });

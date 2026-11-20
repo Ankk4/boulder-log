@@ -33,10 +33,7 @@ const PastSessionsList = () => {
 
   useEffect(() => {
     const loadSessions = async () => {
-      const allSessions = await db.sessions
-        .orderBy('startTime')
-        .reverse()
-        .toArray();
+      const allSessions = await db.sessions.orderBy('startTime').reverse().toArray();
       setSessions(allSessions);
     };
     loadSessions();

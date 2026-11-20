@@ -25,7 +25,7 @@ const StatefulFocus = () => {
   );
 };
 
-const renderLayout =(path = '/session', child = <Path />) =>
+const renderLayout = (path = '/session', child = <Path />) =>
   render(
     <ThemeProvider theme={createAppTheme('light')}>
       <MemoryRouter initialEntries={[path]}>

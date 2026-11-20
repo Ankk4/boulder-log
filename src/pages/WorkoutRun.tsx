@@ -48,8 +48,7 @@ const WorkoutRun = () => {
     muted: workout?.muted ?? false,
   });
 
-  const isRunning =
-    timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest';
+  const isRunning = timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest';
   useRequestFocusMode(isRunning);
 
   useWakeLock(hasStarted && timer.phase !== 'done');
@@ -108,7 +107,7 @@ const WorkoutRun = () => {
         });
       }
     },
-    [timer.completedIntervals, timer.muted, workout]
+    [timer.completedIntervals, timer.muted, workout],
   );
 
   useEffect(() => {
@@ -141,7 +140,7 @@ const WorkoutRun = () => {
   const totalSeconds = calculateTotalSeconds(
     workout.workSeconds,
     workout.restSeconds,
-    workout.intervals
+    workout.intervals,
   );
 
   const phaseLabel =
@@ -158,9 +157,7 @@ const WorkoutRun = () => {
             : 'READY';
 
   const progress =
-    workout.intervals > 0
-      ? Math.min(100, (timer.completedIntervals / workout.intervals) * 100)
-      : 0;
+    workout.intervals > 0 ? Math.min(100, (timer.completedIntervals / workout.intervals) * 100) : 0;
 
   const handleStart = async () => {
     await unlockAudio();
@@ -312,12 +309,7 @@ const WorkoutRun = () => {
                 ? 'Set complete. Saved to history.'
                 : `Stopped after ${timer.completedIntervals} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
             </Typography>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={handleBack}
-              sx={filledSx}
-            >
+            <Button fullWidth variant="contained" onClick={handleBack} sx={filledSx}>
               Back to workouts
             </Button>
             <Button

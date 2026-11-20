@@ -35,7 +35,9 @@ describe('createAppTheme', () => {
     expect(contrastRatio(p.secondary.contrastText, p.secondary.main)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p.text.primary, p.background.default)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p.text.primary, p.background.paper)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(brand[mode].textSecondary, p.background.default)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(brand[mode].textSecondary, p.background.default)).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 });
 

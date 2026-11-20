@@ -10,7 +10,7 @@ export function useCurrentSession() {
 export function useSessionWithDetails(sessionId: string | undefined) {
   return useLiveQuery(
     () => (sessionId ? db.getSessionWithDetails(sessionId) : undefined),
-    [sessionId]
+    [sessionId],
   );
 }
 
@@ -30,4 +30,4 @@ export function useRecentIntervalRuns(limit = 20) {
   return useLiveQuery(() => db.getRecentIntervalRuns(limit), [limit]);
 }
 
-export { BoulderLogDatabase }; 
+export { BoulderLogDatabase };

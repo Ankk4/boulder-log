@@ -15,22 +15,18 @@ import {
   ListItemText,
   Paper,
   Badge,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
   FlashOn as FlashIcon,
   Check as SendIcon,
-  FitnessCenterRounded as AttemptIcon
+  FitnessCenterRounded as AttemptIcon,
 } from '@mui/icons-material';
 import DifficultySelect from './DifficultySelect';
 import { AttemptType } from '../types';
 import type { SessionProblem } from '../types';
-import {
-  LIMITS,
-  sanitizeGrade,
-  sanitizeProblemName,
-} from '../utils/validation';
+import { LIMITS, sanitizeGrade, sanitizeProblemName } from '../utils/validation';
 
 interface QuickLogProps {
   sessionId: string;
@@ -57,7 +53,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         console.log('French Grade:', frenchGrade);
         console.log('Color Grade:', colorGrade);
       }
-      
+
       onAddProblem({
         name,
         frenchGrade,
@@ -65,9 +61,9 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         sessionId,
         createdAt: new Date().toISOString(),
         flash: false,
-        send: false
+        send: false,
       });
-      
+
       setNewProblemName('');
       setNewFrenchGrade('');
       setNewColorGrade('');
@@ -120,8 +116,10 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                     </span>
                   </Tooltip>
                   <Tooltip title="Log an attempt">
-                    <Badge 
-                      badgeContent={problem.attempts.filter(a => a.type === AttemptType.ATTEMPT).length} 
+                    <Badge
+                      badgeContent={
+                        problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length
+                      }
                       color="primary"
                       sx={{ '& .MuiBadge-badge': { fontSize: '0.8rem' } }}
                     >
@@ -143,7 +141,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
               sx={{
                 '& .MuiListItemText-root': {
                   marginRight: '120px', // Add space for the icons
-                }
+                },
               }}
             >
               <ListItemText
@@ -160,7 +158,8 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                     {problem.frenchGrade && problem.colorGrade && ' | '}
                     {problem.colorGrade && `Color: ${problem.colorGrade}`}
                     <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                      Attempts: {problem.attempts.filter(a => a.type === AttemptType.ATTEMPT).length}
+                      Attempts:{' '}
+                      {problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length}
                       {(problem.flash || problem.send) && ' • Completed'}
                     </Typography>
                   </>
@@ -193,11 +192,13 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsAddingProblem(false)}>Cancel</Button>
-          <Button onClick={handleAddProblem} variant="contained">Add</Button>
+          <Button onClick={handleAddProblem} variant="contained">
+            Add
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 };
 
-export default QuickLog; 
+export default QuickLog;

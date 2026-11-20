@@ -1,11 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type {
-  Session,
-  SessionProblem,
-  Attempt,
-  IntervalWorkout,
-  IntervalRun,
-} from '../types';
+import type { Session, SessionProblem, Attempt, IntervalWorkout, IntervalRun } from '../types';
 
 export class BoulderLogDatabase extends Dexie {
   sessions!: Table<Session>;
@@ -44,16 +38,10 @@ export class BoulderLogDatabase extends Dexie {
     const session = await this.sessions.get(sessionId);
     if (!session) return undefined;
 
-    const problems = await this.problems
-      .where('sessionId')
-      .equals(sessionId)
-      .toArray();
+    const problems = await this.problems.where('sessionId').equals(sessionId).toArray();
 
     for (const problem of problems) {
-      problem.attempts = await this.attempts
-        .where('problemId')
-        .equals(problem.id)
-        .toArray();
+      problem.attempts = await this.attempts.where('problemId').equals(problem.id).toArray();
     }
 
     return {
@@ -93,7 +81,7 @@ export class BoulderLogDatabase extends Dexie {
           problem.flash ? 'Yes' : 'No',
           problem.send ? 'Yes' : 'No',
           problem.attempts.length,
-        ].join(',')
+        ].join(','),
       );
     });
 
@@ -128,7 +116,7 @@ export class BoulderLogDatabase extends Dexie {
     workout: Omit<IntervalWorkout, 'id' | 'createdAt' | 'updatedAt'> & {
       id?: string;
       createdAt?: string;
-    }
+    },
   ): Promise<string> {
     const now = new Date().toISOString();
     if (workout.id) {

@@ -34,5 +34,9 @@ export function ensureDeps(dir) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const linked = ensureDeps(process.argv[2] ?? process.cwd());
-  console.log(linked ? `Linked node_modules into ${linked}` : 'node_modules already available (nothing to do)');
+  console.log(
+    linked
+      ? `Linked node_modules into ${linked}`
+      : 'node_modules already available (nothing to do)',
+  );
 }

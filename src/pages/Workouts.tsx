@@ -124,7 +124,7 @@ const Workouts = () => {
             const total = calculateTotalSeconds(
               workout.workSeconds,
               workout.restSeconds,
-              workout.intervals
+              workout.intervals,
             );
             return (
               <Paper key={workout.id} sx={{ mb: 1.5 }}>

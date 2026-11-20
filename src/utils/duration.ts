@@ -11,12 +11,11 @@ export function calculateTotalSeconds(
   workSeconds: number,
   restSeconds: number,
   intervals: number,
-  options: TotalDurationOptions = {}
+  options: TotalDurationOptions = {},
 ): number {
   const { includePrepare = true } = options;
   if (intervals <= 0) return 0;
-  const setSeconds =
-    intervals * workSeconds + Math.max(0, intervals - 1) * restSeconds;
+  const setSeconds = intervals * workSeconds + Math.max(0, intervals - 1) * restSeconds;
   return setSeconds + (includePrepare ? PREPARE_SECONDS : 0);
 }
 

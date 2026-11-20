@@ -13,18 +13,56 @@ import { pathToFileURL } from 'node:url';
 // Flags whose value is the next token (or the rest of the token).
 const SHORT_VALUE = new Set(['A', 'B', 'C', 'd', 'E', 'e', 'f', 'g', 'j', 'M', 'm', 'r', 'T', 't']);
 const LONG_VALUE = new Set([
-  'after-context', 'before-context', 'color', 'colors', 'context', 'context-separator',
-  'dfa-size-limit', 'encoding', 'engine', 'field-context-separator', 'field-match-separator',
-  'file', 'generate', 'glob', 'hostname-bin', 'hyperlink-format', 'iglob', 'ignore-file',
-  'max-columns', 'max-count', 'max-depth', 'max-filesize', 'path-separator', 'pre',
-  'pre-glob', 'regex-size-limit', 'regexp', 'replace', 'sort', 'sortr', 'threads',
-  'type', 'type-add', 'type-clear', 'type-not',
+  'after-context',
+  'before-context',
+  'color',
+  'colors',
+  'context',
+  'context-separator',
+  'dfa-size-limit',
+  'encoding',
+  'engine',
+  'field-context-separator',
+  'field-match-separator',
+  'file',
+  'generate',
+  'glob',
+  'hostname-bin',
+  'hyperlink-format',
+  'iglob',
+  'ignore-file',
+  'max-columns',
+  'max-count',
+  'max-depth',
+  'max-filesize',
+  'path-separator',
+  'pre',
+  'pre-glob',
+  'regex-size-limit',
+  'regexp',
+  'replace',
+  'sort',
+  'sortr',
+  'threads',
+  'type',
+  'type-add',
+  'type-clear',
+  'type-not',
 ]);
 // Flags that give the pattern, so every positional is a path.
 const PATTERN_SHORT = new Set(['e', 'f']);
 const PATTERN_LONG = new Set(['regexp', 'file']);
 // Flags that make rg not search at all, so it never reads stdin.
-const NO_SEARCH = new Set(['--files', '--version', '-V', '--help', '-h', '--type-list', '--pcre2-version', '--generate']);
+const NO_SEARCH = new Set([
+  '--files',
+  '--version',
+  '-V',
+  '--help',
+  '-h',
+  '--type-list',
+  '--pcre2-version',
+  '--generate',
+]);
 
 // Split into segments of words, honouring quotes. Returns null if unbalanced.
 function segments(command) {
@@ -129,8 +167,9 @@ export function check(command) {
     if (lacksPath(words.slice(k + 1))) {
       return {
         block: true,
-        reason: 'block-pathless-rg: `rg` without a path reads stdin and hangs in agent shells. '
-          + 'Add `.` or a path, e.g. `rg -n foo .` or `rg -n foo src`.',
+        reason:
+          'block-pathless-rg: `rg` without a path reads stdin and hangs in agent shells. ' +
+          'Add `.` or a path, e.g. `rg -n foo .` or `rg -n foo src`.',
       };
     }
   }

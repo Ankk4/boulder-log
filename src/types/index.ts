@@ -26,8 +26,8 @@ export interface SessionProblem {
   frenchGrade: string;
   colorGrade: string;
   attempts: Attempt[];
-  flash?: boolean;  // Completed on first attempt
-  send?: boolean;   // Completed after multiple attempts
+  flash?: boolean; // Completed on first attempt
+  send?: boolean; // Completed after multiple attempts
   sessionId: string;
   createdAt: string;
 }
@@ -35,7 +35,7 @@ export interface SessionProblem {
 export enum AttemptType {
   ATTEMPT = 'attempt',
   FLASH = 'flash',
-  SEND = 'send'
+  SEND = 'send',
 }
 
 export interface Attempt {
@@ -70,4 +70,4 @@ export interface IntervalRun {
   completedAt?: string;
   status: 'completed' | 'aborted';
   notes?: string;
-} 
+}

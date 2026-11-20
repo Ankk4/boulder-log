@@ -21,9 +21,10 @@ try {
     ...(e.hook_event_name === 'SubagentStop' && {
       stop_hook_active: e.stop_hook_active,
       transcript: e.agent_transcript_path,
-      last_message: typeof e.last_assistant_message === 'string'
-        ? e.last_assistant_message.slice(0, 300)
-        : undefined,
+      last_message:
+        typeof e.last_assistant_message === 'string'
+          ? e.last_assistant_message.slice(0, 300)
+          : undefined,
     }),
   };
   appendFileSync(join(dir, 'agents.jsonl'), JSON.stringify(line) + '\n');

@@ -13,13 +13,16 @@ import {
 describe('validation helpers', () => {
   it('truncates problem names and grades', () => {
     expect(sanitizeProblemName(`  ${'x'.repeat(LIMITS.problemName + 10)}  `)).toHaveLength(
-      LIMITS.problemName
+      LIMITS.problemName,
     );
     expect(sanitizeGrade('  7a+  ')).toBe('7a+');
   });
 
   it('limits goals count and length', () => {
-    const goals = Array.from({ length: LIMITS.maxGoals + 5 }, (_, i) => `goal-${i}-${'y'.repeat(300)}`);
+    const goals = Array.from(
+      { length: LIMITS.maxGoals + 5 },
+      (_, i) => `goal-${i}-${'y'.repeat(300)}`,
+    );
     const sanitized = sanitizeGoals(goals);
     expect(sanitized).toHaveLength(LIMITS.maxGoals);
     expect(sanitized.every((g) => g.length <= LIMITS.goal)).toBe(true);

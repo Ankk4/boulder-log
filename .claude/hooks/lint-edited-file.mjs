@@ -16,7 +16,9 @@ const file = resolve(cwd, tool_input.file_path);
 let root;
 try {
   root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: dirname(file), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    cwd: dirname(file),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
 } catch {
   process.exit(0); // not in a git checkout (e.g. a new directory outside the repo)

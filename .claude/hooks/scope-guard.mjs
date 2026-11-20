@@ -33,7 +33,9 @@ while (!existsSync(probe) && dirname(probe) !== probe) probe = dirname(probe);
 let root;
 try {
   root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: probe, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    cwd: probe,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
 } catch {
   root = process.env.CLAUDE_PROJECT_DIR ?? cwd;
@@ -62,7 +64,9 @@ switch (agent_type) {
     break;
   case 'implementer':
     if (protectedForImplementer.some((re) => re.test(rel))) {
-      block('Checks, config, specs and research are off limits. Fix the cause in src/, or report that the spec or config needs a change.');
+      block(
+        'Checks, config, specs and research are off limits. Fix the cause in src/, or report that the spec or config needs a change.',
+      );
     }
     break;
   default:
