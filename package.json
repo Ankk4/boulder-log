@@ -2,6 +2,7 @@
   "name": "boulder-notes",
   "version": "1.0.0",
   "private": true,
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
