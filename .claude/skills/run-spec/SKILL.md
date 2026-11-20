@@ -9,7 +9,10 @@ You are the orchestrator (planner model). Running this skill is the user's reque
 
 Arguments: `$ARGUMENTS`. The first word is the feature name, written `<feature>` below. If `--draft-pr` appears after it, the draft-PR wrap-up is on. Folder: `specs/active/<feature>/`.
 
+Rules for every step: if a tool call or command is denied, ask the user; don't substitute another command for it. Never edit `spec.md` or `tasks.md` during a run without the user's OK.
+
 ## 0. Preflight (stop and report if any fails)
+- If `<feature>` doesn't exactly match a folder in `specs/active/`, list the folders and ask; never guess.
 - `tasks.md` exists. If `spec.md` exists, its frontmatter says `status: approved`. (Quick specs have no spec.md.)
 - `git status --porcelain` shows nothing outside `specs/`. Don't start on a dirty tree.
 - Create or switch to the branch `feature/<feature>`: `git switch -c feature/<feature>`, or `git switch` if it already exists. Commit the spec files there first (`spec: <feature>`).
