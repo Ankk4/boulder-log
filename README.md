@@ -63,6 +63,7 @@ Development is AI-assisted with Claude Code. Features are specced in `specs/` (v
 - Session statistics and trends
 - Project tracking
 - Multi-gym support
+- Better timer & active exercise functions
 
 ## License
 
