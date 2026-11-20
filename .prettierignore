@@ -1,0 +1,7 @@
+dist
+coverage
+research
+.claude/worktrees
+.claude/logs
+package-lock.json
+*.md

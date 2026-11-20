@@ -3,6 +3,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
   // .claude/worktrees: agent worktrees (copies of the tree, linted in place). research: private notes repo.
@@ -34,4 +35,5 @@ export default tseslint.config(
     files: ['**/__tests__/**', '**/*.test.{ts,tsx}', 'src/setupTests.ts'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
+  prettier,
 )
