@@ -6,12 +6,17 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { ensureDeps } from './lib/ensure-deps.mjs';
 
+// CLI mode for the /run-spec orchestrator: `node verify-on-stop.mjs --check [dir]`.
+// Same cache and checks, plain output, exit 1 on failure.
+const cli = process.argv[2] === '--check';
 let input = '';
-for await (const chunk of process.stdin) input += chunk;
-const { stop_hook_active = false, cwd = process.cwd(), hook_event_name, agent_type, agent_id } = JSON.parse(input || '{}');
+if (!cli) for await (const chunk of process.stdin) input += chunk;
+const { stop_hook_active = false, cwd = process.cwd(), hook_event_name, agent_type, agent_id } = cli
+  ? { cwd: resolve(process.argv[3] ?? process.cwd()), hook_event_name: 'cli' }
+  : JSON.parse(input || '{}');
 // SubagentStop fires for every agent type; only the implementer writes code.
 // (A `matcher` on the settings entry didn't fire in practice, so filter here.)
 if (hook_event_name === 'SubagentStop' && agent_type !== 'implementer') process.exit(0);
@@ -61,6 +66,12 @@ const output = `${run.stdout}\n${run.stderr}`
   .filter((l) => l.trim() && !/MODULE_TYPELESS|Reparsing|trace-warnings|To eliminate/.test(l))
   .slice(-60)
   .join('\n');
+
+if (cli) {
+  trace('fail');
+  process.stdout.write(`npm run verify failed. Last lines:\n${output}\n`);
+  process.exit(1);
+}
 
 if (stop_hook_active) {
   trace('fail-gave-up');

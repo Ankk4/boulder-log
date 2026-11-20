@@ -42,4 +42,4 @@ The main session (Opus) plans; Sonnet subagents in `.claude/agents/` execute. Ru
 - `implementer` does one task and never commits. `reviewer` is read-only and returns PASS/FAIL. `researcher` writes only to `research/`.
 - `research/` is a separate **private** repo, gitignored here. This repo is public: link research notes by path, never paste competitor detail into specs, commits or PRs.
 - Worktrees (`isolation: "worktree"`) only for tasks marked `parallel-safe: yes` with `schema-change: no`. Dexie `version()` bumps always run alone.
-- Hooks: `scope-guard.mjs` limits what each agent may write; `verify-on-stop.mjs` also gates the implementer's stop (`SubagentStop`); `log-agents.mjs` logs to `.claude/logs/agents.jsonl`.
+- Hooks: `scope-guard.mjs` limits what each agent may write; `verify-on-stop.mjs` also runs on the implementer's `SubagentStop`, but a background agent has already handed back by then, so `/run-spec` re-runs it with `verify-on-stop.mjs --check <tree>` before review (instant when the hook's pass stamp matches); `log-agents.mjs` and the gate log to `.claude/logs/agents.jsonl`.

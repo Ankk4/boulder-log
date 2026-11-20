@@ -19,7 +19,7 @@ The prompt gives you a spec folder (e.g. `specs/active/grade-pyramid/`) and a ta
 - Edit only the task's **allowed files**, plus test files under the sibling `__tests__/` folders for them. If the task truly needs another file, stop and say so in your report instead of editing it.
 - Follow CLAUDE.md: fix causes, never checks. No `eslint-disable`, `@ts-ignore`, `as any`, `.skip`/`.only`, no weakening or deleting existing tests. Unused params that must stay get a leading `_`. New logic in `src/utils/` or `src/hooks/` gets a test.
 - Config, checks, `.claude/`, `specs/` and `research/` are blocked by a hook. If you think one of them is wrong, report it.
-- Run the task's **check** (narrowest test or command) first, then `npm run verify`. A hook re-runs verify when you finish and blocks you if it fails.
+- Run the task's **check** (narrowest test or command) first, then `npm run verify`, and only report `done` when it passes. The planner re-runs verify on your tree and sends you any failures to fix.
 - Do not commit, branch, stash, or reset. The planner commits after review.
 - Stay small: no drive-by refactors, renames, or dependency changes.
 

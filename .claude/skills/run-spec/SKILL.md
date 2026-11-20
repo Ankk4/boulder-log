@@ -21,19 +21,26 @@ Feature: `$ARGUMENTS`. Folder: `specs/active/$ARGUMENTS/`.
 - Tell the user one line per batch, e.g. `T1 (sequential)` or `T3+T4 (parallel worktrees)`.
 
 ## 2a. Sequential task (main tree)
-1. Spawn `implementer` with the prompt: `Spec folder: specs/active/$ARGUMENTS/. Task: T<n>.` Add the reviewer's findings if this is a retry. The hook runs `npm run verify` when it stops.
-2. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/$ARGUMENTS/. Task: T<n>. Diff: git diff --cached in <repo root>.`
-3. Read the implementer report, the reviewer verdict, and `git diff --cached --stat`. Do your own sanity check of the diff; you are the more capable model.
-4. On PASS, commit with message `$ARGUMENTS T<n>: <summary>`, then a blank line, a body listing `covers: R…`, and the attribution trailer.
-5. On FAIL, re-spawn the implementer once with the numbered findings, then review again. If it fails a second time, stop. `git restore --staged .` and leave the changes in place. Report to the user what failed and why. Don't loop.
+1. Spawn `implementer` with the prompt: `Spec folder: specs/active/$ARGUMENTS/. Task: T<n>.`
+2. **Verify gate (you enforce it).** When the implementer returns, run `node .claude/hooks/verify-on-stop.mjs --check <tree>` yourself (it runs `npm run verify`, exits 1 with the failing lines). Don't trust the report's "verify passed".
+   - The `SubagentStop` hook also runs verify. Its block arrives after a background agent has already handed back, so the hook can't stop the agent. What it does do is leave a pass stamp, which makes your `--check` instant when the tree is green.
+   - On failure, send the last ~40 lines of output to the same implementer with SendMessage, so it keeps its context. Wait, then verify again.
+3. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/$ARGUMENTS/. Task: T<n>. Diff: git diff --cached in <repo root>.`
+4. Read the implementer report, the reviewer verdict, and `git diff --cached --stat`. Do your own sanity check of the diff; you are the more capable model.
+5. On PASS, commit with message `$ARGUMENTS T<n>: <summary>`, then a blank line, a body listing `covers: R…`, and the attribution trailer.
+6. On FAIL, send the numbered findings to the same implementer with SendMessage, then repeat the verify gate and review.
+   - Budget: at most 2 follow-ups per task, counting verify and review failures together.
+   - Over budget, stop. `git restore --staged .` and leave the changes in place. Report to the user what failed and why. Don't loop.
 
 ## 2b. Parallel batch (worktrees)
 1. Spawn one `implementer` per task, all in the same message, each with `isolation: "worktree"`. Settings have `worktree.baseRef: head`, so the worktrees branch from the feature branch.
-2. Each result names its worktree path and branch. For each one, `git -C <path> add -A`, then spawn `reviewer` (task mode, diff: `git diff --cached` in `<path>`). Reviewers can run in parallel.
+2. Each result names its worktree path and branch (`worktree-agent-<id>`). For each one:
+   - Run the verify gate from 2a in that path: `node .claude/hooks/verify-on-stop.mjs --check <path>`. `node_modules` is already linked in by the hooks; if it's missing, run `node .claude/hooks/lib/ensure-deps.mjs <path>`.
+   - `git -C <path> add -A`, then spawn `reviewer` (task mode, diff: `git diff --cached` in `<path>`). Reviewers can run in parallel.
 3. Commit each PASS inside its worktree (same message format). Then, one at a time on `feature/$ARGUMENTS`:
    - `git cherry-pick <worktree-branch-sha>`
    - `npm run verify`. If it fails after a cherry-pick, the tasks weren't really independent. Report it, fix it as its own commit, and mark the spec's tasks to fix the parallel-safe flags.
-   - `git worktree remove <path>` and `git branch -D <worktree-branch>`.
+   - `git worktree remove <path>` and `git branch -D <worktree-branch>`. If the agent has finished but the worktree is still locked, use `git worktree remove -f -f <path>`.
 4. FAIL handling is the same as 2a, inside the worktree. If a task still fails, leave its worktree in place for the user to inspect.
 
 ## 3. Final spec review (skip for quick specs)
