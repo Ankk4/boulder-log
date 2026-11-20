@@ -59,7 +59,7 @@ Spec: `specs/active/branding/spec.md`. Every task ends green on `npm run verify`
 ## T4: Rename to Matside and write the brand guide
 - covers: [R1, R2, R10]
 - allowed files: `README.md`, `SECURITY.md`, `package.json`, `package-lock.json`, `docs/brand.md`, `src/__tests__/branding.test.ts`
-- check: `npx vitest run src/__tests__/branding.test.ts`, then `rg -n -i "boulder ?notes|boulderlog" --glob '!specs/**' --glob '!research/**' --glob '!node_modules/**' --glob '!package-lock.json'` matches only `src/db/`
+- check: `npx vitest run src/__tests__/branding.test.ts`, then `rg -n -i "boulder ?notes|boulderlog" --glob '!specs/**' --glob '!research/**' --glob '!node_modules/**' --glob '!package-lock.json'` matches only `src/db/`, the kept-DB-name note in `docs/brand.md` (R10) and the DB-name assertion in `src/__tests__/branding.test.ts` (R2)
 - tests to add: "manifest and index.html use the brand name" in the existing branding test. It checks the manifest `name` and `short_name`, the index `<title>` and the README H1 `# Matside`, and that the README links `docs/brand.md`.
 - parallel-safe: no
 - schema-change: no
