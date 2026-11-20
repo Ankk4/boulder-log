@@ -9,7 +9,10 @@ You are the orchestrator (planner model). Running this skill is the user's reque
 
 Arguments: `$ARGUMENTS`. The first word is the feature name, written `<feature>` below. If `--draft-pr` appears after it, the draft-PR wrap-up is on. Folder: `specs/active/<feature>/`.
 
+Rules for every step: if a tool call or command is denied, ask the user; don't substitute another command for it. Never edit `spec.md` or `tasks.md` during a run without the user's OK. A subagent report with no PASS/FAIL verdict is not a pass: SendMessage the same agent for the full report.
+
 ## 0. Preflight (stop and report if any fails)
+- If `<feature>` doesn't exactly match a folder in `specs/active/`, list the folders and ask; never guess.
 - `tasks.md` exists. If `spec.md` exists, its frontmatter says `status: approved`. (Quick specs have no spec.md.)
 - `git status --porcelain` shows nothing outside `specs/`. Don't start on a dirty tree.
 - Create or switch to the branch `feature/<feature>`: `git switch -c feature/<feature>`, or `git switch` if it already exists. Commit the spec files there first (`spec: <feature>`).
@@ -54,13 +57,17 @@ Arguments: `$ARGUMENTS`. The first word is the feature name, written `<feature>`
 
 ## 4. Wrap-up
 Without `--draft-pr`, do each step only with the user's OK:
+- **Retro**, before the move. Copy `specs/TEMPLATE/retro.md` to `specs/active/<feature>/retro.md`. Collect candidate rows from this run: reviewer FAILs, verify-gate failures, your own follow-ups and fixes, and issues the user reported. For each row propose a fix ranked per the template (hook, lint or test first, then a one-line rule where that layer reads it, `log` if unknown), and ask the user to approve, edit or drop it. Apply the approved fixes, fill the table, and commit as `<feature>: retro`. If nothing went wrong, `retro.md` holds only the `No issues.` line.
 - Move the spec folder to `specs/done/`. If `spec.md` exists, set its `status: done` (quick specs have no spec.md; the move is enough).
 - Push, then open a PR against `master` with `gh pr create`. The PR body links the spec and lists the requirements and manual checks.
 
 With `--draft-pr`, the command is the user's OK for these steps, but only if every task is committed with a reviewer PASS and the step 3 spec review (if any) has no FAIL rows. Otherwise stop and report as above, and say the PR was skipped and why.
-1. Move the spec folder to `specs/done/` (set `status: done` if `spec.md` exists) and commit it as `<feature>: mark spec done`.
-2. Write the PR body to a file in the scratchpad: the spec link, the requirement table, anything not verified, and the manual checks. End it with the PR attribution line from the system reminder.
-3. Run `node .claude/hooks/lib/open-pr.mjs --title "<title>" --body-file <path>`. It checks the branch, a clean tree, `npm run verify` and the `research/` guard, then pushes and opens a **draft** PR (or prints the one already open). If it refuses, show the reason and stop. Don't work around it.
-4. Show the PR URL. Say it is a draft and that marking it ready or merging is the user's call.
+1. **Retro**, hands-off: write `specs/active/<feature>/retro.md` from the template with the same candidate rows, but set every `Fix kind` to `proposed` and apply no fixes; the user approves them later. Commit as `<feature>: retro`.
+2. Move the spec folder to `specs/done/` (set `status: done` if `spec.md` exists) and commit it as `<feature>: mark spec done`.
+3. Write the PR body to a file in the scratchpad: the spec link, the requirement table, the proposed retro rows for the user to approve, anything not verified, and the manual checks. End it with the PR attribution line from the system reminder.
+4. Run `node .claude/hooks/lib/open-pr.mjs --title "<title>" --body-file <path>`. It checks the branch, a clean tree, `npm run verify` and the `research/` guard, then pushes and opens a **draft** PR (or prints the one already open). If it refuses, show the reason and stop. Don't work around it.
+5. Show the PR URL. Say it is a draft and that marking it ready or merging is the user's call.
+
+Issues found after merge (bugs the user hits later) are appended to the shipped spec's `specs/done/<feature>/retro.md` in the same row format, with their fix.
 
 Agent activity log: `.claude/logs/agents.jsonl`.

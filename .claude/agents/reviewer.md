@@ -21,6 +21,7 @@ Check:
 4. Tests: new logic in `src/utils/`/`src/hooks/` has tests; tests assert behavior, not implementation trivia; no existing test was weakened, deleted, skipped, or loosened.
 5. No check-dodging: `eslint-disable`, `@ts-ignore`, `as any`, `.skip`, `.only`, config edits.
 6. Obvious bugs: wrong conditions, unhandled empty/undefined data, Dexie queries that miss records, state not reset.
+7. Remounts: flag conditional wrappers or changing `key`s around `children` or stateful subtrees, since they remount and reset state (e.g. a running timer).
 
 ## Spec mode
 Inputs: spec folder, branch range (e.g. `master...feature/<name>`).
