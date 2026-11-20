@@ -38,13 +38,13 @@ Rules for splitting:
 
 ## T4 — useFocusMode hook and provider
 - covers: [R13]
-- allowed files: `src/hooks/useFocusMode.tsx`, `src/hooks/__tests__/useFocusMode.test.tsx`
+- allowed files: `src/hooks/useFocusMode.ts`, `src/hooks/useFocusMode.tsx`, `src/hooks/FocusModeProvider.tsx`, `src/hooks/__tests__/useFocusMode.test.tsx`
 - check: `npx vitest run src/hooks/__tests__/useFocusMode.test.tsx`
 - tests to add: "sets and clears focus, clears on unmount": `useFocusMode()` reads `false` by default; `useRequestFocusMode(true)` in a child makes it `true`; changing the argument to `false` or unmounting the child sets it back to `false`. Outside a provider, reading returns `false` and requesting does nothing (no throw).
 - parallel-safe: yes
 - schema-change: no
 - depends-on: []
-- notes: The spec names `src/hooks/useFocusMode.ts`. Use `.tsx` because the provider has JSX; that's fine. Exports: `FocusModeProvider`, `useFocusMode(): boolean`, `useRequestFocusMode(active: boolean): void` (an effect that sets the value and clears it on cleanup). React context only, no global state.
+- notes: `react-refresh/only-export-components` forbids exporting the provider and the hooks from one file, so split them: `src/hooks/FocusModeProvider.tsx` holds `FocusModeContext` and `FocusModeProvider`; `src/hooks/useFocusMode.ts` holds the hooks (matches the spec's filename). T5 imports `FocusModeProvider` from `src/hooks/FocusModeProvider.tsx`. Exports: `FocusModeProvider`, `useFocusMode(): boolean`, `useRequestFocusMode(active: boolean): void` (an effect that sets the value and clears it on cleanup). React context only, no global state.
 
 ## T5 — Responsive Layout: full-width bar, tabs on desktop, bottom nav on mobile, content column, focus mode
 - covers: [R7, R9, R10, R13]
