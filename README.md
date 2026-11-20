@@ -65,6 +65,9 @@ All session, health, and notes data stay on your device in **cleartext IndexedDB
    npm start
    ```
 
+### Agent workflow (Claude Code)
+Features are specced in `specs/` and implemented by Claude Code subagents: `/spec <feature>` (interview, spec, tasks), then `/run-spec <feature>` (implement, review, commit per task on `feature/<name>`). See the "Agent workflow" section in `CLAUDE.md`.
+
 ### Building for Production
 ```bash
 npm run build

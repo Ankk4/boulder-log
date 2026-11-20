@@ -33,3 +33,13 @@ Narrower loops while iterating:
 
 - `src/setupTests.ts` mocks Dexie, `matchMedia`, and `crypto.randomUUID` globally.
 - Page tests mock `../../db/index` and assert on the typed `db` export (see `src/pages/__tests__/Session.test.tsx`).
+
+## Agent workflow
+
+The main session (Opus) plans; Sonnet subagents in `.claude/agents/` execute. Running `/spec`, `/run-spec` or `/research` counts as the user asking for subagents.
+
+- Specs: `specs/active/<feature>/{spec.md,tasks.md}`, templates in `specs/TEMPLATE/`, shipped specs move to `specs/done/`. Requirements have IDs (`R1`…) with pass/fail checks; tasks list the requirements they `covers`.
+- `implementer` does one task and never commits. `reviewer` is read-only and returns PASS/FAIL. `researcher` writes only to `research/`.
+- `research/` is a separate **private** repo, gitignored here. This repo is public: link research notes by path, never paste competitor detail into specs, commits or PRs.
+- Worktrees (`isolation: "worktree"`) only for tasks marked `parallel-safe: yes` with `schema-change: no`. Dexie `version()` bumps always run alone.
+- Hooks: `scope-guard.mjs` limits what each agent may write; `verify-on-stop.mjs` also runs on the implementer's `SubagentStop`, but a background agent has already handed back by then, so `/run-spec` re-runs it with `verify-on-stop.mjs --check <tree>` before review (instant when the hook's pass stamp matches); `log-agents.mjs` and the gate log to `.claude/logs/agents.jsonl`.

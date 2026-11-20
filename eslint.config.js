@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage'] },
+  // .claude/worktrees: agent worktrees (copies of the tree, linted in place). research: private notes repo.
+  { ignores: ['dist', 'coverage', '.claude/worktrees', 'research'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
