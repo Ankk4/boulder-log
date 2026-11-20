@@ -25,7 +25,7 @@ Rules for splitting:
 ## T2 — Pathless-rg hook with node:test tests, wired into verify
 - covers: [R10, R11]
 - allowed files: `.claude/hooks/block-pathless-rg.mjs`, `.claude/hooks/__tests__/block-pathless-rg.test.mjs`, `.claude/settings.json`, `package.json`, `CLAUDE.md`
-- check: `node --test .claude/hooks/__tests__/` then `npm run verify`
+- check: `npm run test:hooks` then `npm run verify`
 - tests to add: one test per blocked and allowed example in R10, plus a malformed-input (fail-open) case and an empty-command case.
 - parallel-safe: no
 - schema-change: no
