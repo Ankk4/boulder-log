@@ -39,6 +39,7 @@ Narrower loops while iterating:
 The main session (Opus) plans; Sonnet subagents in `.claude/agents/` execute. Running `/spec`, `/run-spec` or `/research` counts as the user asking for subagents.
 
 - Specs: `specs/active/<feature>/{spec.md,tasks.md}`, templates in `specs/TEMPLATE/`, shipped specs move to `specs/done/`. Requirements have IDs (`R1`…) with pass/fail checks; tasks list the requirements they `covers`.
+- Retro: each shipped spec gets a `retro.md` (template in `specs/TEMPLATE/`) recording mistakes and where the fix landed; `/run-spec` §4 writes it, issues after merge are appended later.
 - `implementer` does one task and never commits. `reviewer` is read-only and returns PASS/FAIL. `researcher` writes only to `research/`.
 - `research/` is a separate **private** repo, gitignored here. This repo is public: link research notes by path, never paste competitor detail into specs, commits or PRs.
 - `/run-spec <feature> --draft-pr` pushes the branch and opens a draft PR via `.claude/hooks/lib/open-pr.mjs`, only when every task passed. Without the flag nothing is pushed.
