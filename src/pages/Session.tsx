@@ -8,6 +8,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material';
+import PageHeader from '../components/PageHeader';
 import QuickLog from '../components/QuickLog';
 import PreSessionForm from '../components/PreSessionForm';
 import PastSessionsList from '../components/PastSessionsList';
@@ -156,10 +157,8 @@ const SessionPage = () => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Session
-      </Typography>
+    <>
+      <PageHeader title="Session" />
 
       <ToggleButtonGroup
         value={mode}
@@ -270,7 +269,7 @@ const SessionPage = () => {
           </Button>
         </Paper>
       )}
-    </Box>
+    </>
   );
 };
 

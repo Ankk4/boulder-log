@@ -23,6 +23,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+import PageHeader from '../components/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import type { IntervalWorkout } from '../types';
 import { db, useIntervalWorkouts, useRecentIntervalRuns } from '../db';
@@ -80,13 +81,15 @@ const Workouts = () => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h4">Interval Timer</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-          New
-        </Button>
-      </Stack>
+    <>
+      <PageHeader
+        title="Interval timer"
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+            New
+          </Button>
+        }
+      />
 
       <Typography variant="h6" sx={{ mb: 1 }}>
         Presets
@@ -170,7 +173,9 @@ const Workouts = () => {
       {!runs ? (
         <Typography color="text.secondary">Loading…</Typography>
       ) : runs.length === 0 ? (
-        <Typography color="text.secondary">No runs yet.</Typography>
+        <Paper sx={{ p: 2 }}>
+          <Typography color="text.secondary">No runs yet.</Typography>
+        </Paper>
       ) : (
         <List>
           {runs.map((run) => (
@@ -218,7 +223,7 @@ const Workouts = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 };
 

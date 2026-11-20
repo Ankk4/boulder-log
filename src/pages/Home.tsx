@@ -1,13 +1,12 @@
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/PageHeader';
 
 export default function Home() {
   const navigate = useNavigate();
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Matside
-      </Typography>
+    <>
+      <PageHeader title="Matside" />
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         An offline-first PWA for logging bouldering sessions, problems, attempts, benchmarks and
         everything related to the sport.
@@ -20,6 +19,6 @@ export default function Home() {
           Interval timer
         </Button>
       </Stack>
-    </Box>
+    </>
   );
 }
