@@ -44,7 +44,7 @@ Rules for splitting:
 - parallel-safe: yes
 - schema-change: no
 - depends-on: []
-- notes: `react-refresh/only-export-components` forbids exporting the provider and the hooks from one file, so split them: `src/hooks/FocusModeProvider.tsx` holds `FocusModeContext` and `FocusModeProvider`; `src/hooks/useFocusMode.ts` holds the hooks (matches the spec's filename). T5 imports `FocusModeProvider` from `src/hooks/FocusModeProvider.tsx`. Exports: `FocusModeProvider`, `useFocusMode(): boolean`, `useRequestFocusMode(active: boolean): void` (an effect that sets the value and clears it on cleanup). React context only, no global state.
+- notes: `react-refresh/only-export-components` forbids exporting the provider and the hooks from one file, so split them: `src/hooks/FocusModeProvider.tsx` holds only `FocusModeProvider`; `src/hooks/useFocusMode.ts` holds `FocusModeContext` and the hooks (the rule also flags a context exported next to a component) (matches the spec's filename). T5 imports `FocusModeProvider` from `src/hooks/FocusModeProvider.tsx`. Exports: `FocusModeProvider`, `useFocusMode(): boolean`, `useRequestFocusMode(active: boolean): void` (an effect that sets the value and clears it on cleanup). React context only, no global state.
 
 ## T5 — Responsive Layout: full-width bar, tabs on desktop, bottom nav on mobile, content column, focus mode
 - covers: [R7, R9, R10, R13]
