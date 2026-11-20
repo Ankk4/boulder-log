@@ -8,6 +8,12 @@ export const brand = {
     paper: '#FFFFFF',
     textPrimary: '#1C1F22',
     textSecondary: '#4A545B',
+    phase: {
+      prepare: { bg: '#BF360C', text: '#FFFFFF' },
+      work: { bg: '#1B5E20', text: '#FFFFFF' },
+      rest: { bg: '#0D47A1', text: '#FFFFFF' },
+      done: { bg: '#4A148C', text: '#FFFFFF' },
+    },
   },
   dark: {
     primary: '#A9B4BC',
@@ -18,6 +24,12 @@ export const brand = {
     paper: '#26292D',
     textPrimary: '#F7F4EF',
     textSecondary: '#B8C0C6',
+    phase: {
+      prepare: { bg: '#A82E08', text: '#FFFFFF' },
+      work: { bg: '#164A1A', text: '#FFFFFF' },
+      rest: { bg: '#0A3A82', text: '#FFFFFF' },
+      done: { bg: '#3C1074', text: '#FFFFFF' },
+    },
   },
 } as const;
 

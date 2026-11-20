@@ -39,6 +39,16 @@ describe('createAppTheme', () => {
   });
 });
 
+describe('phase colours', () => {
+  it.each(['light', 'dark'] as const)('%s phase colours reach 4.5:1', (mode) => {
+    const phase = createAppTheme(mode).palette.phase;
+    expect(phase).toBeDefined();
+    for (const key of ['prepare', 'work', 'rest', 'done'] as const) {
+      expect(contrastRatio(phase[key].text, phase[key].bg)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
 describe('contrastRatio', () => {
   it('gives 21 for black on white', () => {
     expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 5);
