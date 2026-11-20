@@ -96,6 +96,26 @@ Rules for splitting:
 - depends-on: [T6, T8]
 - notes: In `DifficultySelect.tsx`, replace the swatch border `rgba(0,0,0,0.2)` with `1px solid` + `theme.palette.divider`, or `text.secondary` so the black swatch shows on `#26292D` paper. If the scan finds literals in files from earlier tasks, report them; don't edit outside allowed files. Finish with a full `npm run verify`.
 
+## T10 — FocusModeContext in its own module
+- covers: [R13]
+- allowed files: `src/hooks/FocusModeContext.ts`, `src/hooks/useFocusMode.ts`, `src/hooks/FocusModeProvider.tsx`
+- check: `npx vitest run src/hooks/__tests__/useFocusMode.test.tsx && test "$(rg -l "createContext" src/hooks)" = "src/hooks/FocusModeContext.ts"`
+- tests to add: none. The existing useFocusMode tests prove behaviour is unchanged and must stay green without edits.
+- parallel-safe: yes
+- schema-change: no
+- depends-on: [T4]
+- notes: Follow-up refactor after the final spec review. Move `FocusModeValue` and `FocusModeContext` (the `createContext` call) from `useFocusMode.ts` into a new `src/hooks/FocusModeContext.ts` that exports no components and no hooks. `useFocusMode.ts` then holds only `useFocusMode` and `useRequestFocusMode`; `FocusModeProvider.tsx` holds only the component. Both import the context from `./FocusModeContext`. Why: a context created in a module that hot-reloads gets a new identity, so providers and consumers can silently mismatch; react-refresh asks for contexts in their own file. Keep public import paths for `FocusModeProvider`, `useFocusMode` and `useRequestFocusMode` unchanged, so Layout, WorkoutRun and the tests need no edits. Match the files' existing style (no semicolons). Don't run Prettier or any formatter.
+
+## T11 — Layout constants out of the Layout component
+- covers: [R10]
+- allowed files: `src/theme/layout.ts`, `src/components/Layout.tsx`, `src/pages/WorkoutRun.tsx`
+- check: `test "$(rg -l "export const CONTENT_MAX_WIDTH" src)" = "src/theme/layout.ts" && npx vitest run src/components src/pages`
+- tests to add: none. The existing Layout and page tests must stay green.
+- parallel-safe: yes
+- schema-change: no
+- depends-on: [T5, T8]
+- notes: Follow-up refactor after the final spec review. Create `src/theme/layout.ts` exporting `CONTENT_MAX_WIDTH = 720`. `Layout.tsx` imports it and no longer exports it; `WorkoutRun.tsx` imports it from `../theme/layout` instead of `../components/Layout`. Why: a page shouldn't depend on the shell component for a shared value; both depend on the theme layer. Change only the import/export lines. Match each file's existing style (semicolons, single quotes). Don't run Prettier or any formatter.
+
 ## Coverage
 | R | tasks |
 | --- | --- |
@@ -108,7 +128,7 @@ Rules for splitting:
 | R7 | T2, T5 |
 | R8 | T2 |
 | R9 | T5 |
-| R10 | T5, T6 |
+| R10 | T5, T6, T11 |
 | R11 | T3, T6 |
 | R12 | T7 |
-| R13 | T4, T5, T8 |
+| R13 | T4, T5, T8, T10 |
