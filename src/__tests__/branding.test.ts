@@ -68,3 +68,14 @@ describe('branding', () => {
     expect(read('src/db/database.ts')).toContain("super('boulderLog')");
   });
 });
+
+describe('brand name', () => {
+  it('manifest and index.html use the brand name', () => {
+    expect(manifest.name).toBe('Matside');
+    expect(manifest.short_name).toBe('Matside');
+    expect(read('index.html')).toContain('<title>Matside</title>');
+    const readme = read('README.md');
+    expect(readme.split('\n')[0]).toBe('# Matside');
+    expect(readme).toContain('docs/brand.md');
+  });
+});

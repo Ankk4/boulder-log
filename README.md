@@ -1,6 +1,8 @@
-# Boulder Notes
+# Matside
 
-An offline-first PWA for logging bouldering sessions, problems and attempts.
+Matside (repo: boulder-log)
+
+An offline-first PWA for logging bouldering sessions, problems and attempts. See the [brand guide](docs/brand.md).
 
 [![Deploy](https://github.com/Ankk4/boulder-log/actions/workflows/deploy.yml/badge.svg?branch=master)](https://github.com/Ankk4/boulder-log/actions/workflows/deploy.yml)
 [![CI](https://github.com/Ankk4/boulder-log/actions/workflows/ci.yml/badge.svg)](https://github.com/Ankk4/boulder-log/actions/workflows/ci.yml)

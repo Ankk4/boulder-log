@@ -6,7 +6,7 @@ Security fixes are applied to the latest `master` branch of this repository.
 
 ## Threat model
 
-Boulder Notes is a **client-only** Progressive Web App deployed as static files (GitHub Pages). There is no application backend or user authentication.
+Matside is a **client-only** Progressive Web App deployed as static files (GitHub Pages). There is no application backend or user authentication.
 
 | Asset | Risk |
 |-------|------|
