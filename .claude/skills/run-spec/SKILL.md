@@ -9,7 +9,7 @@ You are the orchestrator (planner model). Running this skill is the user's reque
 
 Arguments: `$ARGUMENTS`. The first word is the feature name, written `<feature>` below. If `--draft-pr` appears after it, the draft-PR wrap-up is on. Folder: `specs/active/<feature>/`.
 
-Rules for every step: if a tool call or command is denied, ask the user; don't substitute another command for it. Never edit `spec.md` or `tasks.md` during a run without the user's OK.
+Rules for every step: if a tool call or command is denied, ask the user; don't substitute another command for it. Never edit `spec.md` or `tasks.md` during a run without the user's OK. A subagent report with no PASS/FAIL verdict is not a pass: SendMessage the same agent for the full report.
 
 ## 0. Preflight (stop and report if any fails)
 - If `<feature>` doesn't exactly match a folder in `specs/active/`, list the folders and ask; never guess.
