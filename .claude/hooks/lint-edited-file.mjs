@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// PostToolUse (Edit|Write|MultiEdit): lint the file Claude just changed.
-// Exit 2 sends ESLint's findings back to Claude so it fixes them right away.
-// Lints from the edited file's own repo root, so edits inside a git worktree
+// PostToolUse (Edit|Write|MultiEdit): format the file Claude just changed with
+// Prettier (any file in the repo; .prettierignore and --ignore-unknown skip the
+// rest), then lint it with ESLint if it is src/**/*.ts(x).
+// Exit 2 sends Prettier's or ESLint's errors back to Claude so it fixes them right away.
+// Formats and lints from the edited file's own repo root, so edits inside a git worktree
 // (subagents with isolation: "worktree") are linted against that worktree.
 import { execFileSync } from 'node:child_process';
-import { dirname, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { ensureDeps } from './lib/ensure-deps.mjs';
 
 let input = '';
@@ -25,8 +27,27 @@ try {
 }
 
 const rel = relative(root, file);
-if (!/^src\/.*\.(ts|tsx)$/.test(rel)) process.exit(0);
+if (rel.startsWith('..') || isAbsolute(rel)) process.exit(0);
 ensureDeps(root);
+
+const clean = (err) =>
+  `${err.stdout ?? ''}${err.stderr ?? ''}`
+    .split('\n')
+    .filter((l) => !/MODULE_TYPELESS|Reparsing|trace-warnings|To eliminate/.test(l))
+    .join('\n')
+    .trim();
+
+try {
+  execFileSync('npx', ['--no-install', 'prettier', '--write', '--ignore-unknown', rel], {
+    cwd: root,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+} catch (err) {
+  process.stderr.write(`Prettier failed for ${rel}:\n${clean(err)}\n`);
+  process.exit(2);
+}
+
+if (!/^src\/.*\.(ts|tsx)$/.test(rel)) process.exit(0);
 
 try {
   execFileSync('npx', ['--no-install', 'eslint', '--max-warnings=0', rel], {
@@ -34,11 +55,6 @@ try {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 } catch (err) {
-  const out = `${err.stdout ?? ''}${err.stderr ?? ''}`
-    .split('\n')
-    .filter((l) => !/MODULE_TYPELESS|Reparsing|trace-warnings|To eliminate/.test(l))
-    .join('\n')
-    .trim();
-  process.stderr.write(`ESLint failed for ${rel}:\n${out}\n`);
+  process.stderr.write(`ESLint failed for ${rel}:\n${clean(err)}\n`);
   process.exit(2);
 }

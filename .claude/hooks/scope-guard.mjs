@@ -50,6 +50,9 @@ const protectedForImplementer = [
   /^tsconfig[^/]*\.json$/,
   /^vite\.config\.ts$/,
   /^package(-lock)?\.json$/,
+  /^\.prettierrc\.json$/,
+  /^\.prettierignore$/,
+  /^\.git-blame-ignore-revs$/,
 ];
 
 switch (agent_type) {
