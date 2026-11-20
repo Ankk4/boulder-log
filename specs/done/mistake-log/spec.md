@@ -1,5 +1,5 @@
 ---
-status: approved       # draft | approved | done. /run-spec only runs approved specs.
+status: done       # draft | approved | done. /run-spec only runs approved specs.
 commitment: spec-anchored # the retro step and its rules keep evolving with the workflow
 ---
 
