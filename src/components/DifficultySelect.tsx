@@ -85,7 +85,8 @@ const DifficultySelect = ({
                   height: 20,
                   backgroundColor: grade.color,
                   borderRadius: '4px',
-                  border: '1px solid rgba(0,0,0,0.2)'
+                  border: 1,
+                  borderColor: 'text.secondary'
                 }}
               />
               {grade.name} ({grade.range})

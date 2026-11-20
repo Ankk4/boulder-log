@@ -9,6 +9,7 @@ import {
   LinearProgress,
   CircularProgress,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
   Pause as PauseIcon,
   PlayArrow as PlayIcon,
@@ -20,6 +21,8 @@ import {
 } from '@mui/icons-material';
 import { db, useIntervalWorkout } from '../db';
 import { useIntervalTimer } from '../hooks/useIntervalTimer';
+import { useRequestFocusMode } from '../hooks/useFocusMode';
+import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { unlockAudio } from '../utils/beep';
 import {
@@ -29,39 +32,6 @@ import {
   PREPARE_SECONDS,
 } from '../utils/duration';
 import type { IntervalRun } from '../types';
-
-const PHASE_STYLES = {
-  idle: {
-    bgcolor: '#f5f5f5',
-    color: '#212121',
-    muted: 'rgba(0, 0, 0, 0.6)',
-    progress: 'rgba(0, 0, 0, 0.2)',
-  },
-  prepare: {
-    bgcolor: '#e65100',
-    color: '#fff',
-    muted: 'rgba(255, 255, 255, 0.85)',
-    progress: 'rgba(255, 255, 255, 0.35)',
-  },
-  work: {
-    bgcolor: '#b71c1c',
-    color: '#fff',
-    muted: 'rgba(255, 255, 255, 0.85)',
-    progress: 'rgba(255, 255, 255, 0.35)',
-  },
-  rest: {
-    bgcolor: '#01579b',
-    color: '#fff',
-    muted: 'rgba(255, 255, 255, 0.85)',
-    progress: 'rgba(255, 255, 255, 0.35)',
-  },
-  done: {
-    bgcolor: '#1b5e20',
-    color: '#fff',
-    muted: 'rgba(255, 255, 255, 0.85)',
-    progress: 'rgba(255, 255, 255, 0.35)',
-  },
-} as const;
 
 const WorkoutRun = () => {
   const { id } = useParams<{ id: string }>();
@@ -78,7 +48,30 @@ const WorkoutRun = () => {
     muted: workout?.muted ?? false,
   });
 
+  const isRunning =
+    timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest';
+  useRequestFocusMode(isRunning);
+
   useWakeLock(hasStarted && timer.phase !== 'done');
+
+  const muiTheme = useTheme();
+  // Only a running phase gets its own colour; idle and done/stopped use the normal page.
+  const phaseColors =
+    timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest'
+      ? muiTheme.palette.phase[timer.phase]
+      : { bg: muiTheme.palette.background.default, text: muiTheme.palette.text.primary };
+  const theme = {
+    bgcolor: phaseColors.bg,
+    color: phaseColors.text,
+    muted: alpha(phaseColors.text, 0.85),
+    progress: alpha(phaseColors.text, 0.35),
+  };
+  const outlinedSx = {
+    borderColor: alpha(phaseColors.text, 0.7),
+    color: theme.color,
+    '&:hover': { borderColor: theme.color, bgcolor: alpha(phaseColors.text, 0.1) },
+  };
+  const filledSx = { bgcolor: theme.color, color: theme.bgcolor };
 
   useEffect(() => {
     if (workout && !hasStarted) {
@@ -185,186 +178,164 @@ const WorkoutRun = () => {
     navigate('/workouts');
   };
 
-  const isRunning =
-    timer.phase === 'prepare' || timer.phase === 'work' || timer.phase === 'rest';
-
-  const theme = PHASE_STYLES[timer.phase];
-
   return (
     <Box
       sx={{
-        minHeight: 'calc(100vh - 56px)',
-        mb: -7,
-        p: 2,
-        pb: 9,
+        minHeight: isRunning ? '100dvh' : undefined,
         bgcolor: theme.bgcolor,
         color: theme.color,
         transition: 'background-color 0.25s ease',
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton aria-label="back" onClick={handleBack} sx={{ color: theme.color }}>
-          <BackIcon />
-        </IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" sx={{ color: theme.color }}>
-            {workout.name}
+      <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto', p: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+          <IconButton aria-label="back" onClick={handleBack} sx={{ color: theme.color }}>
+            <BackIcon />
+          </IconButton>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" sx={{ color: theme.color }}>
+              {workout.name}
+            </Typography>
+            <Typography variant="body2" sx={{ color: theme.muted }}>
+              {workout.workSeconds}s / {workout.restSeconds}s · {workout.intervals} intervals ·{' '}
+              {formatDuration(totalSeconds)} (incl. {PREPARE_SECONDS}s prepare)
+            </Typography>
+          </Box>
+          <IconButton
+            aria-label={timer.muted ? 'unmute' : 'mute'}
+            onClick={() => timer.setMuted(!timer.muted)}
+            sx={{ color: theme.color }}
+          >
+            {timer.muted ? <MuteIcon /> : <UnmuteIcon />}
+          </IconButton>
+        </Stack>
+
+        <Box sx={{ textAlign: 'center', py: 4, mb: 2 }}>
+          <Typography
+            variant="overline"
+            sx={{ color: theme.color, letterSpacing: 3, fontWeight: 700, fontSize: '1rem' }}
+          >
+            {phaseLabel}
+            {timer.isPaused ? ' · PAUSED' : ''}
           </Typography>
-          <Typography variant="body2" sx={{ color: theme.muted }}>
-            {workout.workSeconds}s / {workout.restSeconds}s · {workout.intervals} intervals ·{' '}
-            {formatDuration(totalSeconds)} (incl. {PREPARE_SECONDS}s prepare)
+          <Typography
+            variant="h1"
+            sx={{
+              fontVariantNumeric: 'tabular-nums',
+              my: 1,
+              fontSize: { xs: '5rem', sm: '6.5rem' },
+              fontWeight: 700,
+              color: theme.color,
+              lineHeight: 1,
+            }}
+          >
+            {timer.phase === 'idle' || timer.phase === 'done'
+              ? formatCountdown(workout.workSeconds)
+              : formatCountdown(timer.secondsRemaining)}
           </Typography>
+          <Typography variant="h6" sx={{ color: theme.muted }}>
+            {timer.phase === 'prepare'
+              ? 'Get ready'
+              : timer.phase === 'idle'
+                ? `0 / ${workout.intervals}`
+                : `${Math.min(timer.currentInterval, workout.intervals)} / ${workout.intervals}`}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{
+              mt: 3,
+              height: 10,
+              borderRadius: 1,
+              bgcolor: theme.progress,
+              '& .MuiLinearProgress-bar': {
+                bgcolor: theme.color,
+              },
+            }}
+          />
         </Box>
-        <IconButton
-          aria-label={timer.muted ? 'unmute' : 'mute'}
-          onClick={() => timer.setMuted(!timer.muted)}
-          sx={{ color: theme.color }}
-        >
-          {timer.muted ? <MuteIcon /> : <UnmuteIcon />}
-        </IconButton>
-      </Stack>
 
-      <Box sx={{ textAlign: 'center', py: 4, mb: 2 }}>
-        <Typography
-          variant="overline"
-          sx={{ color: theme.color, letterSpacing: 3, fontWeight: 700, fontSize: '1rem' }}
-        >
-          {phaseLabel}
-          {timer.isPaused ? ' · PAUSED' : ''}
-        </Typography>
-        <Typography
-          variant="h1"
-          sx={{
-            fontVariantNumeric: 'tabular-nums',
-            my: 1,
-            fontSize: { xs: '5rem', sm: '6.5rem' },
-            fontWeight: 700,
-            color: theme.color,
-            lineHeight: 1,
-          }}
-        >
-          {timer.phase === 'idle' || timer.phase === 'done'
-            ? formatCountdown(workout.workSeconds)
-            : formatCountdown(timer.secondsRemaining)}
-        </Typography>
-        <Typography variant="h6" sx={{ color: theme.muted }}>
-          {timer.phase === 'prepare'
-            ? 'Get ready'
-            : timer.phase === 'idle'
-              ? `0 / ${workout.intervals}`
-              : `${Math.min(timer.currentInterval, workout.intervals)} / ${workout.intervals}`}
-        </Typography>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          sx={{
-            mt: 3,
-            height: 10,
-            borderRadius: 1,
-            bgcolor: theme.progress,
-            '& .MuiLinearProgress-bar': {
-              bgcolor: theme.color,
-            },
-          }}
-        />
-      </Box>
+        {timer.phase === 'idle' && (
+          <Button fullWidth size="large" variant="contained" onClick={handleStart}>
+            Start
+          </Button>
+        )}
 
-      {timer.phase === 'idle' && (
-        <Button fullWidth size="large" variant="contained" onClick={handleStart}>
-          Start
-        </Button>
-      )}
-
-      {isRunning && (
-        <Stack direction="row" spacing={1} justifyContent="center">
-          {timer.isPaused ? (
-            <Button
-              variant="contained"
-              color="inherit"
-              startIcon={<PlayIcon />}
-              onClick={() => {
-                void unlockAudio();
-                timer.resume();
-              }}
-              sx={{ bgcolor: 'rgba(255,255,255,0.95)', color: theme.bgcolor }}
-            >
-              Resume
-            </Button>
-          ) : (
+        {isRunning && (
+          <Stack direction="row" spacing={1} justifyContent="center">
+            {timer.isPaused ? (
+              <Button
+                variant="contained"
+                color="inherit"
+                startIcon={<PlayIcon />}
+                onClick={() => {
+                  void unlockAudio();
+                  timer.resume();
+                }}
+                sx={filledSx}
+              >
+                Resume
+              </Button>
+            ) : (
+              <Button
+                variant="outlined"
+                startIcon={<PauseIcon />}
+                onClick={timer.pause}
+                sx={outlinedSx}
+              >
+                Pause
+              </Button>
+            )}
             <Button
               variant="outlined"
-              startIcon={<PauseIcon />}
-              onClick={timer.pause}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.7)',
-                color: theme.color,
-                '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
-              }}
+              startIcon={<SkipIcon />}
+              onClick={timer.skip}
+              sx={outlinedSx}
             >
-              Pause
+              Skip
             </Button>
-          )}
-          <Button
-            variant="outlined"
-            startIcon={<SkipIcon />}
-            onClick={timer.skip}
-            sx={{
-              borderColor: 'rgba(255,255,255,0.7)',
-              color: theme.color,
-              '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
-            }}
-          >
-            Skip
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<StopIcon />}
-            onClick={handleAbort}
-            sx={{
-              borderColor: 'rgba(255,255,255,0.7)',
-              color: theme.color,
-              '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
-            }}
-          >
-            Stop
-          </Button>
-        </Stack>
-      )}
+            <Button
+              variant="outlined"
+              startIcon={<StopIcon />}
+              onClick={handleAbort}
+              sx={outlinedSx}
+            >
+              Stop
+            </Button>
+          </Stack>
+        )}
 
-      {timer.phase === 'done' && (
-        <Stack spacing={1}>
-          <Typography align="center" sx={{ color: theme.muted }}>
-            {timer.completedIntervals >= workout.intervals
-              ? 'Set complete. Saved to history.'
-              : `Stopped after ${timer.completedIntervals} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
-          </Typography>
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleBack}
-            sx={{ bgcolor: 'rgba(255,255,255,0.95)', color: theme.bgcolor }}
-          >
-            Back to workouts
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => {
-              persistedRef.current = false;
-              startedAtRef.current = null;
-              setHasStarted(false);
-              void handleStart();
-            }}
-            sx={{
-              borderColor: 'rgba(255,255,255,0.7)',
-              color: theme.color,
-              '&:hover': { borderColor: theme.color, bgcolor: 'rgba(255,255,255,0.1)' },
-            }}
-          >
-            Run again
-          </Button>
-        </Stack>
-      )}
+        {timer.phase === 'done' && (
+          <Stack spacing={1}>
+            <Typography align="center" sx={{ color: theme.muted }}>
+              {timer.completedIntervals >= workout.intervals
+                ? 'Set complete. Saved to history.'
+                : `Stopped after ${timer.completedIntervals} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
+            </Typography>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleBack}
+              sx={filledSx}
+            >
+              Back to workouts
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                persistedRef.current = false;
+                startedAtRef.current = null;
+                setHasStarted(false);
+                void handleStart();
+              }}
+              sx={outlinedSx}
+            >
+              Run again
+            </Button>
+          </Stack>
+        )}
+      </Box>
     </Box>
   );
 };

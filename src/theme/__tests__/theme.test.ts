@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createAppTheme } from '../theme';
+import { createAppTheme, DEFAULT_THEME_MODE } from '../theme';
 import { brand, contrastRatio } from '../brand';
 
 describe('createAppTheme', () => {
@@ -21,6 +21,10 @@ describe('createAppTheme', () => {
     expect(t.palette.background.paper).toBe('#26292D');
   });
 
+  it('default mode is dark', () => {
+    expect(DEFAULT_THEME_MODE).toBe('dark');
+  });
+
   it('uses the system font stack', () => {
     expect(createAppTheme('light').typography.fontFamily).toMatch(/^system-ui/);
   });
@@ -32,6 +36,16 @@ describe('createAppTheme', () => {
     expect(contrastRatio(p.text.primary, p.background.default)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p.text.primary, p.background.paper)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(brand[mode].textSecondary, p.background.default)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('phase colours', () => {
+  it.each(['light', 'dark'] as const)('%s phase colours reach 4.5:1', (mode) => {
+    const phase = createAppTheme(mode).palette.phase;
+    expect(phase).toBeDefined();
+    for (const key of ['prepare', 'work', 'rest'] as const) {
+      expect(contrastRatio(phase[key].text, phase[key].bg)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
 
