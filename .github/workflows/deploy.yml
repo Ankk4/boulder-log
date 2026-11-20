@@ -39,6 +39,25 @@ jobs:
       - name: Build with Vite
         run: npx vite build
 
+      - name: Measure coverage
+        run: npx vitest run --coverage --coverage.reporter=json-summary
+
+      - name: Write coverage badge
+        run: |
+          node -e '
+            const fs = require("fs");
+            const s = JSON.parse(fs.readFileSync("coverage/coverage-summary.json", "utf8"));
+            const pct = s.total.lines.pct;
+            const color = pct >= 80 ? "brightgreen" : pct >= 60 ? "yellow" : "red";
+            fs.mkdirSync("dist", { recursive: true });
+            fs.writeFileSync("dist/coverage-badge.json", JSON.stringify({
+              schemaVersion: 1,
+              label: "coverage",
+              message: Math.round(pct) + "%",
+              color,
+            }));
+          '
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
