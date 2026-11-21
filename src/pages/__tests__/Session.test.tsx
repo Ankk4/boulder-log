@@ -14,6 +14,7 @@ const { mockDb } = vi.hoisted(() => ({
     sessions: {
       add: vi.fn<typeof db.sessions.add>(),
       put: vi.fn<typeof db.sessions.put>(),
+      update: vi.fn<typeof db.sessions.update>(),
       orderBy: vi.fn<typeof db.sessions.orderBy>().mockReturnThis(),
       reverse: vi.fn<typeof db.sessions.reverse>().mockReturnThis(),
       toArray: vi.fn<typeof db.sessions.toArray>().mockResolvedValue([]),
@@ -479,6 +480,130 @@ describe('Session Page', () => {
       vi.mocked(useCurrentSession).mockReturnValue(mockSession);
       render(ui());
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('review draft persistence', () => {
+    const goalSession: SessionType = {
+      ...mockSession,
+      preSessionData: { ...mockSession.preSessionData, goals: ['Send red', 'Flash blue'] },
+    };
+
+    it('writes the draft to the active session on change', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      mockDb.sessions.update.mockResolvedValue(1);
+      render(ui());
+
+      fireEvent.click(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '6' }),
+      );
+
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalledWith('1', {
+          postSessionReview: {
+            rpe: 6,
+            energyAfter: null,
+            accomplishments: [],
+            workOn: [],
+            achievedGoals: [],
+          },
+          postSessionNotes: '',
+        });
+      });
+
+      fireEvent.change(screen.getByLabelText(/post-session notes/i), {
+        target: { value: 'hi' },
+      });
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenLastCalledWith(
+          '1',
+          expect.objectContaining({ postSessionNotes: 'hi' }),
+        );
+      });
+    });
+
+    it('logs and swallows a failed draft write', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      mockDb.sessions.update.mockRejectedValue(new Error('boom'));
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      render(ui());
+
+      fireEvent.click(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '6' }),
+      );
+
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledWith('Error saving review draft:', expect.any(Error));
+      });
+      spy.mockRestore();
+    });
+
+    it('restores the draft from the session on remount', () => {
+      vi.mocked(useCurrentSession).mockReturnValue({
+        ...goalSession,
+        postSessionNotes: 'Saved notes',
+        postSessionReview: {
+          rpe: 8,
+          energyAfter: 3,
+          accomplishments: ['Did A'],
+          workOn: ['Fix B'],
+          achievedGoals: [0],
+        },
+      });
+      const first = render(ui());
+      first.unmount();
+      render(ui());
+
+      expect(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '8' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        within(screen.getByRole('group', { name: 'Energy after' })).getByRole('button', {
+          name: '3',
+        }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Did A')).toBeInTheDocument();
+      expect(screen.getByText('Fix B')).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: 'Send red' })).toBeChecked();
+      expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('Saved notes');
+    });
+
+    it('starts the next session with an empty review after End', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue({
+        ...goalSession,
+        postSessionReview: {
+          rpe: 8,
+          energyAfter: null,
+          accomplishments: ['Did A'],
+          workOn: [],
+          achievedGoals: [],
+        },
+        postSessionNotes: 'Saved notes',
+      });
+      mockDb.sessions.put.mockResolvedValue(1);
+      mockDb.sessions.add.mockResolvedValue('2');
+      const view = render(ui());
+
+      fireEvent.click(screen.getByText(/end session/i));
+      await waitFor(() => {
+        expect(mockDb.sessions.put).toHaveBeenCalled();
+      });
+
+      vi.mocked(useCurrentSession).mockReturnValue(undefined);
+      view.rerender(ui());
+      fireEvent.click(screen.getByText(/start session/i));
+      await waitFor(() => {
+        expect(mockDb.sessions.add).toHaveBeenCalled();
+      });
+
+      vi.mocked(useCurrentSession).mockReturnValue({ ...goalSession, id: '2' });
+      view.rerender(ui());
+
+      expect(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '8' }),
+      ).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.queryByText('Did A')).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('');
     });
   });
 });

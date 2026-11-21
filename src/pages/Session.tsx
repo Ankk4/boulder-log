@@ -54,6 +54,35 @@ const SessionPage = () => {
   const [postSessionNotes, setPostSessionNotes] = useState('');
   const [review, setReview] = useState<PostSessionReview>(emptyReview);
   const [now, setNow] = useState(() => Date.now());
+  const [loadedId, setLoadedId] = useState<string | undefined>(undefined);
+
+  if (currentSession?.id !== loadedId) {
+    setLoadedId(currentSession?.id);
+    setReview(currentSession?.postSessionReview ?? emptyReview);
+    setPostSessionNotes(currentSession?.postSessionNotes ?? '');
+  }
+
+  const saveDraft = async (nextReview: PostSessionReview, nextNotes: string) => {
+    if (!currentSession) return;
+    try {
+      await db.sessions.update(currentSession.id, {
+        postSessionReview: nextReview,
+        postSessionNotes: nextNotes,
+      });
+    } catch (error) {
+      console.error('Error saving review draft:', error);
+    }
+  };
+
+  const changeReview = (next: PostSessionReview) => {
+    setReview(next);
+    void saveDraft(next, postSessionNotes);
+  };
+
+  const changeNotes = (next: string) => {
+    setPostSessionNotes(next);
+    void saveDraft(review, next);
+  };
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -288,7 +317,7 @@ const SessionPage = () => {
           <PostSessionReviewSection
             value={review}
             goals={currentSession.preSessionData.goals}
-            onChange={setReview}
+            onChange={changeReview}
           />
 
           <TextField
@@ -299,7 +328,7 @@ const SessionPage = () => {
             value={postSessionNotes}
             slotProps={{ htmlInput: { maxLength: LIMITS.postSessionNotes } }}
             onChange={(e) => {
-              setPostSessionNotes(e.target.value);
+              changeNotes(e.target.value);
             }}
             sx={{ mt: 2 }}
           />
