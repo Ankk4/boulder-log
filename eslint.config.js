@@ -9,11 +9,15 @@ export default tseslint.config(
   // .claude/worktrees: agent worktrees (copies of the tree, linted in place). research: private notes repo.
   { ignores: ['dist', 'coverage', '.claude/worktrees', 'research'] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       'react-hooks': reactHooks,

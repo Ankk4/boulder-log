@@ -53,6 +53,8 @@ const protectedForImplementer = [
   /^\.prettierrc\.json$/,
   /^\.prettierignore$/,
   /^\.git-blame-ignore-revs$/,
+  /^knip\.json$/,
+  /^eslint-suppressions\.json$/,
 ];
 
 switch (agent_type) {

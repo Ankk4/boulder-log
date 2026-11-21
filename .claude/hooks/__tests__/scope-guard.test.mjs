@@ -14,7 +14,13 @@ function run(file_path, agent_type) {
   return r.status;
 }
 
-for (const f of ['.prettierrc.json', '.prettierignore', '.git-blame-ignore-revs']) {
+for (const f of [
+  '.prettierrc.json',
+  '.prettierignore',
+  '.git-blame-ignore-revs',
+  'knip.json',
+  'eslint-suppressions.json',
+]) {
   test(`blocks implementer on ${f}`, () => {
     assert.equal(run(f, 'implementer'), 2);
   });

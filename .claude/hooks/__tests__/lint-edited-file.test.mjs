@@ -21,7 +21,16 @@ let dir;
 before(() => {
   dir = mkdtempSync(join(tmpdir(), 'lint-edited-file-'));
   execFileSync('git', ['init', '-q'], { cwd: dir });
-  for (const f of ['.prettierrc.json', '.prettierignore', 'eslint.config.js']) {
+  // tsconfig files: the ESLint step is type-aware (projectService), so it needs them.
+  for (const f of [
+    '.prettierrc.json',
+    '.prettierignore',
+    'eslint.config.js',
+    'tsconfig.json',
+    'tsconfig.app.json',
+    'tsconfig.node.json',
+    'tsconfig.test.json',
+  ]) {
     copyFileSync(join(repo, f), join(dir, f));
   }
   writeFileSync(join(dir, 'package.json'), '{"type":"module"}\n');
@@ -78,4 +87,14 @@ test("a formatted file with an ESLint error exits 2 with ESLint's message", () =
   assert.equal(r.code, 2);
   assert.match(r.stderr, /ESLint failed for src\/c\.ts/);
   assert.match(r.stderr, /no-unused-vars/);
+});
+
+test('an un-awaited promise in src/*.ts exits 2 with no-floating-promises', () => {
+  const r = run(
+    'src/d.ts',
+    'async function load(): Promise<number> {\n  return 1;\n}\n\nexport function start(): void {\n  load();\n}\n',
+  );
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /ESLint failed for src\/d\.ts/);
+  assert.match(r.stderr, /no-floating-promises/);
 });
