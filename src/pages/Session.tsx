@@ -85,6 +85,8 @@ const SessionPage = () => {
       };
       try {
         await db.sessions.put(updatedSession);
+        setPreSessionData(defaultPreSessionData);
+        setPostSessionNotes('');
       } catch (error) {
         console.error('Error ending session:', error);
       }
@@ -150,8 +152,8 @@ const SessionPage = () => {
 
           const updatedProblem = {
             ...problem,
-            flash: type === AttemptType.FLASH && attempts.length === 1,
-            send: type === AttemptType.SEND,
+            flash: problem.flash || (type === AttemptType.FLASH && attempts.length === 1),
+            send: problem.send || type === AttemptType.SEND,
             attempts: [...problem.attempts, newAttempt],
           };
 
@@ -182,7 +184,10 @@ const SessionPage = () => {
         fullWidth
         size="small"
         onChange={(_event, next: SessionMode | null) => {
-          if (next) setMode(next);
+          if (next) {
+            if (next !== mode) setPreSessionData(defaultPreSessionData);
+            setMode(next);
+          }
         }}
         sx={{ mb: 2 }}
         aria-label="Session mode"

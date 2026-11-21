@@ -28,3 +28,6 @@ coverage
 /research/
 .claude/logs/
 .claude/worktrees/
+
+# Local diagrams
+/docs/diagrams/

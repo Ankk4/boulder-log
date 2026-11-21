@@ -15,6 +15,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
 - If `<feature>` doesn't exactly match a folder in `specs/active/`, list the folders and ask; never guess.
 - `tasks.md` exists. If `spec.md` exists, its frontmatter says `status: approved`. (Quick specs have no spec.md.)
 - `git status --porcelain` shows nothing outside `specs/`. Don't start on a dirty tree.
+  - A dirty `.gitignore` gets committed on the feature branch (with the user's OK), not stashed: stashing it re-exposes ignored files to Prettier, and `.git/info/exclude` doesn't hide them from it.
 - Create or switch to the branch `feature/<feature>`: `git switch -c feature/<feature>`, or `git switch` if it already exists. Commit the spec files there first (`spec: <feature>`).
 - Parse the tasks and build the dependency order. Skip tasks that are already committed: `git log --oneline` has `<feature> T<n>:`.
 

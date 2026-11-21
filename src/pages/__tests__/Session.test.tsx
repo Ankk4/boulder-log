@@ -229,6 +229,113 @@ describe('Session Page', () => {
     });
   });
 
+  it.each([
+    ['send', { send: true }],
+    ['flash', { flash: true }],
+  ] as const)('keeps %s sticky when another attempt is logged', async (_name, status) => {
+    const problem: SessionProblem = { ...mockProblem, ...status };
+    vi.mocked(useCurrentSession).mockReturnValue({ ...mockSession, problems: [problem] });
+    mockDb.problems.get.mockResolvedValue(problem);
+    mockDb.problems.put.mockResolvedValue(1);
+    mockDb.attempts.add.mockResolvedValue('a2');
+    mockDb.sessions.put.mockResolvedValue(1);
+    mockDb.attempts.toArray.mockResolvedValue([]);
+
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByTestId('attempt-button'));
+
+    await waitFor(() => {
+      expect(mockDb.problems.put).toHaveBeenCalledWith(expect.objectContaining(status));
+    });
+  });
+
+  const ui = () => (
+    <MemoryRouter>
+      <Session />
+    </MemoryRouter>
+  );
+
+  const defaultPre = {
+    sleepQuality: 5,
+    energyLevel: 5,
+    fingerSoreness: 5,
+    motivation: 5,
+    restDays: 1,
+    nutrition: 'moderate',
+    stress: 'medium',
+    goals: [],
+    additionalNotes: '',
+  };
+
+  const addGoal = (text: string) => {
+    const input = screen.getByPlaceholderText(/add a goal/i);
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+  };
+
+  it('resets check-in and notes for the next session after ending one', async () => {
+    mockDb.sessions.add.mockResolvedValue('1');
+    mockDb.sessions.put.mockResolvedValue(1);
+    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    const { rerender } = render(ui());
+
+    addGoal('Send the red');
+    fireEvent.click(screen.getByText(/start session/i));
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preSessionData: expect.objectContaining({ goals: ['Send the red'] }) as unknown,
+        }),
+      );
+    });
+
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    rerender(ui());
+    fireEvent.change(screen.getByLabelText(/post-session notes/i), {
+      target: { value: 'Felt strong' },
+    });
+    fireEvent.click(screen.getByText(/end session/i));
+    await waitFor(() => {
+      expect(mockDb.sessions.put).toHaveBeenCalled();
+    });
+
+    mockDb.sessions.add.mockClear();
+    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    rerender(ui());
+    fireEvent.click(screen.getByText(/start session/i));
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledWith(
+        expect.objectContaining({ preSessionData: defaultPre }),
+      );
+    });
+
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    rerender(ui());
+    expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('');
+  });
+
+  it('saves the form defaults after switching to History and back', async () => {
+    mockDb.sessions.add.mockResolvedValue('1');
+    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    render(ui());
+
+    addGoal('Stale goal');
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+    fireEvent.click(screen.getByRole('button', { name: /climb/i }));
+    fireEvent.click(screen.getByText(/start session/i));
+
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledWith(
+        expect.objectContaining({ preSessionData: defaultPre }),
+      );
+    });
+  });
+
   it('ends current session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
     mockDb.sessions.put.mockResolvedValue(1);
