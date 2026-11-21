@@ -58,7 +58,7 @@ Rules for splitting:
 - depends-on: [T2]
 - notes:
   - Packages: `typescript@~6.0`, `eslint@10`, `@eslint/js@10`, `typescript-eslint@latest`, `globals`, `prettier`, `knip` and `eslint-plugin-react-refresh` at latest.
-  - Leave `eslint-plugin-react-hooks` on 5; T5 does it.
+  - Also install `eslint-plugin-react-hooks@7` here (user-approved change, 2026-11-21): v5's peer range stops at ESLint 9, so ESLint 10 can't install without it. Keep T3's lint config to the rules the repo has today (`rules-of-hooks`, `exhaustive-deps`); T5 turns the compiler rules on and fixes their findings after T4's test exists. `eslint.config.js` is already an allowed file.
   - TS 6 changed several compiler defaults (for example `types`). `tsconfig.test.json` already lists `types`. If app or node configs lose ambient types, add an explicit `types` entry rather than loosening anything.
   - TS 6 also removes deprecated options. Run `tsc -b` and fix what it names.
   - If `tseslint.config()` is deprecated, switch to `defineConfig` from `eslint/config` with the same blocks and rules (R8).
@@ -82,7 +82,7 @@ Rules for splitting:
   - Assert public results only (`phase`, `currentInterval`, `secondsRemaining`, `completedIntervals`, `isPaused`, `muted`), never refs. That way T5 can change the internals and the test stays the same.
   - Pattern reference: `src/hooks/__tests__/useFocusMode.test.tsx`.
 
-## T5: eslint-plugin-react-hooks 7 and its compiler-rule findings
+## T5: react-hooks 7 compiler rules and their findings
 - covers: [R8, R10, R13]
 - runner: planner
 - allowed files: `package.json`, `package-lock.json`, `eslint.config.js`, `src/hooks/useIntervalTimer.ts`, `src/components/WorkoutFormDialog.tsx`, `src/pages/Workouts.tsx`, `src/pages/Session.tsx`
