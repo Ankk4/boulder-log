@@ -25,9 +25,9 @@ export function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(safe / 60);
   const seconds = safe % 60;
   if (minutes === 0) {
-    return `${seconds}s`;
+    return `${String(seconds)}s`;
   }
-  return `${minutes}m ${seconds}s`;
+  return `${String(minutes)}m ${String(seconds)}s`;
 }
 
 /** Format countdown as M:SS. */
@@ -35,5 +35,5 @@ export function formatCountdown(totalSeconds: number): string {
   const safe = Math.max(0, Math.ceil(totalSeconds));
   const minutes = Math.floor(safe / 60);
   const seconds = safe % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  return `${String(minutes)}:${seconds.toString().padStart(2, '0')}`;
 }

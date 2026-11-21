@@ -1,45 +1,10 @@
 {
-  "src/__tests__/branding.test.ts": {
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 2
-    }
-  },
-  "src/__tests__/theme-usage.test.ts": {
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 1
-    }
-  },
   "src/services/sheetsService.ts": {
     "@typescript-eslint/no-meaningless-void-operator": {
       "count": 1
     },
     "@typescript-eslint/require-await": {
       "count": 2
-    }
-  },
-  "src/setupTests.ts": {
-    "@typescript-eslint/no-unsafe-assignment": {
-      "count": 1
-    }
-  },
-  "src/utils/__tests__/validation.test.ts": {
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 1
-    }
-  },
-  "src/utils/beep.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
-  "src/utils/csv.ts": {
-    "@typescript-eslint/no-base-to-string": {
-      "count": 1
-    }
-  },
-  "src/utils/duration.ts": {
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 4
     }
   }
 }

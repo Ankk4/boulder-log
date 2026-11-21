@@ -21,7 +21,7 @@ describe('validation helpers', () => {
   it('limits goals count and length', () => {
     const goals = Array.from(
       { length: LIMITS.maxGoals + 5 },
-      (_, i) => `goal-${i}-${'y'.repeat(300)}`,
+      (_, i) => `goal-${String(i)}-${'y'.repeat(300)}`,
     );
     const sanitized = sanitizeGoals(goals);
     expect(sanitized).toHaveLength(LIMITS.maxGoals);

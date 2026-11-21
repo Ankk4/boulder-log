@@ -29,7 +29,7 @@ const CSP =
 
 function pngSize(rel: string): string {
   const buf = fs.readFileSync(path.join(root, rel));
-  return `${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)}`;
+  return `${String(buf.readUInt32BE(16))}x${String(buf.readUInt32BE(20))}`;
 }
 
 describe('branding', () => {
