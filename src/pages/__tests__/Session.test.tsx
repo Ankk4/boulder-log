@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
@@ -394,5 +394,91 @@ describe('Session Page', () => {
       expect(errorSpy).toHaveBeenCalledWith('Error ending session:', expect.any(Error));
     });
     errorSpy.mockRestore();
+  });
+
+  describe('post-session review', () => {
+    const goalSession: SessionType = {
+      ...mockSession,
+      preSessionData: { ...mockSession.preSessionData, goals: ['Send red', 'Flash blue'] },
+    };
+
+    it('saves the filled-in review when ending', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      mockDb.sessions.put.mockResolvedValue(1);
+      render(ui());
+
+      const rpe = screen.getByRole('group', { name: 'RPE' });
+      fireEvent.click(within(rpe).getByRole('button', { name: '7' }));
+      const energy = screen.getByRole('group', { name: 'Energy after' });
+      fireEvent.click(within(energy).getByRole('button', { name: '4' }));
+
+      const acc = screen.getByLabelText('Accomplished');
+      fireEvent.change(acc, { target: { value: 'Project A' } });
+      fireEvent.keyDown(acc, { key: 'Enter' });
+      const work = screen.getByLabelText('Work on');
+      fireEvent.change(work, { target: { value: 'Heel hooks' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Add work-on item' }));
+
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Flash blue' }));
+      fireEvent.change(screen.getByLabelText(/post-session notes/i), {
+        target: { value: 'Good day' },
+      });
+      fireEvent.click(screen.getByText(/end session/i));
+
+      await waitFor(() => {
+        expect(mockDb.sessions.put).toHaveBeenCalledWith(
+          expect.objectContaining({
+            postSessionNotes: 'Good day',
+            postSessionReview: {
+              rpe: 7,
+              energyAfter: 4,
+              accomplishments: ['Project A'],
+              workOn: ['Heel hooks'],
+              achievedGoals: [1],
+            },
+          }),
+        );
+      });
+    });
+
+    it('saves nulls and empty lists when the review is untouched', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      mockDb.sessions.put.mockResolvedValue(1);
+      render(ui());
+
+      fireEvent.click(screen.getByText(/end session/i));
+
+      await waitFor(() => {
+        expect(mockDb.sessions.put).toHaveBeenCalledWith(
+          expect.objectContaining({
+            postSessionReview: {
+              rpe: null,
+              energyAfter: null,
+              accomplishments: [],
+              workOn: [],
+              achievedGoals: [],
+            },
+          }),
+        );
+      });
+    });
+
+    it('clears a picker when the selected value is clicked again', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      render(ui());
+      const button = within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', {
+        name: '3',
+      });
+      fireEvent.click(button);
+      expect(button).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.click(button);
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('shows no goal checkbox when the session has no goals', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      render(ui());
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    });
   });
 });
