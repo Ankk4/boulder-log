@@ -27,6 +27,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
 1. Spawn `implementer` with the prompt: `Spec folder: specs/active/<feature>/. Task: T<n>.`
    - `runner: planner` task (its files are protected by scope-guard): spawn no implementer. Make the edits yourself in the main tree, only in the task's allowed files. Steps 2–6 are unchanged; where they say "send to the implementer", fix it yourself, within the same budget.
 2. **Verify gate (you enforce it).** When the implementer returns, run `node .claude/hooks/verify-on-stop.mjs --check <tree>` yourself (it runs `npm run verify`, exits 1 with the failing lines). Don't trust the report's "verify passed".
+   - After any `npm install`, read `git diff package.json`: a package must stay in the section (`dependencies` or `devDependencies`) it was in. Install runtime packages without `-D`.
    - The `SubagentStop` hook also runs verify. Its block arrives after a background agent has already handed back, so the hook can't stop the agent. What it does do is leave a pass stamp, which makes your `--check` instant when the tree is green.
    - On failure, send the last ~40 lines of output to the same implementer with SendMessage, so it keeps its context. Wait, then verify again.
 3. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/<feature>/. Task: T<n>. Diff: git diff --cached in <repo root>.`

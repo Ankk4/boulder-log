@@ -8,7 +8,7 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, action }: PageHeaderProps) {
   return (
-    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+    <Stack direction="row" sx={{ mb: 2, justifyContent: 'space-between', alignItems: 'center' }}>
       <Typography variant="h5" component="h2">
         {title}
       </Typography>

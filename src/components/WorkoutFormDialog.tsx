@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -46,30 +46,15 @@ const defaults: WorkoutFormValues = {
 };
 
 const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialogProps) => {
-  const [name, setName] = useState(defaults.name);
-  const [workSeconds, setWorkSeconds] = useState(defaults.workSeconds);
-  const [restSeconds, setRestSeconds] = useState(defaults.restSeconds);
-  const [intervals, setIntervals] = useState(defaults.intervals);
-  const [muted, setMuted] = useState(defaults.muted);
+  // The parent remounts this dialog (via `key`) each time it opens, so state starts from `initial`.
+  const start = initial ? { ...initial, muted: initial.muted ?? false } : defaults;
+  const [name, setName] = useState(start.name);
+  const [workSeconds, setWorkSeconds] = useState(start.workSeconds);
+  const [restSeconds, setRestSeconds] = useState(start.restSeconds);
+  const [intervals, setIntervals] = useState(start.intervals);
+  const [muted, setMuted] = useState(start.muted);
 
   const isEditing = Boolean(initial && 'id' in initial && initial.id);
-
-  useEffect(() => {
-    if (!open) return;
-    if (initial) {
-      setName(initial.name);
-      setWorkSeconds(initial.workSeconds);
-      setRestSeconds(initial.restSeconds);
-      setIntervals(initial.intervals);
-      setMuted(initial.muted ?? false);
-    } else {
-      setName(defaults.name);
-      setWorkSeconds(defaults.workSeconds);
-      setRestSeconds(defaults.restSeconds);
-      setIntervals(defaults.intervals);
-      setMuted(defaults.muted);
-    }
-  }, [open, initial]);
 
   const totalSeconds = calculateTotalSeconds(workSeconds, restSeconds, intervals);
   const canSave = name.trim().length > 0 && workSeconds > 0 && restSeconds >= 0 && intervals > 0;
@@ -108,7 +93,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Work (seconds)"
             type="number"
-            inputProps={{ min: 1, step: 1 }}
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
             value={workSeconds}
             onChange={(e) => {
               setWorkSeconds(Math.max(1, parsePositiveInt(e.target.value, 1)));
@@ -119,7 +104,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Rest (seconds)"
             type="number"
-            inputProps={{ min: 0, step: 1 }}
+            slotProps={{ htmlInput: { min: 0, step: 1 } }}
             value={restSeconds}
             onChange={(e) => {
               setRestSeconds(Math.max(0, parsePositiveInt(e.target.value, 0)));
@@ -130,7 +115,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Intervals"
             type="number"
-            inputProps={{ min: 1, step: 1 }}
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
             value={intervals}
             onChange={(e) => {
               setIntervals(Math.max(1, parsePositiveInt(e.target.value, 1)));

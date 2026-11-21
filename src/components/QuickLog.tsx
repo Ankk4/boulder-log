@@ -92,7 +92,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
           <Paper key={problem.id} sx={{ mb: 2, p: 1 }}>
             <ListItem
               secondaryAction={
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <Tooltip title="Mark as flashed (completed first try)">
                     <span>
                       <IconButton
@@ -165,7 +165,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                     {problem.frenchGrade && `French Grade: ${problem.frenchGrade}`}
                     {problem.frenchGrade && problem.colorGrade && ' | '}
                     {problem.colorGrade && `Color: ${problem.colorGrade}`}
-                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
                       Attempts:{' '}
                       {problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length}
                       {(problem.flash || problem.send) && ' • Completed'}
@@ -192,7 +192,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
             label="Problem Name"
             fullWidth
             value={newProblemName}
-            inputProps={{ maxLength: LIMITS.problemName }}
+            slotProps={{ htmlInput: { maxLength: LIMITS.problemName } }}
             onChange={(e) => {
               setNewProblemName(e.target.value);
             }}

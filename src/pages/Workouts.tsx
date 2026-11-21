@@ -24,7 +24,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import PageHeader from '../components/PageHeader';
-import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import type { IntervalWorkout } from '../types';
 import { db, useIntervalWorkouts, useRecentIntervalRuns } from '../db';
 import WorkoutFormDialog, {
@@ -35,20 +35,23 @@ import { calculateTotalSeconds, formatDuration } from '../utils/duration';
 import { WORKOUT_PRESETS, type WorkoutPreset } from '../utils/workoutPresets';
 
 const Workouts = () => {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const workouts = useIntervalWorkouts();
   const runs = useRecentIntervalRuns(15);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogKey, setDialogKey] = useState(0);
   const [formInitial, setFormInitial] = useState<WorkoutFormInitial | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IntervalWorkout | null>(null);
 
   const openCreate = () => {
     setFormInitial(null);
+    setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
   const openEdit = (workout: IntervalWorkout) => {
     setFormInitial(workout);
+    setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
@@ -60,6 +63,7 @@ const Workouts = () => {
       intervals: preset.intervals,
       muted: false,
     });
+    setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
@@ -104,7 +108,7 @@ const Workouts = () => {
       <Typography variant="h6" sx={{ mb: 1 }}>
         Presets
       </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 3 }}>
+      <Stack direction="row" sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
         {WORKOUT_PRESETS.map((preset) => (
           <Chip
             key={preset.id}
@@ -202,7 +206,11 @@ const Workouts = () => {
         <List>
           {runs.map((run) => (
             <Paper key={run.id} sx={{ mb: 1, p: 1.5 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+              >
                 <Box>
                   <Typography variant="subtitle1">{run.workoutName}</Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -222,6 +230,7 @@ const Workouts = () => {
       )}
 
       <WorkoutFormDialog
+        key={dialogKey}
         open={dialogOpen}
         initial={formInitial}
         onClose={() => {
