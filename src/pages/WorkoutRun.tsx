@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import {
   Box,
   Typography,
@@ -35,7 +36,7 @@ import type { IntervalRun } from '../types';
 
 const WorkoutRun = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const workout = useIntervalWorkout(id);
   const startedAtRef = useRef<string | null>(null);
   const persistedRef = useRef(false);
@@ -196,7 +197,7 @@ const WorkoutRun = () => {
       }}
     >
       <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto', p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: 'center' }}>
           <IconButton aria-label="back" onClick={handleBack} sx={{ color: theme.color }}>
             <BackIcon />
           </IconButton>
@@ -279,7 +280,7 @@ const WorkoutRun = () => {
         )}
 
         {isRunning && (
-          <Stack direction="row" spacing={1} justifyContent="center">
+          <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
             {timer.isPaused ? (
               <Button
                 variant="contained"

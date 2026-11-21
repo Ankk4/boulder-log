@@ -1,9 +1,9 @@
 import { Button, Stack, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import PageHeader from '../components/PageHeader';
 
 export default function Home() {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   return (
     <>
       <PageHeader title="Matside" />

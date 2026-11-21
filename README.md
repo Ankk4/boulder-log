@@ -28,7 +28,7 @@ All session, health, and notes data stay on your device in **cleartext IndexedDB
 
 ## Getting started
 
-Prerequisites: Node.js 20+
+Prerequisites: Node.js 26+
 
 ```bash
 npm install

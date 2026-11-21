@@ -213,7 +213,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             fullWidth
             placeholder="Add a goal and press Enter"
             value={goalInput}
-            inputProps={{ maxLength: LIMITS.goal }}
+            slotProps={{ htmlInput: { maxLength: LIMITS.goal } }}
             onChange={(e) => {
               setGoalInput(e.target.value);
             }}
@@ -244,7 +244,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             rows={3}
             placeholder="Any other notes about your condition or goals..."
             value={formData.additionalNotes}
-            inputProps={{ maxLength: LIMITS.notes }}
+            slotProps={{ htmlInput: { maxLength: LIMITS.notes } }}
             onChange={(e) => {
               handleChange('additionalNotes', e.target.value);
             }}
