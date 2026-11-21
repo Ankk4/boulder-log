@@ -25,6 +25,7 @@ Use only if the change touches ≤ 3 source files and the expected behavior is o
 ### Phase 2: Draft spec
 - Write `spec.md` from the template with `status: draft`. Every requirement has an ID and a pass/fail check. UI/audio behavior gets a `manual:` check.
 - Run each command-style `_Check:_` once while drafting, so a check that can't work (wrong flag, wrong Node behaviour) is caught before approval; it must work on CI's Node (`node-version` in `.github/workflows/ci.yml`) as well as the local one.
+- A check that greps a branch diff excludes `specs/` (`git diff master...HEAD -- . ':!specs'`), since the spec quotes the patterns it bans.
 - A requirement about size or layout (e.g. a tab's height) gets a `manual:` check, or a test that asserts a class or style; tests can't see layout.
 - A check for a state transition exercises that transition mid-flow (start, then change mode, then assert), not only the state on mount.
 - For visual choices (colour, spacing, typography), add a `manual:` check by the user; don't pin exact values unless the user chose them.
@@ -36,6 +37,7 @@ Use only if the change touches ≤ 3 source files and the expected behavior is o
 - Write `tasks.md` from the template. Name the existing helpers to reuse in each task's notes (e.g. `src/utils/duration.ts`, `src/utils/validation.ts`, `src/db/index.ts`).
 - Check planned files against the ESLint rules, e.g. `react-refresh/only-export-components`: keep components in separate files from hooks, contexts and constants.
 - Task notes cite R-IDs and don't restate requirements; if they conflict, the requirement wins (see the template's "Rules for splitting").
+- When a task note points to something in `spec.md` (a config block, a list), confirm it is actually there.
 - Check coverage: every `R…` appears in some `covers`. Mark `parallel-safe` and `schema-change` honestly; any Dexie `version()` bump is `schema-change: yes`.
 - Show the task table (id, summary, covers, parallel-safe, depends-on).
 - Tell the user: run `/clear`, then `/run-spec <feature>`, so implementation starts from the files and not this conversation.

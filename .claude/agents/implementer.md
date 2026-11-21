@@ -22,6 +22,8 @@ The prompt gives you a spec folder (e.g. `specs/active/grade-pyramid/`) and a ta
 - Run the task's **check** (narrowest test or command) first, then `npm run verify`, and only report `done` when it passes. The planner re-runs verify on your tree and sends you any failures to fix.
 - Do not commit, branch, stash, or reset. The planner commits after review.
 - Stay small: no drive-by refactors, renames, or dependency changes.
+- Every new `catch` or `.catch` gets a test that drives the error path.
+- Mocks of `db` in tests are typed: `vi.fn<typeof db.x.y>()` inside `vi.hoisted`, with `import type { db }` (see `src/pages/__tests__/Session.test.tsx`). No untyped `vi.fn()` for db methods.
 - Knip findings: remove the dead code, never edit `knip.json`. Never run `eslint --suppress-all` or `--suppress-rule`; after fixing a suppressed finding, run `npx eslint --prune-suppressions`.
 - The edit hook formats every file you Edit/Write. Never run `npm run format` or Prettier on paths outside your allowed files, and write files with Edit/Write, not Bash, so the hook sees them.
 

@@ -16,7 +16,7 @@ The prompt tells you the mode, the spec folder, and where the diff is (a working
 Inputs: spec folder, task id, diff location (usually `git diff --cached` in the given tree).
 Check:
 1. Each requirement in the task's `covers` list is actually implemented, including edge cases the spec mentions.
-2. The task's **check** passes (run it).
+2. The task's **check** passes: run every command on its `check:` line verbatim, never judge it from the diff.
 3. Only allowed files (and their `__tests__/`) changed.
 4. Tests: new logic in `src/utils/`/`src/hooks/` has tests; tests assert behavior, not implementation trivia; no existing test was weakened, deleted, skipped, or loosened.
 5. Don't flag formatting; `format:check` in verify owns it.
