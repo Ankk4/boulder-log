@@ -4,8 +4,17 @@ export interface Session {
   endTime?: string | null;
   preSessionData: PreSessionData;
   postSessionNotes?: string;
+  postSessionReview?: PostSessionReview;
   duration?: number; // in minutes
   problems: SessionProblem[];
+}
+
+export interface PostSessionReview {
+  rpe: number | null; // 1-10
+  energyAfter: number | null; // 1-10
+  accomplishments: string[];
+  workOn: string[];
+  achievedGoals: number[]; // indexes into preSessionData.goals
 }
 
 export interface PreSessionData {
