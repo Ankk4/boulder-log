@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -42,6 +42,16 @@ const SessionPage = () => {
   const [mode, setMode] = useState<SessionMode>('climb');
   const [preSessionData, setPreSessionData] = useState<PreSessionData>(defaultPreSessionData);
   const [postSessionNotes, setPostSessionNotes] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(Date.now());
+    }, 30_000);
+    return () => {
+      clearInterval(id);
+    };
+  }, []);
 
   const startSession = async () => {
     const sanitizedPreSession: PreSessionData = {
@@ -209,8 +219,7 @@ const SessionPage = () => {
           </Typography>
           <Typography>
             Duration:{' '}
-            {Math.round((Date.now() - new Date(currentSession.startTime).getTime()) / (1000 * 60))}{' '}
-            minutes
+            {Math.round((now - new Date(currentSession.startTime).getTime()) / (1000 * 60))} minutes
           </Typography>
 
           <Box sx={{ mt: 2, mb: 2 }}>

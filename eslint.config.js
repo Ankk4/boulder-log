@@ -9,7 +9,11 @@ export default tseslint.config(
   // .claude/worktrees: agent worktrees (copies of the tree, linted in place). research: private notes repo.
   { ignores: ['dist', 'coverage', '.claude/worktrees', 'research'] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.strictTypeChecked,
+      reactHooks.configs.flat.recommended,
+    ],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
@@ -20,13 +24,9 @@ export default tseslint.config(
       },
     },
     plugins: {
-      'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
     rules: {
-      // Interim: the v5 pair only. The upgrade spec's T5 restores the full v7 recommended set (compiler rules) once useIntervalTimer has a test.
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'error',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': [
         'error',

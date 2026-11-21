@@ -39,16 +39,19 @@ const Workouts = () => {
   const workouts = useIntervalWorkouts();
   const runs = useRecentIntervalRuns(15);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogKey, setDialogKey] = useState(0);
   const [formInitial, setFormInitial] = useState<WorkoutFormInitial | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IntervalWorkout | null>(null);
 
   const openCreate = () => {
     setFormInitial(null);
+    setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
   const openEdit = (workout: IntervalWorkout) => {
     setFormInitial(workout);
+    setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
@@ -60,6 +63,7 @@ const Workouts = () => {
       intervals: preset.intervals,
       muted: false,
     });
+    setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
@@ -222,6 +226,7 @@ const Workouts = () => {
       )}
 
       <WorkoutFormDialog
+        key={dialogKey}
         open={dialogOpen}
         initial={formInitial}
         onClose={() => {

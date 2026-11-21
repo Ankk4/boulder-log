@@ -50,9 +50,12 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
   const remainingMsRef = useRef(config.workSeconds * 1000);
   const lastPrepareCeilRef = useRef(PREPARE_SECONDS);
   const rafRef = useRef<number | null>(null);
+  const tickRef = useRef<() => void>(() => undefined);
   const configRef = useRef(config);
 
-  configRef.current = config;
+  useEffect(() => {
+    configRef.current = config;
+  });
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -184,9 +187,15 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
     }
 
     if (isActivePhase(phaseRef.current)) {
-      rafRef.current = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(() => {
+        tickRef.current();
+      });
     }
   }, [advanceFromPrepare, advanceFromRest, advanceFromWork]);
+
+  useEffect(() => {
+    tickRef.current = tick;
+  }, [tick]);
 
   const startLoop = useCallback(() => {
     stopLoop();
