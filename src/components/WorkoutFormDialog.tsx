@@ -44,12 +44,7 @@ const defaults: WorkoutFormValues = {
   muted: false,
 };
 
-const WorkoutFormDialog = ({
-  open,
-  initial,
-  onClose,
-  onSave,
-}: WorkoutFormDialogProps) => {
+const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialogProps) => {
   const [name, setName] = useState(defaults.name);
   const [workSeconds, setWorkSeconds] = useState(defaults.workSeconds);
   const [restSeconds, setRestSeconds] = useState(defaults.restSeconds);
@@ -76,11 +71,7 @@ const WorkoutFormDialog = ({
   }, [open, initial]);
 
   const totalSeconds = calculateTotalSeconds(workSeconds, restSeconds, intervals);
-  const canSave =
-    name.trim().length > 0 &&
-    workSeconds > 0 &&
-    restSeconds >= 0 &&
-    intervals > 0;
+  const canSave = name.trim().length > 0 && workSeconds > 0 && restSeconds >= 0 && intervals > 0;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -139,9 +130,7 @@ const WorkoutFormDialog = ({
             helperText="How many work intervals in the set"
           />
           <FormControlLabel
-            control={
-              <Switch checked={muted} onChange={(e) => setMuted(e.target.checked)} />
-            }
+            control={<Switch checked={muted} onChange={(e) => setMuted(e.target.checked)} />}
             label="Mute beeps by default"
           />
           <Typography variant="body2" color="text.secondary">

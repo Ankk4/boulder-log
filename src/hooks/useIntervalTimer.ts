@@ -202,11 +202,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
   }, [enterPrepare, startLoop]);
 
   const pause = useCallback(() => {
-    if (
-      phaseRef.current === 'idle' ||
-      phaseRef.current === 'done' ||
-      pausedRef.current
-    ) {
+    if (phaseRef.current === 'idle' || phaseRef.current === 'done' || pausedRef.current) {
       return;
     }
     if (endAtRef.current !== null) {

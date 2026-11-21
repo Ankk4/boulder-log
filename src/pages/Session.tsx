@@ -66,7 +66,7 @@ const SessionPage = () => {
         endTime: new Date().toISOString(),
         postSessionNotes: sanitizeNotes(postSessionNotes, LIMITS.postSessionNotes),
         duration: Math.round(
-          (new Date().getTime() - new Date(currentSession.startTime).getTime()) / (1000 * 60)
+          (new Date().getTime() - new Date(currentSession.startTime).getTime()) / (1000 * 60),
         ),
       };
       await db.sessions.put(updatedSession);
@@ -141,9 +141,7 @@ const SessionPage = () => {
 
           const updatedSession: Session = {
             ...currentSession,
-            problems: currentSession.problems.map((p) =>
-              p.id === problemId ? updatedProblem : p
-            ),
+            problems: currentSession.problems.map((p) => (p.id === problemId ? updatedProblem : p)),
           };
 
           await db.sessions.put(updatedSession);
@@ -201,9 +199,7 @@ const SessionPage = () => {
           </Typography>
           <Typography>
             Duration:{' '}
-            {Math.round(
-              (Date.now() - new Date(currentSession.startTime).getTime()) / (1000 * 60)
-            )}{' '}
+            {Math.round((Date.now() - new Date(currentSession.startTime).getTime()) / (1000 * 60))}{' '}
             minutes
           </Typography>
 
@@ -217,15 +213,13 @@ const SessionPage = () => {
             <Typography>
               Flashes: {currentSession.problems.filter((p) => p.flash).length}
             </Typography>
-            <Typography>
-              Sends: {currentSession.problems.filter((p) => p.send).length}
-            </Typography>
+            <Typography>Sends: {currentSession.problems.filter((p) => p.send).length}</Typography>
             <Typography>
               Success Rate:{' '}
               {Math.round(
                 (currentSession.problems.filter((p) => p.flash || p.send).length /
                   Math.max(currentSession.problems.length, 1)) *
-                  100
+                  100,
               )}
               %
             </Typography>

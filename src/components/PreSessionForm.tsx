@@ -9,7 +9,7 @@ import {
   RadioGroup,
   TextField,
   Stack,
-  Chip
+  Chip,
 } from '@mui/material';
 import {
   LIMITS,
@@ -46,7 +46,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
     nutrition: 'moderate',
     stress: 'medium',
     goals: [],
-    additionalNotes: ''
+    additionalNotes: '',
   });
 
   const [goalInput, setGoalInput] = useState('');
@@ -87,7 +87,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
   };
 
   const handleDeleteGoal = (goalToDelete: string) => {
-    const newGoals = formData.goals.filter(goal => goal !== goalToDelete);
+    const newGoals = formData.goals.filter((goal) => goal !== goalToDelete);
     handleChange('goals', newGoals);
   };
 
@@ -96,8 +96,10 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
       <Stack spacing={3}>
         {/* Physical State */}
         <Box>
-          <Typography variant="h6" gutterBottom>Physical State</Typography>
-          
+          <Typography variant="h6" gutterBottom>
+            Physical State
+          </Typography>
+
           <Typography gutterBottom>Sleep Quality (Last Night)</Typography>
           <Slider
             value={formData.sleepQuality}
@@ -141,7 +143,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
 
         {/* Mental State */}
         <Box>
-          <Typography variant="h6" gutterBottom>Mental State</Typography>
+          <Typography variant="h6" gutterBottom>
+            Mental State
+          </Typography>
 
           <Typography gutterBottom>Motivation Level</Typography>
           <Slider
@@ -169,7 +173,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
 
         {/* Nutrition */}
         <Box>
-          <Typography variant="h6" gutterBottom>Nutrition</Typography>
+          <Typography variant="h6" gutterBottom>
+            Nutrition
+          </Typography>
           <FormControl component="fieldset">
             <Typography gutterBottom>Today's Nutrition Quality</Typography>
             <RadioGroup
@@ -186,7 +192,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
 
         {/* Session Goals */}
         <Box>
-          <Typography variant="h6" gutterBottom>Session Goals</Typography>
+          <Typography variant="h6" gutterBottom>
+            Session Goals
+          </Typography>
           <TextField
             fullWidth
             placeholder="Add a goal and press Enter"
@@ -198,18 +206,16 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
           />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {formData.goals.map((goal, index) => (
-              <Chip
-                key={index}
-                label={goal}
-                onDelete={() => handleDeleteGoal(goal)}
-              />
+              <Chip key={index} label={goal} onDelete={() => handleDeleteGoal(goal)} />
             ))}
           </Box>
         </Box>
 
         {/* Additional Notes */}
         <Box>
-          <Typography variant="h6" gutterBottom>Additional Notes</Typography>
+          <Typography variant="h6" gutterBottom>
+            Additional Notes
+          </Typography>
           <TextField
             fullWidth
             multiline
@@ -225,4 +231,4 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
   );
 };
 
-export default PreSessionForm; 
+export default PreSessionForm;

@@ -99,7 +99,13 @@ const LayoutShell = ({ children }: LayoutProps) => {
       </Container>
       {!focus && !isDesktop && (
         <Paper
-          sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, pb: 'env(safe-area-inset-bottom)' }}
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            pb: 'env(safe-area-inset-bottom)',
+          }}
           elevation={3}
         >
           <BottomNavigation

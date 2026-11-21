@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,9 +21,9 @@ export default defineConfig({
         manualChunks: undefined,
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]'
-      }
-    }
+        assetFileNames: 'assets/[name].[hash].[ext]',
+      },
+    },
   },
   test: {
     globals: true,
@@ -42,4 +42,4 @@ export default defineConfig({
       },
     },
   },
-})
+});

@@ -27,7 +27,7 @@ function playTone(
   startAt: number,
   durationMs: number,
   peak = 0.75,
-  type: OscillatorType = 'square'
+  type: OscillatorType = 'square',
 ): void {
   const oscillator = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -43,7 +43,7 @@ function playTone(
   gain.gain.exponentialRampToValueAtTime(peak, startAt + attack);
   gain.gain.exponentialRampToValueAtTime(
     0.0001,
-    startAt + Math.max(attack + 0.02, durationSec - release)
+    startAt + Math.max(attack + 0.02, durationSec - release),
   );
 
   oscillator.connect(gain);
@@ -58,7 +58,7 @@ function playChord(
   frequencies: number[],
   startAt: number,
   durationMs: number,
-  peak = 0.7
+  peak = 0.7,
 ): void {
   const perOsc = peak / Math.max(1, frequencies.length);
   for (const frequency of frequencies) {

@@ -6,9 +6,11 @@ Rules for splitting:
 - `parallel-safe: yes` only if the task's allowed files overlap no other open task, it has no unmet `depends-on`, and `schema-change: no`.
 - Notes cite R-IDs and don't restate requirements; if a note and `spec.md` conflict, the requirement wins.
 - The `check` is the narrowest thing that proves the task, e.g. `npx vitest run src/utils/__tests__/grades.test.ts`.
+- `runner: planner` (default `implementer`) when any allowed file matches `protectedForImplementer` in `.claude/hooks/scope-guard.mjs`. The orchestrator does those tasks itself; they are never parallel-safe. If one edits `.claude/`, expect a permission prompt and say so in its notes.
 
 ## T1 — <one-line summary>
 - covers: [R1]
+- runner: implementer
 - allowed files: `src/utils/grades.ts`, `src/utils/__tests__/grades.test.ts`
 - check: `npx vitest run src/utils/__tests__/grades.test.ts`
 - tests to add: <what they assert>
@@ -19,6 +21,7 @@ Rules for splitting:
 
 ## T2 — <one-line summary>
 - covers: [R2]
+- runner: implementer
 - allowed files: `src/components/X.tsx`, `src/pages/Session.tsx`, `src/pages/__tests__/Session.test.tsx`
 - check: `npx vitest run src/pages/__tests__/Session.test.tsx`
 - tests to add: ...

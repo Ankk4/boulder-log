@@ -38,17 +38,13 @@ export function clampNumber(value: number, min: number, max: number): number {
 const NUTRITION_VALUES = ['poor', 'moderate', 'good'] as const;
 const STRESS_VALUES = ['low', 'medium', 'high'] as const;
 
-export function sanitizeNutrition(
-  value: string
-): (typeof NUTRITION_VALUES)[number] {
+export function sanitizeNutrition(value: string): (typeof NUTRITION_VALUES)[number] {
   return (NUTRITION_VALUES as readonly string[]).includes(value)
     ? (value as (typeof NUTRITION_VALUES)[number])
     : 'moderate';
 }
 
-export function sanitizeStress(
-  value: string
-): (typeof STRESS_VALUES)[number] {
+export function sanitizeStress(value: string): (typeof STRESS_VALUES)[number] {
   return (STRESS_VALUES as readonly string[]).includes(value)
     ? (value as (typeof STRESS_VALUES)[number])
     : 'medium';

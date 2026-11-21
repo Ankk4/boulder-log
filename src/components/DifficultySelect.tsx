@@ -9,10 +9,28 @@ interface DifficultySelectProps {
 }
 
 const frenchGrades = [
-  '3', '3+', '4', '4+', '5', '5+',
-  '6a', '6a+', '6b', '6b+', '6c', '6c+',
-  '7a', '7a+', '7b', '7b+', '7c', '7c+',
-  '8a', '8a+', '8b', '8b+'
+  '3',
+  '3+',
+  '4',
+  '4+',
+  '5',
+  '5+',
+  '6a',
+  '6a+',
+  '6b',
+  '6b+',
+  '6c',
+  '6c+',
+  '7a',
+  '7a+',
+  '7b',
+  '7b+',
+  '7c',
+  '7c+',
+  '8a',
+  '8a+',
+  '8b',
+  '8b+',
 ];
 
 const colorGrades = [
@@ -22,14 +40,14 @@ const colorGrades = [
   { name: 'Napakka', color: '#FF69B4', range: '6a+-6b+' },
   { name: 'Haastava', color: '#FF0000', range: '6c-7a' },
   { name: 'Vaikea', color: '#800080', range: '7a+-7b' },
-  { name: 'Erittäin Vaikea', color: '#000000', range: '7b+->' }
+  { name: 'Erittäin Vaikea', color: '#000000', range: '7b+->' },
 ];
 
 const DifficultySelect = ({
   frenchGrade,
   colorGrade,
   onFrenchGradeChange,
-  onColorGradeChange
+  onColorGradeChange,
 }: DifficultySelectProps) => {
   const handleFrenchGradeChange = (event: SelectChangeEvent) => {
     onFrenchGradeChange(event.target.value);
@@ -43,11 +61,7 @@ const DifficultySelect = ({
     <Box sx={{ display: 'flex', gap: 2 }}>
       <FormControl fullWidth>
         <InputLabel>French Grade</InputLabel>
-        <Select
-          value={frenchGrade}
-          label="French Grade"
-          onChange={handleFrenchGradeChange}
-        >
+        <Select value={frenchGrade} label="French Grade" onChange={handleFrenchGradeChange}>
           <MenuItem value="">
             <em>None</em>
           </MenuItem>
@@ -61,22 +75,18 @@ const DifficultySelect = ({
 
       <FormControl fullWidth>
         <InputLabel>Gym Color</InputLabel>
-        <Select
-          value={colorGrade}
-          label="Gym Color"
-          onChange={handleColorGradeChange}
-        >
+        <Select value={colorGrade} label="Gym Color" onChange={handleColorGradeChange}>
           <MenuItem value="">
             <em>None</em>
           </MenuItem>
           {colorGrades.map((grade) => (
-            <MenuItem 
-              key={grade.name} 
+            <MenuItem
+              key={grade.name}
               value={grade.name}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1
+                gap: 1,
               }}
             >
               <Box
@@ -86,7 +96,7 @@ const DifficultySelect = ({
                   backgroundColor: grade.color,
                   borderRadius: '4px',
                   border: 1,
-                  borderColor: 'text.secondary'
+                  borderColor: 'text.secondary',
                 }}
               />
               {grade.name} ({grade.range})
@@ -98,4 +108,4 @@ const DifficultySelect = ({
   );
 };
 
-export default DifficultySelect; 
+export default DifficultySelect;

@@ -29,12 +29,18 @@ const refuse = (reason) => {
   process.stderr.write(`open-pr: refused. ${reason}\n`);
   process.exit(1);
 };
-const run = (cmd, cmdArgs) => execFileSync(cmd, cmdArgs, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const run = (cmd, cmdArgs) =>
+  execFileSync(cmd, cmdArgs, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const tryRun = (cmd, cmdArgs) => {
   try {
     return run(cmd, cmdArgs);
   } catch (err) {
-    refuse(`\`${cmd} ${cmdArgs.join(' ')}\` failed: ${String(err.stderr || err.message).trim().split('\n').pop()}`);
+    refuse(
+      `\`${cmd} ${cmdArgs.join(' ')}\` failed: ${String(err.stderr || err.message)
+        .trim()
+        .split('\n')
+        .pop()}`,
+    );
   }
 };
 
@@ -51,7 +57,8 @@ if (!body.trim()) refuse(`Body file ${bodyFile} is empty.`);
 
 // 2. Branch
 const branch = tryRun('git', ['branch', '--show-current']);
-if (!branch.startsWith('feature/')) refuse(`Current branch is "${branch || '(detached)'}", not feature/*.`);
+if (!branch.startsWith('feature/'))
+  refuse(`Current branch is "${branch || '(detached)'}", not feature/*.`);
 
 // 3. Clean tracked files
 if (tryRun('git', ['status', '--porcelain', '--untracked-files=no'])) {
@@ -69,19 +76,36 @@ if (verify.status !== 0) refuse('`npm run verify` failed. Run it to see the fail
 tryRun('git', ['fetch', '-q', 'origin', base]);
 if (body.includes('research/')) refuse('The PR body mentions research/, which is private.');
 const messages = tryRun('git', ['log', '--format=%H%n%B', `origin/${base}..HEAD`]);
-if (messages.includes('research/')) refuse(`A commit message in origin/${base}..HEAD mentions research/, which is private.`);
+if (messages.includes('research/'))
+  refuse(`A commit message in origin/${base}..HEAD mentions research/, which is private.`);
 
 // Push and open (or reuse) the draft PR
 const push = ['push', '-u', 'origin', branch];
-const create = ['pr', 'create', '--draft', '--base', base, '--head', branch, '--title', title, '--body-file', bodyFile];
+const create = [
+  'pr',
+  'create',
+  '--draft',
+  '--base',
+  base,
+  '--head',
+  branch,
+  '--title',
+  title,
+  '--body-file',
+  bodyFile,
+];
 if (dryRun) {
   console.log(`would run: git ${push.join(' ')}`);
-  console.log(`would run: gh ${create.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ')}`);
+  console.log(
+    `would run: gh ${create.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ')}`,
+  );
   process.exit(0);
 }
 
 tryRun('git', push);
-const existing = JSON.parse(tryRun('gh', ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'url']) || '[]');
+const existing = JSON.parse(
+  tryRun('gh', ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'url']) || '[]',
+);
 if (existing.length > 0) {
   console.log(`PR already open, left unchanged: ${existing[0].url}`);
   process.exit(0);

@@ -88,7 +88,7 @@ describe('Session Page', () => {
     render(
       <MemoryRouter>
         <Session />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     expect(screen.getByText(/pre-session check-in/i)).toBeInTheDocument();
   });
@@ -100,7 +100,7 @@ describe('Session Page', () => {
     render(
       <MemoryRouter>
         <Session />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByText(/start session/i));
@@ -110,7 +110,7 @@ describe('Session Page', () => {
         expect.objectContaining({
           startTime: expect.any(String),
           endTime: null,
-        })
+        }),
       );
     });
   });
@@ -122,7 +122,7 @@ describe('Session Page', () => {
     render(
       <MemoryRouter>
         <Session />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByText(/add problem/i));
@@ -144,7 +144,7 @@ describe('Session Page', () => {
           name: 'Test Problem',
           frenchGrade: '6a',
           id: expect.any(String),
-        })
+        }),
       );
     });
   });
@@ -170,7 +170,7 @@ describe('Session Page', () => {
     render(
       <MemoryRouter>
         <Session />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const attemptButton = screen.getByTestId('attempt-button');
@@ -182,7 +182,7 @@ describe('Session Page', () => {
           problemId: '1',
           type: AttemptType.ATTEMPT,
           id: expect.any(String),
-        })
+        }),
       );
     });
   });
@@ -207,7 +207,7 @@ describe('Session Page', () => {
     render(
       <MemoryRouter>
         <Session />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const flashButton = screen.getByTestId('flash-button');
@@ -219,7 +219,7 @@ describe('Session Page', () => {
           id: '1',
           flash: true,
           send: false,
-        })
+        }),
       );
     });
   });
@@ -231,7 +231,7 @@ describe('Session Page', () => {
     render(
       <MemoryRouter>
         <Session />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByText(/end session/i));
@@ -241,7 +241,7 @@ describe('Session Page', () => {
         expect.objectContaining({
           ...mockSession,
           endTime: expect.any(String),
-        })
+        }),
       );
     });
   });
