@@ -8,6 +8,8 @@ An offline-first PWA for logging bouldering sessions, problems and attempts. See
 [![CI](https://github.com/Ankk4/boulder-log/actions/workflows/ci.yml/badge.svg)](https://github.com/Ankk4/boulder-log/actions/workflows/ci.yml)
 ![Coverage](https://img.shields.io/endpoint?url=https://ankk4.github.io/boulder-log/coverage-badge.json)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io)
+[![TypeScript: strict](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)](tsconfig.app.json)
 
 **[Live app: https://ankk4.github.io/boulder-log/](https://ankk4.github.io/boulder-log/)**
 
@@ -39,7 +41,10 @@ npm start
 | --- | --- |
 | `npm start` | Start the Vite dev server |
 | `npm run build` | Typecheck and build for production |
-| `npm run verify` | Typecheck, lint and tests (the definition of done) |
+| `npm run verify` | Typecheck, lint, format check, dead-code check and tests (the definition of done) |
+| `npm run format` | Format the repo with Prettier |
+| `npm run format:check` | Check formatting without writing |
+| `npm run knip` | Find dead files, unused exports and unused dependencies |
 | `npm run test:coverage` | Run tests with coverage |
 | `npm run verify:full` | `verify`, production build and dependency audit |
 

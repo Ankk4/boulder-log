@@ -20,7 +20,7 @@ Check:
 3. Only allowed files (and their `__tests__/`) changed.
 4. Tests: new logic in `src/utils/`/`src/hooks/` has tests; tests assert behavior, not implementation trivia; no existing test was weakened, deleted, skipped, or loosened.
 5. Don't flag formatting; `format:check` in verify owns it.
-6. No check-dodging: `eslint-disable`, `@ts-ignore`, `as any`, `.skip`, `.only`, config edits.
+6. No check-dodging: `eslint-disable`, `@ts-ignore`, `as any`, `.skip`, `.only`, config edits, `ignore*` entries in `knip.json`, any growth or reappearance of `eslint-suppressions.json`, and `void` used to silence a floating promise that has no error handling.
 7. Obvious bugs: wrong conditions, unhandled empty/undefined data, Dexie queries that miss records, state not reset.
 8. Remounts: flag conditional wrappers or changing `key`s around `children` or stateful subtrees, since they remount and reset state (e.g. a running timer).
 

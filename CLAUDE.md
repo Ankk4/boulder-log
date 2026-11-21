@@ -6,11 +6,12 @@ React 18 + TypeScript + Vite SPA, Dexie (IndexedDB) storage, deployed to GitHub 
 
 A change is done only when `npm run verify` passes. It runs, in order:
 
-1. `npm run typecheck`: `tsc -b` over app, tests, and `vite.config.ts` (project references)
-2. `npm run lint`: ESLint with `--max-warnings=0`
+1. `npm run typecheck`: `tsc -b` over app, tests (every `*.test.ts(x)` and `src/setupTests.ts`), and `vite.config.ts` (project references)
+2. `npm run lint`: ESLint with `--max-warnings=0`, type-aware (`strictTypeChecked`)
 3. `npm run format:check`: Prettier (`npm run format` fixes it; Markdown is ignored)
-4. `npm run test:run`: Vitest, once (console output is shown only for failing tests)
-5. `npm run test:hooks`: `node --test` over `.claude/hooks/__tests__/`
+4. `npm run knip`: Knip, which fails on dead files, unused exports and unused dependencies
+5. `npm run test:run`: Vitest, once (console output is shown only for failing tests)
+6. `npm run test:hooks`: `node --test` over `.claude/hooks/__tests__/`
 
 `npm run verify:full` also runs the production build and `npm audit` (production deps only).
 
@@ -31,6 +32,8 @@ Narrower loops while iterating:
 - Don't weaken or delete an existing test to make a change pass. If the behavior change is intended, update the test and say so.
 - New logic in `src/utils/` or `src/hooks/` gets a test under the sibling `__tests__/` folder.
 - Unused parameters that must stay go with a leading `_`.
+- Fix knip findings by removing the dead code, never by adding `ignore*` entries to `knip.json`.
+- Never run `eslint --suppress-all` or `--suppress-rule`. After fixing a suppressed finding, run `npx eslint --prune-suppressions`.
 - UI changes: tests can't see layout or audio. Say so, or run the app (`npm start`) and check it.
 
 ## Testing notes
