@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { MockInstance } from 'vitest';
 import WorkoutRun from '../WorkoutRun';
 import type { IntervalWorkout } from '../../types';
+import type { db } from '../../db/index';
 import { unlockAudio } from '../../utils/beep';
 
 const workout: IntervalWorkout = {
@@ -19,8 +20,8 @@ const workout: IntervalWorkout = {
 
 vi.mock('../../db/index', () => ({
   db: {
-    saveIntervalRun: vi.fn(),
-    saveIntervalWorkout: vi.fn(),
+    addIntervalRun: vi.fn<typeof db.addIntervalRun>(),
+    saveIntervalWorkout: vi.fn<typeof db.saveIntervalWorkout>(),
   },
   useIntervalWorkout: vi.fn(() => workout),
 }));

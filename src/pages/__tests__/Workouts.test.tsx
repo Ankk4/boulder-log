@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { MockInstance } from 'vitest';
 import Workouts from '../Workouts';
 import type { IntervalWorkout } from '../../types';
+import type { db } from '../../db/index';
 
 const workout: IntervalWorkout = {
   id: 'w1',
@@ -17,8 +18,8 @@ const workout: IntervalWorkout = {
 };
 
 const { saveIntervalWorkout, deleteIntervalWorkout } = vi.hoisted(() => ({
-  saveIntervalWorkout: vi.fn(),
-  deleteIntervalWorkout: vi.fn(),
+  saveIntervalWorkout: vi.fn<typeof db.saveIntervalWorkout>(),
+  deleteIntervalWorkout: vi.fn<typeof db.deleteIntervalWorkout>(),
 }));
 
 vi.mock('../../db/index', () => ({

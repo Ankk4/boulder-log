@@ -1,14 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import PastSessionsList from '../PastSessionsList';
-const { orderBy } = vi.hoisted(() => ({ orderBy: vi.fn() }));
+import type { db } from '../../db';
+const { orderBy } = vi.hoisted(() => ({ orderBy: vi.fn<typeof db.sessions.orderBy>() }));
 
 vi.mock('../../db', () => ({
   db: {
     sessions: {
       orderBy,
     },
-    deleteSession: vi.fn(),
+    deleteSession: vi.fn<typeof db.deleteSession>(),
   },
 }));
 
