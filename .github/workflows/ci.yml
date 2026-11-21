@@ -18,6 +18,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
       - name: Typecheck, lint, test
         run: npm run verify
       - name: Build

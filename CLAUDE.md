@@ -13,7 +13,7 @@ A change is done only when `npm run verify` passes. It runs, in order:
 5. `npm run test:run`: Vitest, once (console output is shown only for failing tests)
 6. `npm run test:hooks`: `node --test` over `.claude/hooks/__tests__/`
 
-`npm run verify:full` also runs the production build and `npm audit` (production deps only).
+`npm run verify:full` also runs the production build and `npm audit --audit-level=moderate` (dev deps included).
 
 The one-time Prettier reformat is listed in `.git-blame-ignore-revs`. To skip it in `git blame`, run once: `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
