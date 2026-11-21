@@ -270,7 +270,7 @@ const SessionPage = () => {
             rows={4}
             label="Post-session notes"
             value={postSessionNotes}
-            inputProps={{ maxLength: LIMITS.postSessionNotes }}
+            slotProps={{ htmlInput: { maxLength: LIMITS.postSessionNotes } }}
             onChange={(e) => {
               setPostSessionNotes(e.target.value);
             }}

@@ -93,7 +93,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Work (seconds)"
             type="number"
-            inputProps={{ min: 1, step: 1 }}
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
             value={workSeconds}
             onChange={(e) => {
               setWorkSeconds(Math.max(1, parsePositiveInt(e.target.value, 1)));
@@ -104,7 +104,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Rest (seconds)"
             type="number"
-            inputProps={{ min: 0, step: 1 }}
+            slotProps={{ htmlInput: { min: 0, step: 1 } }}
             value={restSeconds}
             onChange={(e) => {
               setRestSeconds(Math.max(0, parsePositiveInt(e.target.value, 0)));
@@ -115,7 +115,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Intervals"
             type="number"
-            inputProps={{ min: 1, step: 1 }}
+            slotProps={{ htmlInput: { min: 1, step: 1 } }}
             value={intervals}
             onChange={(e) => {
               setIntervals(Math.max(1, parsePositiveInt(e.target.value, 1)));

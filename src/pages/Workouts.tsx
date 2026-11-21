@@ -108,7 +108,7 @@ const Workouts = () => {
       <Typography variant="h6" sx={{ mb: 1 }}>
         Presets
       </Typography>
-      <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 3 }}>
+      <Stack direction="row" sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
         {WORKOUT_PRESETS.map((preset) => (
           <Chip
             key={preset.id}
@@ -206,7 +206,11 @@ const Workouts = () => {
         <List>
           {runs.map((run) => (
             <Paper key={run.id} sx={{ mb: 1, p: 1.5 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+              >
                 <Box>
                   <Typography variant="subtitle1">{run.workoutName}</Typography>
                   <Typography variant="body2" color="text.secondary">

@@ -86,7 +86,7 @@ const PastSessionsList = () => {
               >
                 <ListItemText
                   primary={
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                       <Typography variant="subtitle1">
                         {new Date(session.startTime).toLocaleDateString()}
                       </Typography>
@@ -97,20 +97,20 @@ const PastSessionsList = () => {
                   }
                   secondary={
                     <Box component="span">
-                      <Typography component="span" variant="body2" display="block">
+                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
                         Duration: {session.duration ? formatDuration(session.duration) : 'N/A'}
                       </Typography>
-                      <Typography component="span" variant="body2" display="block">
+                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
                         Problems: {session.problems.length}
                       </Typography>
-                      <Typography component="span" variant="body2" display="block">
+                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
                         Flashes: {session.problems.filter((p) => p.flash).length}
                       </Typography>
-                      <Typography component="span" variant="body2" display="block">
+                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
                         Sends: {session.problems.filter((p) => p.send).length}
                       </Typography>
                       {session.preSessionData.goals.length > 0 && (
-                        <Typography component="span" variant="body2" display="block">
+                        <Typography component="span" variant="body2" sx={{ display: 'block' }}>
                           Goals: {session.preSessionData.goals.join(', ')}
                         </Typography>
                       )}
