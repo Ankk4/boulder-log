@@ -4,36 +4,39 @@ import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
 import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
-import { db, useCurrentSession } from '../../db/index';
+import { useCurrentSession } from '../../db/index';
+import type { db } from '../../db/index';
+import type { WhereClause } from 'dexie';
 
 // Mock database functions
-vi.mock('../../db/index', () => {
-  const mockDb = {
+const { mockDb } = vi.hoisted(() => ({
+  mockDb: {
     sessions: {
-      add: vi.fn(),
-      put: vi.fn(),
-      orderBy: vi.fn().mockReturnThis(),
-      reverse: vi.fn().mockReturnThis(),
-      toArray: vi.fn().mockResolvedValue([]),
+      add: vi.fn<typeof db.sessions.add>(),
+      put: vi.fn<typeof db.sessions.put>(),
+      orderBy: vi.fn<typeof db.sessions.orderBy>().mockReturnThis(),
+      reverse: vi.fn<typeof db.sessions.reverse>().mockReturnThis(),
+      toArray: vi.fn<typeof db.sessions.toArray>().mockResolvedValue([]),
     },
     problems: {
-      add: vi.fn(),
-      get: vi.fn(),
-      put: vi.fn(),
+      add: vi.fn<typeof db.problems.add>(),
+      get: vi.fn<typeof db.problems.get>(),
+      put: vi.fn<typeof db.problems.put>(),
     },
     attempts: {
-      add: vi.fn(),
-      where: vi.fn().mockReturnThis(),
-      equals: vi.fn().mockReturnThis(),
-      toArray: vi.fn().mockResolvedValue([]),
+      add: vi.fn<typeof db.attempts.add>(),
+      where: vi.fn<typeof db.attempts.where>().mockReturnThis(),
+      equals: vi.fn<WhereClause['equals']>().mockReturnThis(),
+      toArray: vi.fn<typeof db.attempts.toArray>().mockResolvedValue([]),
     },
-    deleteSession: vi.fn(),
-  };
-  return {
-    db: mockDb,
-    useCurrentSession: vi.fn(),
-  };
-});
+    deleteSession: vi.fn<typeof db.deleteSession>(),
+  },
+}));
+
+vi.mock('../../db/index', () => ({
+  db: mockDb,
+  useCurrentSession: vi.fn(),
+}));
 
 // Mock MUI components
 vi.mock('@mui/material', async () => {
@@ -95,7 +98,7 @@ describe('Session Page', () => {
 
   it('starts a new session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(undefined);
-    vi.mocked(db.sessions.add).mockResolvedValue('1');
+    mockDb.sessions.add.mockResolvedValue('1');
 
     render(
       <MemoryRouter>
@@ -106,9 +109,9 @@ describe('Session Page', () => {
     fireEvent.click(screen.getByText(/start session/i));
 
     await waitFor(() => {
-      expect(db.sessions.add).toHaveBeenCalledWith(
+      expect(mockDb.sessions.add).toHaveBeenCalledWith(
         expect.objectContaining({
-          startTime: expect.any(String),
+          startTime: expect.any(String) as string,
           endTime: null,
         }),
       );
@@ -117,7 +120,7 @@ describe('Session Page', () => {
 
   it('adds a problem to current session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
-    vi.mocked(db.problems.add).mockResolvedValue('2');
+    mockDb.problems.add.mockResolvedValue('2');
 
     render(
       <MemoryRouter>
@@ -140,12 +143,12 @@ describe('Session Page', () => {
     fireEvent.click(addButton);
 
     await waitFor(() => {
-      expect(db.problems.add).toHaveBeenCalledWith(
+      expect(mockDb.problems.add).toHaveBeenCalledWith(
         expect.objectContaining({
           sessionId: '1',
           name: 'Test Problem',
           frenchGrade: '6a',
-          id: expect.any(String),
+          id: expect.any(String) as string,
         }),
       );
     });
@@ -156,10 +159,10 @@ describe('Session Page', () => {
       ...mockSession,
       problems: [mockProblem],
     });
-    vi.mocked(db.attempts.add).mockResolvedValue('3');
-    vi.mocked(db.problems.get).mockResolvedValue(mockProblem);
-    vi.mocked(db.problems.put).mockResolvedValue(1);
-    vi.mocked(db.attempts.toArray).mockResolvedValue([
+    mockDb.attempts.add.mockResolvedValue('3');
+    mockDb.problems.get.mockResolvedValue(mockProblem);
+    mockDb.problems.put.mockResolvedValue(1);
+    mockDb.attempts.toArray.mockResolvedValue([
       {
         id: 'a1',
         problemId: '1',
@@ -179,11 +182,11 @@ describe('Session Page', () => {
     fireEvent.click(attemptButton);
 
     await waitFor(() => {
-      expect(db.attempts.add).toHaveBeenCalledWith(
+      expect(mockDb.attempts.add).toHaveBeenCalledWith(
         expect.objectContaining({
           problemId: '1',
           type: AttemptType.ATTEMPT,
-          id: expect.any(String),
+          id: expect.any(String) as string,
         }),
       );
     });
@@ -194,9 +197,9 @@ describe('Session Page', () => {
       ...mockSession,
       problems: [mockProblem],
     });
-    vi.mocked(db.problems.get).mockResolvedValue(mockProblem);
-    vi.mocked(db.problems.put).mockResolvedValue(1);
-    vi.mocked(db.attempts.toArray).mockResolvedValue([
+    mockDb.problems.get.mockResolvedValue(mockProblem);
+    mockDb.problems.put.mockResolvedValue(1);
+    mockDb.attempts.toArray.mockResolvedValue([
       {
         id: 'a1',
         problemId: '1',
@@ -216,7 +219,7 @@ describe('Session Page', () => {
     fireEvent.click(flashButton);
 
     await waitFor(() => {
-      expect(db.problems.put).toHaveBeenCalledWith(
+      expect(mockDb.problems.put).toHaveBeenCalledWith(
         expect.objectContaining({
           id: '1',
           flash: true,
@@ -228,7 +231,7 @@ describe('Session Page', () => {
 
   it('ends current session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
-    vi.mocked(db.sessions.put).mockResolvedValue(1);
+    mockDb.sessions.put.mockResolvedValue(1);
 
     render(
       <MemoryRouter>
@@ -239,12 +242,50 @@ describe('Session Page', () => {
     fireEvent.click(screen.getByText(/end session/i));
 
     await waitFor(() => {
-      expect(db.sessions.put).toHaveBeenCalledWith(
+      expect(mockDb.sessions.put).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockSession,
-          endTime: expect.any(String),
+          endTime: expect.any(String) as string,
         }),
       );
     });
+  });
+
+  it('logs an error when starting a session fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    mockDb.sessions.add.mockRejectedValue(new Error('boom'));
+
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByText(/start session/i));
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Error starting session:', expect.any(Error));
+    });
+    errorSpy.mockRestore();
+  });
+
+  it('logs an error when ending a session fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    mockDb.sessions.put.mockRejectedValue(new Error('boom'));
+
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByText(/end session/i));
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Error ending session:', expect.any(Error));
+    });
+    errorSpy.mockRestore();
   });
 });

@@ -19,7 +19,12 @@ const StatefulFocus = () => {
   const [running, setRunning] = useState(false);
   useRequestFocusMode(running);
   return (
-    <button type="button" onClick={() => setRunning(true)}>
+    <button
+      type="button"
+      onClick={() => {
+        setRunning(true);
+      }}
+    >
       {running ? 'running' : 'start'}
     </button>
   );
@@ -34,7 +39,7 @@ const renderLayout = (path = '/session', child = <Path />) =>
     </ThemeProvider>,
   );
 
-const originalMatchMedia = window.matchMedia;
+const originalMatchMedia = window.matchMedia.bind(window);
 
 const mockDesktop = () => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

@@ -56,7 +56,11 @@ const SessionPage = () => {
       preSessionData: sanitizedPreSession,
       problems: [],
     };
-    await db.sessions.add(newSession);
+    try {
+      await db.sessions.add(newSession);
+    } catch (error) {
+      console.error('Error starting session:', error);
+    }
   };
 
   const endSession = async () => {
@@ -69,7 +73,11 @@ const SessionPage = () => {
           (new Date().getTime() - new Date(currentSession.startTime).getTime()) / (1000 * 60),
         ),
       };
-      await db.sessions.put(updatedSession);
+      try {
+        await db.sessions.put(updatedSession);
+      } catch (error) {
+        console.error('Error ending session:', error);
+      }
     }
   };
 
@@ -185,7 +193,9 @@ const SessionPage = () => {
             variant="contained"
             color="primary"
             fullWidth
-            onClick={startSession}
+            onClick={() => {
+              void startSession();
+            }}
             sx={{ mt: 3 }}
           >
             Start Session
@@ -237,8 +247,12 @@ const SessionPage = () => {
           <QuickLog
             sessionId={currentSession.id}
             problems={currentSession.problems}
-            onAddProblem={handleAddProblem}
-            onAddAttempt={handleAddAttempt}
+            onAddProblem={(problem) => {
+              void handleAddProblem(problem);
+            }}
+            onAddAttempt={(problemId, type) => {
+              void handleAddAttempt(problemId, type);
+            }}
           />
 
           <TextField
@@ -248,7 +262,9 @@ const SessionPage = () => {
             label="Post-session notes"
             value={postSessionNotes}
             inputProps={{ maxLength: LIMITS.postSessionNotes }}
-            onChange={(e) => setPostSessionNotes(e.target.value)}
+            onChange={(e) => {
+              setPostSessionNotes(e.target.value);
+            }}
             sx={{ mt: 2 }}
           />
 
@@ -257,7 +273,9 @@ const SessionPage = () => {
             color="secondary"
             fullWidth
             sx={{ mt: 2 }}
-            onClick={endSession}
+            onClick={() => {
+              void endSession();
+            }}
           >
             End Session
           </Button>

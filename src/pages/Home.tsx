@@ -12,10 +12,20 @@ export default function Home() {
         everything related to the sport.
       </Typography>
       <Stack spacing={2}>
-        <Button variant="contained" onClick={() => navigate('/session')}>
+        <Button
+          variant="contained"
+          onClick={() => {
+            navigate('/session');
+          }}
+        >
           Start session
         </Button>
-        <Button variant="outlined" onClick={() => navigate('/workouts')}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            navigate('/workouts');
+          }}
+        >
           Interval timer
         </Button>
       </Stack>
