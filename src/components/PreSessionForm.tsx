@@ -69,7 +69,7 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
       nextValue = sanitizeGoals(value as string[]);
     }
 
-    const newData = { ...formData, [field]: nextValue } as PreSessionData;
+    const newData = { ...formData, [field]: nextValue };
     setFormData(newData);
     onChange(newData);
   };
@@ -103,7 +103,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
           <Typography gutterBottom>Sleep Quality (Last Night)</Typography>
           <Slider
             value={formData.sleepQuality}
-            onChange={(_, value) => handleChange('sleepQuality', value)}
+            onChange={(_, value) => {
+              handleChange('sleepQuality', value);
+            }}
             marks
             min={1}
             max={10}
@@ -113,7 +115,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
           <Typography gutterBottom>Energy Level</Typography>
           <Slider
             value={formData.energyLevel}
-            onChange={(_, value) => handleChange('energyLevel', value)}
+            onChange={(_, value) => {
+              handleChange('energyLevel', value);
+            }}
             marks
             min={1}
             max={10}
@@ -123,7 +127,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
           <Typography gutterBottom>Finger Soreness (1 = Very Sore, 10 = Fresh)</Typography>
           <Slider
             value={formData.fingerSoreness}
-            onChange={(_, value) => handleChange('fingerSoreness', value)}
+            onChange={(_, value) => {
+              handleChange('fingerSoreness', value);
+            }}
             marks
             min={1}
             max={10}
@@ -133,7 +139,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
           <Typography gutterBottom>Rest Days Since Last Session</Typography>
           <Slider
             value={formData.restDays}
-            onChange={(_, value) => handleChange('restDays', value)}
+            onChange={(_, value) => {
+              handleChange('restDays', value);
+            }}
             marks
             min={0}
             max={7}
@@ -150,7 +158,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
           <Typography gutterBottom>Motivation Level</Typography>
           <Slider
             value={formData.motivation}
-            onChange={(_, value) => handleChange('motivation', value)}
+            onChange={(_, value) => {
+              handleChange('motivation', value);
+            }}
             marks
             min={1}
             max={10}
@@ -162,7 +172,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             <RadioGroup
               row
               value={formData.stress}
-              onChange={(e) => handleChange('stress', e.target.value)}
+              onChange={(e) => {
+                handleChange('stress', e.target.value);
+              }}
             >
               <FormControlLabel value="low" control={<Radio />} label="Low" />
               <FormControlLabel value="medium" control={<Radio />} label="Medium" />
@@ -181,7 +193,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             <RadioGroup
               row
               value={formData.nutrition}
-              onChange={(e) => handleChange('nutrition', e.target.value)}
+              onChange={(e) => {
+                handleChange('nutrition', e.target.value);
+              }}
             >
               <FormControlLabel value="poor" control={<Radio />} label="Poor" />
               <FormControlLabel value="moderate" control={<Radio />} label="Moderate" />
@@ -200,13 +214,21 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             placeholder="Add a goal and press Enter"
             value={goalInput}
             inputProps={{ maxLength: LIMITS.goal }}
-            onChange={(e) => setGoalInput(e.target.value)}
-            onKeyPress={handleAddGoal}
+            onChange={(e) => {
+              setGoalInput(e.target.value);
+            }}
+            onKeyDown={handleAddGoal}
             sx={{ mb: 1 }}
           />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {formData.goals.map((goal, index) => (
-              <Chip key={index} label={goal} onDelete={() => handleDeleteGoal(goal)} />
+              <Chip
+                key={index}
+                label={goal}
+                onDelete={() => {
+                  handleDeleteGoal(goal);
+                }}
+              />
             ))}
           </Box>
         </Box>
@@ -223,7 +245,9 @@ const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
             placeholder="Any other notes about your condition or goals..."
             value={formData.additionalNotes}
             inputProps={{ maxLength: LIMITS.notes }}
-            onChange={(e) => handleChange('additionalNotes', e.target.value)}
+            onChange={(e) => {
+              handleChange('additionalNotes', e.target.value);
+            }}
           />
         </Box>
       </Stack>
