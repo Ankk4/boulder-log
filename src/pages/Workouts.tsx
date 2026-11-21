@@ -24,7 +24,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import PageHeader from '../components/PageHeader';
-import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import type { IntervalWorkout } from '../types';
 import { db, useIntervalWorkouts, useRecentIntervalRuns } from '../db';
 import WorkoutFormDialog, {
@@ -35,7 +35,7 @@ import { calculateTotalSeconds, formatDuration } from '../utils/duration';
 import { WORKOUT_PRESETS, type WorkoutPreset } from '../utils/workoutPresets';
 
 const Workouts = () => {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const workouts = useIntervalWorkouts();
   const runs = useRecentIntervalRuns(15);
   const [dialogOpen, setDialogOpen] = useState(false);

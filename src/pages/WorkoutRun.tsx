@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import {
   Box,
   Typography,
@@ -35,7 +36,7 @@ import type { IntervalRun } from '../types';
 
 const WorkoutRun = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const workout = useIntervalWorkout(id);
   const startedAtRef = useRef<string | null>(null);
   const persistedRef = useRef(false);

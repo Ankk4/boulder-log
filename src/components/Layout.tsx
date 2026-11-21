@@ -15,7 +15,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { FitnessCenter, Timer } from '@mui/icons-material';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 import { FocusModeProvider } from '../hooks/FocusModeProvider';
 import { useFocusMode } from '../hooks/useFocusMode';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
@@ -25,7 +26,7 @@ interface LayoutProps {
 }
 
 const LayoutShell = ({ children }: LayoutProps) => {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
