@@ -12,7 +12,7 @@ Rules for splitting:
 
 **Bump recipe (every planner task).**
 1. Precondition: `node -v` starts with `v26.`, or stop (spec Constraints).
-2. `npm install [-D] <pkg>@<major> …` for the task's packages only. Never `npm audit fix --force`, never hand-edit the lockfile, no `overrides`.
+2. `npm install [-D] <pkg>@<major> …` for the task's packages only. Install the host package (vite, eslint) first, then its plugins; a combined install can hit ERESOLVE. Runtime packages go without `-D`. Never `npm audit fix --force`, never hand-edit the lockfile, no `overrides`.
 3. Fix the fallout in the allowed files. The probe list is in spec.md Context. Follow the rules from the analyzers spec (`specs/done/analyzers/tasks.md`, "How to fix specific rules").
 4. Run `npm run format` if the Prettier version changed, then `npm run verify`. Commit once it's green.
 5. If a fix seems to need an allowed file not listed, a rule loosened, or a version pinned back, stop and ask (R8).

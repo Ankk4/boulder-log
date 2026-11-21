@@ -47,7 +47,7 @@ The app runs on a supported Node, with every dependency on its current major and
 - **R8**: The lint and type bar is unchanged.
   - `eslint.config.js` still uses `strictTypeChecked` and the full react-hooks 7 recommended set, compiler rules included (nothing turned off or downgraded).
   - No suppressions file and no new escape hatches.
-  - _Check:_ `git diff master...HEAD -- src eslint.config.js 'tsconfig*.json' vite.config.ts | rg -n '^\+.*(eslint-disable|@ts-ignore|@ts-expect-error|as any|\.skip\(|\.only\()'` prints nothing; `test ! -e eslint-suppressions.json`; `rg -n "strictTypeChecked" eslint.config.js`; reviewer confirms no react-hooks rule is set to `off`/`warn`
+  - _Check:_ `git diff master...HEAD -- src eslint.config.js 'tsconfig*.json' vite.config.ts | rg -n '^\+.*(eslint-disable|@ts-ignore|@ts-expect-error|as any|\b(it|test|describe)\.(skip|only)\()'` prints nothing; `test ! -e eslint-suppressions.json`; `rg -n "strictTypeChecked" eslint.config.js`; reviewer confirms no react-hooks rule is set to `off`/`warn`
 - **R9**: No test is weakened or deleted, and the test count does not drop below 59.
   - _Check:_ `f=$(mktemp --suffix=.json); npx vitest run --reporter=json --outputFile=$f >/dev/null; node -e "const r=require('$f');process.exit(r.numPassedTests>=59&&r.numPendingTests===0&&r.numFailedTests===0?0:1)"`
   - Reviewer: `git diff master...HEAD -- 'src/**/__tests__/**'` removes no `expect` lines except mechanical import or API renames
