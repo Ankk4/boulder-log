@@ -1,10 +1,2 @@
 {
-  "src/services/sheetsService.ts": {
-    "@typescript-eslint/no-meaningless-void-operator": {
-      "count": 1
-    },
-    "@typescript-eslint/require-await": {
-      "count": 2
-    }
-  }
 }

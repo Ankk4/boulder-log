@@ -24,7 +24,7 @@ interface PreSessionFormProps {
   onChange: (data: PreSessionData) => void;
 }
 
-export interface PreSessionData {
+interface PreSessionData {
   sleepQuality: number;
   energyLevel: number;
   fingerSoreness: number;

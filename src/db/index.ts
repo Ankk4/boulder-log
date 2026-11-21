@@ -7,13 +7,6 @@ export function useCurrentSession() {
   return useLiveQuery(() => db.getCurrentSession());
 }
 
-export function useSessionWithDetails(sessionId: string | undefined) {
-  return useLiveQuery(
-    () => (sessionId ? db.getSessionWithDetails(sessionId) : undefined),
-    [sessionId],
-  );
-}
-
 export function useIntervalWorkouts() {
   return useLiveQuery(() => db.getAllIntervalWorkouts());
 }
@@ -29,5 +22,3 @@ export function useIntervalWorkout(id: string | undefined) {
 export function useRecentIntervalRuns(limit = 20) {
   return useLiveQuery(() => db.getRecentIntervalRuns(limit), [limit]);
 }
-
-export { BoulderLogDatabase };

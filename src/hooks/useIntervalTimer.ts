@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { playBeep } from '../utils/beep';
 import { PREPARE_SECONDS } from '../utils/duration';
 
-export type TimerPhase = 'idle' | 'prepare' | 'work' | 'rest' | 'done';
+type TimerPhase = 'idle' | 'prepare' | 'work' | 'rest' | 'done';
 
 // Takes the phase as a parameter so callers re-read the ref after advanceFrom*()
 // mutates it; inline comparisons would be wrongly narrowed by TypeScript.
@@ -15,7 +15,7 @@ export interface IntervalTimerConfig {
   muted: boolean;
 }
 
-export interface IntervalTimerState {
+interface IntervalTimerState {
   phase: TimerPhase;
   currentInterval: number;
   secondsRemaining: number;
