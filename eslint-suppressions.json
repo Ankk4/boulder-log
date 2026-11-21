@@ -47,14 +47,6 @@
       "count": 7
     }
   },
-  "src/components/WorkoutFormDialog.tsx": {
-    "@typescript-eslint/no-confusing-void-expression": {
-      "count": 5
-    },
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
   "src/components/__tests__/Layout.test.tsx": {
     "@typescript-eslint/no-confusing-void-expression": {
       "count": 1
@@ -102,28 +94,6 @@
     },
     "@typescript-eslint/no-misused-promises": {
       "count": 4
-    }
-  },
-  "src/pages/WorkoutRun.tsx": {
-    "@typescript-eslint/no-confusing-void-expression": {
-      "count": 2
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 4
-    }
-  },
-  "src/pages/Workouts.tsx": {
-    "@typescript-eslint/no-confusing-void-expression": {
-      "count": 6
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 2
-    },
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 6
     }
   },
   "src/pages/__tests__/Session.test.tsx": {
