@@ -13,6 +13,8 @@ export function useRequestFocusMode(active: boolean): void {
   useEffect(() => {
     if (!setFocus || !active) return;
     setFocus(true);
-    return () => setFocus(false);
+    return () => {
+      setFocus(false);
+    };
   }, [setFocus, active]);
 }

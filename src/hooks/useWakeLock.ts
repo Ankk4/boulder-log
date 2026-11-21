@@ -5,6 +5,11 @@ type WakeLockSentinelLike = {
   release: () => Promise<void>;
 };
 
+/** The Wake Lock API is missing in some browsers, though the DOM types say it is always present. */
+function getWakeLock(): Navigator['wakeLock'] | undefined {
+  return navigator.wakeLock;
+}
+
 /**
  * Request a screen wake lock while `active` is true.
  * No-ops when the Wake Lock API is unavailable.
@@ -22,8 +27,8 @@ export function useWakeLock(active: boolean): void {
       return;
     }
 
-    const wakeLock = navigator.wakeLock;
-    if (!wakeLock?.request) {
+    const wakeLock = getWakeLock();
+    if (typeof wakeLock?.request !== 'function') {
       return;
     }
 
@@ -46,7 +51,7 @@ export function useWakeLock(active: boolean): void {
     void request();
 
     const onVisibility = () => {
-      if (document.visibilityState === 'visible' && active) {
+      if (document.visibilityState === 'visible') {
         void request();
       }
     };

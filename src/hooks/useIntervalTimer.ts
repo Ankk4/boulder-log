@@ -178,7 +178,7 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
         advanceFromPrepare();
       } else if (phaseRef.current === 'work') {
         advanceFromWork();
-      } else if (phaseRef.current === 'rest') {
+      } else {
         advanceFromRest();
       }
     }
@@ -255,7 +255,9 @@ export function useIntervalTimer(config: IntervalTimerConfig): UseIntervalTimerR
   }, []);
 
   useEffect(() => {
-    return () => stopLoop();
+    return () => {
+      stopLoop();
+    };
   }, [stopLoop]);
 
   return {

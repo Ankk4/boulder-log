@@ -9,29 +9,6 @@
       "count": 1
     }
   },
-  "src/db/database.ts": {
-    "@typescript-eslint/restrict-template-expressions": {
-      "count": 2
-    }
-  },
-  "src/hooks/useFocusMode.ts": {
-    "@typescript-eslint/no-confusing-void-expression": {
-      "count": 1
-    }
-  },
-  "src/hooks/useIntervalTimer.ts": {
-    "@typescript-eslint/no-confusing-void-expression": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
-    }
-  },
-  "src/hooks/useWakeLock.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 3
-    }
-  },
   "src/services/sheetsService.ts": {
     "@typescript-eslint/no-meaningless-void-operator": {
       "count": 1
