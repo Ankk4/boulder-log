@@ -47,7 +47,7 @@ Measured on `bb971b3` (master after PR #23):
   - _Check:_ `npx eslint --print-config src/pages/Session.tsx | node -e "const r=JSON.parse(require('fs').readFileSync(0)).rules;for(const k of ['no-floating-promises','no-misused-promises','no-confusing-void-expression','restrict-template-expressions','no-unnecessary-condition','await-thenable'])if(![2,'error'].includes([].concat(r['@typescript-eslint/'+k])[0]))process.exit(1)"` exits 0. The formatter spec's R3 check still exits 0. `npm run lint` passes with no parsing errors.
 - **R4** — Rollout through bulk suppressions. The task that turns on R3 also creates `eslint-suppressions.json` with `--suppress-all`. After that, every commit only removes entries or lowers counts. The last task deletes the file. No new `eslint-disable`, `@ts-ignore`, `@ts-expect-error` or `as any` is added anywhere.
   - _Check:_ at the branch tip, `test ! -e eslint-suppressions.json`.
-  - _Check:_ `git diff master...HEAD | rg '^\+.*(eslint-disable|@ts-ignore|@ts-expect-error|as any)'` prints nothing.
+  - _Check:_ `git diff master...HEAD -- . ':!specs' ':!.claude/agents' | rg '^\+.*(eslint-disable|@ts-ignore|@ts-expect-error|as any)'` prints nothing (the excluded docs quote the banned patterns).
   - _Check:_ for each fix task, the shrink check in `tasks.md` exits 0.
 - **R5** — The code fixes don't change behavior. Every existing test still passes, and none is deleted, skipped or loosened. Where a fix changes what an async handler does on error, for example a promise that used to reject silently and now has a `.catch`, a test covers it.
   - _Check:_ `npm run verify` passes. The reviewer confirms each fix diff is a type-level or equivalent refactor.
