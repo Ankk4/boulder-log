@@ -5,3 +5,4 @@ research
 .claude/logs
 package-lock.json
 *.md
+eslint-suppressions.json

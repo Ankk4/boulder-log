@@ -20,10 +20,10 @@ import { db } from '../db';
 import type { Session } from '../types';
 
 const formatDuration = (minutes: number) => {
-  if (minutes < 60) return `${minutes} minutes`;
+  if (minutes < 60) return `${String(minutes)} minutes`;
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  return `${hours}h ${remainingMinutes}m`;
+  return `${String(hours)}h ${String(remainingMinutes)}m`;
 };
 
 const PastSessionsList = () => {
@@ -33,10 +33,14 @@ const PastSessionsList = () => {
 
   useEffect(() => {
     const loadSessions = async () => {
-      const allSessions = await db.sessions.orderBy('startTime').reverse().toArray();
-      setSessions(allSessions);
+      try {
+        const allSessions = await db.sessions.orderBy('startTime').reverse().toArray();
+        setSessions(allSessions);
+      } catch (error) {
+        console.error('Error loading sessions:', error);
+      }
     };
-    loadSessions();
+    void loadSessions();
   }, []);
 
   const handleDeleteClick = (session: Session) => {
@@ -72,7 +76,9 @@ const PastSessionsList = () => {
                   <IconButton
                     edge="end"
                     aria-label="delete"
-                    onClick={() => handleDeleteClick(session)}
+                    onClick={() => {
+                      handleDeleteClick(session);
+                    }}
                   >
                     <DeleteIcon />
                   </IconButton>
@@ -103,7 +109,7 @@ const PastSessionsList = () => {
                       <Typography component="span" variant="body2" display="block">
                         Sends: {session.problems.filter((p) => p.send).length}
                       </Typography>
-                      {session.preSessionData?.goals.length > 0 && (
+                      {session.preSessionData.goals.length > 0 && (
                         <Typography component="span" variant="body2" display="block">
                           Goals: {session.preSessionData.goals.join(', ')}
                         </Typography>
@@ -117,7 +123,12 @@ const PastSessionsList = () => {
         )}
       </Paper>
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+        }}
+      >
         <DialogTitle>Delete Session</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -126,8 +137,20 @@ const PastSessionsList = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" autoFocus>
+          <Button
+            onClick={() => {
+              setDeleteDialogOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              void handleDeleteConfirm();
+            }}
+            color="error"
+            autoFocus
+          >
             Delete
           </Button>
         </DialogActions>

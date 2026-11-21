@@ -79,7 +79,9 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => setIsAddingProblem(true)}
+          onClick={() => {
+            setIsAddingProblem(true);
+          }}
         >
           Add Problem
         </Button>
@@ -94,7 +96,9 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                   <Tooltip title="Mark as flashed (completed first try)">
                     <span>
                       <IconButton
-                        onClick={() => onAddAttempt(problem.id, AttemptType.FLASH)}
+                        onClick={() => {
+                          onAddAttempt(problem.id, AttemptType.FLASH);
+                        }}
                         color={problem.flash ? 'success' : 'default'}
                         disabled={problem.flash || problem.send || problem.attempts.length > 0}
                         data-testid="flash-button"
@@ -106,7 +110,9 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                   <Tooltip title="Mark as sent (completed)">
                     <span>
                       <IconButton
-                        onClick={() => onAddAttempt(problem.id, AttemptType.SEND)}
+                        onClick={() => {
+                          onAddAttempt(problem.id, AttemptType.SEND);
+                        }}
                         color={problem.send ? 'success' : 'default'}
                         disabled={problem.flash || problem.send}
                         data-testid="send-button"
@@ -124,7 +130,9 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                       sx={{ '& .MuiBadge-badge': { fontSize: '0.8rem' } }}
                     >
                       <IconButton
-                        onClick={() => onAddAttempt(problem.id, AttemptType.ATTEMPT)}
+                        onClick={() => {
+                          onAddAttempt(problem.id, AttemptType.ATTEMPT);
+                        }}
                         sx={{
                           '&:hover': {
                             backgroundColor: 'action.hover',
@@ -170,7 +178,12 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         ))}
       </List>
 
-      <Dialog open={isAddingProblem} onClose={() => setIsAddingProblem(false)}>
+      <Dialog
+        open={isAddingProblem}
+        onClose={() => {
+          setIsAddingProblem(false);
+        }}
+      >
         <DialogTitle>Add New Problem</DialogTitle>
         <DialogContent>
           <TextField
@@ -180,7 +193,9 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
             fullWidth
             value={newProblemName}
             inputProps={{ maxLength: LIMITS.problemName }}
-            onChange={(e) => setNewProblemName(e.target.value)}
+            onChange={(e) => {
+              setNewProblemName(e.target.value);
+            }}
             sx={{ mb: 2 }}
           />
           <DifficultySelect
@@ -191,7 +206,13 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsAddingProblem(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setIsAddingProblem(false);
+            }}
+          >
+            Cancel
+          </Button>
           <Button onClick={handleAddProblem} variant="contained">
             Add
           </Button>

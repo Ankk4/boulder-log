@@ -4,15 +4,12 @@
   "private": true,
   "license": "GPL-3.0-only",
   "dependencies": {
-    "@chakra-ui/icons": "^2.1.1",
-    "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.7",
     "@mui/material": "^5.15.7",
     "dexie": "^3.2.4",
     "dexie-react-hooks": "^1.1.7",
-    "framer-motion": "^10.16.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.6"
@@ -34,6 +31,7 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.14.0",
     "jsdom": "^26.1.0",
+    "knip": "6.44.1",
     "prettier": "3.10.1",
     "typescript": "~5.8",
     "typescript-eslint": "^8.72.2",
@@ -52,7 +50,8 @@
     "test:hooks": "node --test .claude/hooks/__tests__/*.test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test:run && npm run test:hooks",
+    "knip": "knip",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run knip && npm run test:run && npm run test:hooks",
     "verify:full": "npm run verify && vite build && npm audit --omit=dev --audit-level=high",
     "icons": "node scripts/generate-icons.mjs"
   },

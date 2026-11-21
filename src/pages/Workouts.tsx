@@ -65,18 +65,28 @@ const Workouts = () => {
 
   const handleSave = async (values: WorkoutFormValues) => {
     const editingId = formInitial && 'id' in formInitial ? formInitial.id : undefined;
-    await db.saveIntervalWorkout({
-      id: editingId,
-      createdAt: formInitial && 'createdAt' in formInitial ? formInitial.createdAt : undefined,
-      ...values,
-    });
+    try {
+      await db.saveIntervalWorkout({
+        id: editingId,
+        createdAt: formInitial && 'createdAt' in formInitial ? formInitial.createdAt : undefined,
+        ...values,
+      });
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      return;
+    }
     setDialogOpen(false);
     setFormInitial(null);
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await db.deleteIntervalWorkout(deleteTarget.id);
+    try {
+      await db.deleteIntervalWorkout(deleteTarget.id);
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+      return;
+    }
     setDeleteTarget(null);
   };
 
@@ -98,8 +108,10 @@ const Workouts = () => {
         {WORKOUT_PRESETS.map((preset) => (
           <Chip
             key={preset.id}
-            label={`${preset.name} (${preset.workSeconds}/${preset.restSeconds}×${preset.intervals})`}
-            onClick={() => openPreset(preset)}
+            label={`${preset.name} (${String(preset.workSeconds)}/${String(preset.restSeconds)}×${String(preset.intervals)})`}
+            onClick={() => {
+              openPreset(preset);
+            }}
             clickable
             variant="outlined"
           />
@@ -135,17 +147,27 @@ const Workouts = () => {
                         edge="end"
                         aria-label="start"
                         color="primary"
-                        onClick={() => navigate(`/workouts/${workout.id}/run`)}
+                        onClick={() => {
+                          navigate(`/workouts/${workout.id}/run`);
+                        }}
                       >
                         <PlayIcon />
                       </IconButton>
-                      <IconButton edge="end" aria-label="edit" onClick={() => openEdit(workout)}>
+                      <IconButton
+                        edge="end"
+                        aria-label="edit"
+                        onClick={() => {
+                          openEdit(workout);
+                        }}
+                      >
                         <EditIcon />
                       </IconButton>
                       <IconButton
                         edge="end"
                         aria-label="delete"
-                        onClick={() => setDeleteTarget(workout)}
+                        onClick={() => {
+                          setDeleteTarget(workout);
+                        }}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -154,7 +176,7 @@ const Workouts = () => {
                 >
                   <ListItemText
                     primary={workout.name}
-                    secondary={`${workout.workSeconds}s work · ${workout.restSeconds}s rest · ${workout.intervals} intervals · ${formatDuration(total)}`}
+                    secondary={`${String(workout.workSeconds)}s work · ${String(workout.restSeconds)}s rest · ${String(workout.intervals)} intervals · ${formatDuration(total)}`}
                     sx={{ pr: 12 }}
                   />
                 </ListItem>
@@ -206,10 +228,17 @@ const Workouts = () => {
           setDialogOpen(false);
           setFormInitial(null);
         }}
-        onSave={handleSave}
+        onSave={(values) => {
+          void handleSave(values);
+        }}
       />
 
-      <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onClose={() => {
+          setDeleteTarget(null);
+        }}
+      >
         <DialogTitle>Delete workout?</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -217,8 +246,20 @@ const Workouts = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button
+            onClick={() => {
+              setDeleteTarget(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              void handleDelete();
+            }}
+            color="error"
+            variant="contained"
+          >
             Delete
           </Button>
         </DialogActions>

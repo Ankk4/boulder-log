@@ -7,7 +7,7 @@ export const LIMITS = {
   postSessionNotes: 5000,
 } as const;
 
-export function truncate(value: string, maxLength: number): string {
+function truncate(value: string, maxLength: number): string {
   return value.slice(0, maxLength);
 }
 

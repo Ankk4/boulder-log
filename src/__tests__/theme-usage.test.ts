@@ -30,7 +30,7 @@ describe('theme usage', () => {
         .forEach((line, i) => {
           if (!literal.test(line)) return;
           if (isDifficulty && gradeLine.test(line)) return;
-          hits.push(`${path.relative(process.cwd(), file)}:${i + 1}: ${line.trim()}`);
+          hits.push(`${path.relative(process.cwd(), file)}:${String(i + 1)}: ${line.trim()}`);
         });
     }
     expect(hits, hits.join('\n')).toEqual([]);

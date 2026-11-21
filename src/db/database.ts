@@ -59,14 +59,14 @@ export class BoulderLogDatabase extends Dexie {
     rows.push('Session Details');
     rows.push(`Start Time,${session.startTime}`);
     rows.push(`End Time,${session.endTime || ''}`);
-    rows.push(`Duration (minutes),${session.duration || ''}`);
+    rows.push(`Duration (minutes),${session.duration ? String(session.duration) : ''}`);
 
     rows.push('\nPre-session Data');
     Object.entries(session.preSessionData).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         rows.push(`${key},${value.join('; ')}`);
       } else {
-        rows.push(`${key},${value}`);
+        rows.push(`${key},${String(value)}`);
       }
     });
 

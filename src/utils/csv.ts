@@ -2,7 +2,9 @@
  * Escape a value for safe CSV and neutralize spreadsheet formula injection.
  * Cells starting with =, +, -, @, tab, or CR are prefixed with a single quote.
  */
-export function sanitizeCsvCell(value: unknown): string {
+type CsvCell = string | number | boolean | bigint | null | undefined;
+
+export function sanitizeCsvCell(value: CsvCell): string {
   const stringValue = value == null ? '' : String(value);
   const formulaPrefixes = ['=', '+', '-', '@', '\t', '\r'];
   const needsFormulaGuard = formulaPrefixes.some((prefix) => stringValue.startsWith(prefix));
@@ -11,6 +13,6 @@ export function sanitizeCsvCell(value: unknown): string {
   return `"${escaped}"`;
 }
 
-export function csvRow(cells: unknown[]): string {
+export function csvRow(cells: CsvCell[]): string {
   return cells.map(sanitizeCsvCell).join(',');
 }

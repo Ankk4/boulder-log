@@ -130,7 +130,13 @@ const WorkoutRun = () => {
     return (
       <Box sx={{ p: 2 }}>
         <Typography variant="h6">Workout not found</Typography>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/workouts')} sx={{ mt: 2 }}>
+        <Button
+          startIcon={<BackIcon />}
+          onClick={() => {
+            navigate('/workouts');
+          }}
+          sx={{ mt: 2 }}
+        >
           Back
         </Button>
       </Box>
@@ -160,7 +166,12 @@ const WorkoutRun = () => {
     workout.intervals > 0 ? Math.min(100, (timer.completedIntervals / workout.intervals) * 100) : 0;
 
   const handleStart = async () => {
-    await unlockAudio();
+    try {
+      await unlockAudio();
+    } catch (error) {
+      console.error('Error unlocking audio:', error);
+      return;
+    }
     startedAtRef.current = new Date().toISOString();
     persistedRef.current = false;
     setHasStarted(true);
@@ -200,7 +211,9 @@ const WorkoutRun = () => {
           </Box>
           <IconButton
             aria-label={timer.muted ? 'unmute' : 'mute'}
-            onClick={() => timer.setMuted(!timer.muted)}
+            onClick={() => {
+              timer.setMuted(!timer.muted);
+            }}
             sx={{ color: theme.color }}
           >
             {timer.muted ? <MuteIcon /> : <UnmuteIcon />}
@@ -234,8 +247,8 @@ const WorkoutRun = () => {
             {timer.phase === 'prepare'
               ? 'Get ready'
               : timer.phase === 'idle'
-                ? `0 / ${workout.intervals}`
-                : `${Math.min(timer.currentInterval, workout.intervals)} / ${workout.intervals}`}
+                ? `0 / ${String(workout.intervals)}`
+                : `${String(Math.min(timer.currentInterval, workout.intervals))} / ${String(workout.intervals)}`}
           </Typography>
           <LinearProgress
             variant="determinate"
@@ -253,7 +266,14 @@ const WorkoutRun = () => {
         </Box>
 
         {timer.phase === 'idle' && (
-          <Button fullWidth size="large" variant="contained" onClick={handleStart}>
+          <Button
+            fullWidth
+            size="large"
+            variant="contained"
+            onClick={() => {
+              void handleStart();
+            }}
+          >
             Start
           </Button>
         )}
@@ -307,7 +327,7 @@ const WorkoutRun = () => {
             <Typography align="center" sx={{ color: theme.muted }}>
               {timer.completedIntervals >= workout.intervals
                 ? 'Set complete. Saved to history.'
-                : `Stopped after ${timer.completedIntervals} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
+                : `Stopped after ${String(timer.completedIntervals)} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
             </Typography>
             <Button fullWidth variant="contained" onClick={handleBack} sx={filledSx}>
               Back to workouts

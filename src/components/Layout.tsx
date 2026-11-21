@@ -37,7 +37,9 @@ const LayoutShell = ({ children }: LayoutProps) => {
     return false;
   };
 
-  const goToTab = (value: number) => navigate(value === 0 ? '/session' : '/workouts');
+  const goToTab = (value: number) => {
+    navigate(value === 0 ? '/session' : '/workouts');
+  };
 
   return (
     <Box
@@ -66,7 +68,9 @@ const LayoutShell = ({ children }: LayoutProps) => {
             {isDesktop && (
               <Tabs
                 value={getCurrentTab()}
-                onChange={(_event, newValue: number) => goToTab(newValue)}
+                onChange={(_event, newValue: number) => {
+                  goToTab(newValue);
+                }}
                 textColor="inherit"
                 indicatorColor="secondary"
                 sx={{ ml: 2, minHeight: 48 }}
@@ -111,7 +115,9 @@ const LayoutShell = ({ children }: LayoutProps) => {
           <BottomNavigation
             showLabels
             value={getCurrentTab()}
-            onChange={(_event, newValue: number) => goToTab(newValue)}
+            onChange={(_event, newValue: number) => {
+              goToTab(newValue);
+            }}
           >
             <BottomNavigationAction label="Session" icon={<FitnessCenter />} />
             <BottomNavigationAction label="Timer" icon={<Timer />} />

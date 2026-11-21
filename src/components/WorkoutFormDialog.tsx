@@ -23,7 +23,8 @@ export type WorkoutFormValues = {
 };
 
 /** Saved workout or draft values used to prefill the form (e.g. presets). */
-export type WorkoutFormInitial = WorkoutFormValues & {
+export type WorkoutFormInitial = Omit<WorkoutFormValues, 'muted'> & {
+  muted?: boolean;
   id?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -97,7 +98,9 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           <TextField
             label="Name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
             placeholder="e.g. 5 second holds"
             fullWidth
             autoFocus
@@ -107,7 +110,9 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
             type="number"
             inputProps={{ min: 1, step: 1 }}
             value={workSeconds}
-            onChange={(e) => setWorkSeconds(Math.max(1, parsePositiveInt(e.target.value, 1)))}
+            onChange={(e) => {
+              setWorkSeconds(Math.max(1, parsePositiveInt(e.target.value, 1)));
+            }}
             fullWidth
             helperText="Length of each interval / hold"
           />
@@ -116,7 +121,9 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
             type="number"
             inputProps={{ min: 0, step: 1 }}
             value={restSeconds}
-            onChange={(e) => setRestSeconds(Math.max(0, parsePositiveInt(e.target.value, 0)))}
+            onChange={(e) => {
+              setRestSeconds(Math.max(0, parsePositiveInt(e.target.value, 0)));
+            }}
             fullWidth
             helperText="Rest between intervals"
           />
@@ -125,12 +132,21 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
             type="number"
             inputProps={{ min: 1, step: 1 }}
             value={intervals}
-            onChange={(e) => setIntervals(Math.max(1, parsePositiveInt(e.target.value, 1)))}
+            onChange={(e) => {
+              setIntervals(Math.max(1, parsePositiveInt(e.target.value, 1)));
+            }}
             fullWidth
             helperText="How many work intervals in the set"
           />
           <FormControlLabel
-            control={<Switch checked={muted} onChange={(e) => setMuted(e.target.checked)} />}
+            control={
+              <Switch
+                checked={muted}
+                onChange={(e) => {
+                  setMuted(e.target.checked);
+                }}
+              />
+            }
             label="Mute beeps by default"
           />
           <Typography variant="body2" color="text.secondary">
