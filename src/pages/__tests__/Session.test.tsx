@@ -131,6 +131,8 @@ describe('Session Page', () => {
     fireEvent.change(nameInput, { target: { value: 'Test Problem' } });
 
     const [frenchGradeSelect] = screen.getAllByRole('combobox');
+    expect(frenchGradeSelect).toBeDefined();
+    if (!frenchGradeSelect) return;
     fireEvent.mouseDown(frenchGradeSelect);
     fireEvent.click(await screen.findByRole('option', { name: '6a' }));
 
