@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { db } from '../db';
-import type { Session } from '../types';
+import type { PostSessionReview, Session } from '../types';
 
 const formatDuration = (minutes: number) => {
   if (minutes < 60) return `${String(minutes)} minutes`;
@@ -25,6 +25,44 @@ const formatDuration = (minutes: number) => {
   const remainingMinutes = minutes % 60;
   return `${String(hours)}h ${String(remainingMinutes)}m`;
 };
+
+const ReviewLines = ({
+  review,
+  energyBefore,
+  goalCount,
+}: {
+  review: PostSessionReview;
+  energyBefore: number;
+  goalCount: number;
+}) => (
+  <>
+    {review.rpe !== null && (
+      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
+        RPE: {review.rpe}
+      </Typography>
+    )}
+    {review.energyAfter !== null && (
+      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
+        Energy: {energyBefore} → {review.energyAfter}
+      </Typography>
+    )}
+    {goalCount > 0 && (
+      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
+        Goals achieved: {review.achievedGoals.length}/{goalCount}
+      </Typography>
+    )}
+    {review.accomplishments.length > 0 && (
+      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
+        Accomplished: {review.accomplishments.join(', ')}
+      </Typography>
+    )}
+    {review.workOn.length > 0 && (
+      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
+        Work on: {review.workOn.join(', ')}
+      </Typography>
+    )}
+  </>
+);
 
 const PastSessionsList = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -113,6 +151,13 @@ const PastSessionsList = () => {
                         <Typography component="span" variant="body2" sx={{ display: 'block' }}>
                           Goals: {session.preSessionData.goals.join(', ')}
                         </Typography>
+                      )}
+                      {session.postSessionReview && (
+                        <ReviewLines
+                          review={session.postSessionReview}
+                          energyBefore={session.preSessionData.energyLevel}
+                          goalCount={session.preSessionData.goals.length}
+                        />
                       )}
                     </Box>
                   }
