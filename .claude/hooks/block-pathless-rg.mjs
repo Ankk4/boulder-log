@@ -65,7 +65,7 @@ const NO_SEARCH = new Set([
 ]);
 
 // Split into segments of words, honouring quotes. Returns null if unbalanced.
-function segments(command) {
+export function segments(command) {
   const out = [];
   let words = [];
   let word = null;

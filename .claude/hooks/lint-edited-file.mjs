@@ -31,7 +31,7 @@ if (rel.startsWith('..') || isAbsolute(rel)) process.exit(0);
 ensureDeps(root);
 
 const clean = (err) =>
-  `${err.stdout ?? ''}${err.stderr ?? ''}`
+  `${err.signal ? `killed by ${err.signal}\n` : ''}${err.stdout ?? ''}${err.stderr ?? ''}`
     .split('\n')
     .filter((l) => !/MODULE_TYPELESS|Reparsing|trace-warnings|To eliminate/.test(l))
     .join('\n')

@@ -16,6 +16,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
 - `tasks.md` exists. If `spec.md` exists, its frontmatter says `status: approved`. (Quick specs have no spec.md.)
 - `git status --porcelain` shows nothing outside `specs/`. Don't start on a dirty tree.
   - A dirty `.gitignore` gets committed on the feature branch (with the user's OK), not stashed: stashing it re-exposes ignored files to Prettier, and `.git/info/exclude` doesn't hide them from it.
+- `git fetch origin` and `git merge --ff-only origin/master` on `master`, so the branch starts from the merged state.
 - Create or switch to the branch `feature/<feature>`: `git switch -c feature/<feature>`, or `git switch` if it already exists. Commit the spec files there first (`spec: <feature>`).
 - Parse the tasks and build the dependency order. Skip tasks that are already committed: `git log --oneline` has `<feature> T<n>:`.
 
@@ -29,7 +30,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
    - `runner: planner` task (its files are protected by scope-guard): spawn no implementer. Make the edits yourself in the main tree, only in the task's allowed files. Steps 2–6 are unchanged; where they say "send to the implementer", fix it yourself, within the same budget.
 2. **Verify gate (you enforce it).** When the implementer returns, run `node .claude/hooks/verify-on-stop.mjs --check <tree>` yourself (it runs `npm run verify`, exits 1 with the failing lines). Don't trust the report's "verify passed".
    - After any `npm install`, read `git diff package.json`: a package must stay in the section (`dependencies` or `devDependencies`) it was in. Install runtime packages without `-D`.
-   - The `SubagentStop` hook also runs verify. Its block arrives after a background agent has already handed back, so the hook can't stop the agent. What it does do is leave a pass stamp, which makes your `--check` instant when the tree is green.
+   - The `SubagentStop` hook can't stop a background agent (it has already handed back), but its pass stamp makes your `--check` instant on a green tree.
    - On failure, send the last ~40 lines of output to the same implementer with SendMessage, so it keeps its context. Wait, then verify again.
 3. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/<feature>/. Task: T<n>. Diff: git diff --cached in <repo root>.`
 4. Read the implementer report, the reviewer verdict, and `git diff --cached --stat`. Do your own sanity check of the diff; you are the more capable model.
