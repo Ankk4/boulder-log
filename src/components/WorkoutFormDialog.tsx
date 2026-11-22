@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FocusEvent } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -45,19 +45,33 @@ const defaults: WorkoutFormValues = {
   muted: false,
 };
 
+const parseDigits = (text: string): number | null =>
+  /^\d+$/.test(text) ? parseInt(text, 10) : null;
+
+const numericInput = { inputMode: 'numeric', pattern: '[0-9]*' } as const;
+
+const selectOnFocus = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  e.target.select();
+};
+
 const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialogProps) => {
   // The parent remounts this dialog (via `key`) each time it opens, so state starts from `initial`.
   const start = initial ? { ...initial, muted: initial.muted ?? false } : defaults;
   const [name, setName] = useState(start.name);
-  const [workSeconds, setWorkSeconds] = useState(start.workSeconds);
-  const [restSeconds, setRestSeconds] = useState(start.restSeconds);
-  const [intervals, setIntervals] = useState(start.intervals);
+  const [workText, setWorkText] = useState(String(start.workSeconds));
+  const [restText, setRestText] = useState(String(start.restSeconds));
+  const [intervalsText, setIntervalsText] = useState(String(start.intervals));
   const [muted, setMuted] = useState(start.muted);
 
   const isEditing = Boolean(initial && 'id' in initial && initial.id);
 
-  const totalSeconds = calculateTotalSeconds(workSeconds, restSeconds, intervals);
-  const canSave = name.trim().length > 0 && workSeconds > 0 && restSeconds >= 0 && intervals > 0;
+  const workSeconds = parseDigits(workText);
+  const restSeconds = parseDigits(restText);
+  const intervals = parseDigits(intervalsText);
+  const valid = workSeconds !== null && restSeconds !== null && intervals !== null;
+  const canSave =
+    name.trim().length > 0 && valid && workSeconds >= 1 && restSeconds >= 0 && intervals >= 1;
+  const totalSeconds = valid ? calculateTotalSeconds(workSeconds, restSeconds, intervals) : null;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -68,11 +82,6 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
       intervals,
       muted,
     });
-  };
-
-  const parsePositiveInt = (value: string, fallback: number): number => {
-    const n = parseInt(value, 10);
-    return Number.isFinite(n) ? n : fallback;
   };
 
   return (
@@ -92,33 +101,33 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
           />
           <TextField
             label="Work (seconds)"
-            type="number"
-            slotProps={{ htmlInput: { min: 1, step: 1 } }}
-            value={workSeconds}
+            slotProps={{ htmlInput: numericInput }}
+            value={workText}
+            onFocus={selectOnFocus}
             onChange={(e) => {
-              setWorkSeconds(Math.max(1, parsePositiveInt(e.target.value, 1)));
+              setWorkText(e.target.value);
             }}
             fullWidth
             helperText="Length of each interval / hold"
           />
           <TextField
             label="Rest (seconds)"
-            type="number"
-            slotProps={{ htmlInput: { min: 0, step: 1 } }}
-            value={restSeconds}
+            slotProps={{ htmlInput: numericInput }}
+            value={restText}
+            onFocus={selectOnFocus}
             onChange={(e) => {
-              setRestSeconds(Math.max(0, parsePositiveInt(e.target.value, 0)));
+              setRestText(e.target.value);
             }}
             fullWidth
             helperText="Rest between intervals"
           />
           <TextField
             label="Intervals"
-            type="number"
-            slotProps={{ htmlInput: { min: 1, step: 1 } }}
-            value={intervals}
+            slotProps={{ htmlInput: numericInput }}
+            value={intervalsText}
+            onFocus={selectOnFocus}
             onChange={(e) => {
-              setIntervals(Math.max(1, parsePositiveInt(e.target.value, 1)));
+              setIntervalsText(e.target.value);
             }}
             fullWidth
             helperText="How many work intervals in the set"
@@ -135,8 +144,11 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
             label="Mute beeps by default"
           />
           <Typography variant="body2" color="text.secondary">
-            Total set length: {formatDuration(totalSeconds)} ({totalSeconds}s), includes{' '}
-            {PREPARE_SECONDS}s prepare
+            Total set length:{' '}
+            {totalSeconds === null
+              ? '–'
+              : `${formatDuration(totalSeconds)} (${String(totalSeconds)}s)`}
+            , includes {PREPARE_SECONDS}s prepare
           </Typography>
         </Stack>
       </DialogContent>
