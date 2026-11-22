@@ -11,7 +11,7 @@ What went wrong while this spec was built, and where the fix landed so it doesn'
 | # | Source | Mistake | Layer | Fix kind | Where it landed |
 |---|--------|---------|-------|----------|-----------------|
 | 1 | reviewer FAIL T4 | Planned file layout put a provider and hooks in one file, breaking `react-refresh/only-export-components` | spec | rule | `.claude/skills/spec/SKILL.md` Phase 3 (85447aa) |
-| 2 | T8 follow-up | Implementer ran Prettier and rewrote files outside its task | agent | rule | `.claude/agents/implementer.md` (14cd5ec); enforcement still to come in the planned `chore/prettier` work |
+| 2 | T8 follow-up | Implementer ran Prettier and rewrote files outside its task | agent | rule | `.claude/agents/implementer.md` (14cd5ec). The formatter's edit hook now formats each edited file, so there is no reason to run Prettier by hand; doing so is still a rule, not blocked |
 | 3 | ui-refactor-001 run (finder unknown) | A task note contradicted requirement R12 | spec | rule | `specs/TEMPLATE/tasks.md` "Rules for splitting" and `.claude/skills/spec/SKILL.md` Phase 3 (85447aa) |
 | 4 | ui-refactor-001 run (finder unknown) | Layout size (the 72px MUI Tab) was invisible to tests | spec | rule | `.claude/skills/spec/SKILL.md` Phase 2 (85447aa) |
 | 5 | stuck shell (branding T4) | A pathless `rg` read stdin and hung an agent shell | tooling | hook | `.claude/hooks/block-pathless-rg.mjs`, `.claude/settings.json`, tests in `.claude/hooks/__tests__/` run by `npm run verify` (65b0152) |

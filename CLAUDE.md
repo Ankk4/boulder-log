@@ -50,6 +50,4 @@ The main session (Opus) plans; Sonnet subagents in `.claude/agents/` execute. Ru
 - `implementer` does one task and never commits. `reviewer` is read-only and returns PASS/FAIL. `researcher` writes only to `research/`.
 - `research/` is a separate **private** repo, gitignored here. This repo is public: link research notes by path, never paste competitor detail into specs, commits or PRs.
 - `/run-spec <feature> --draft-pr` pushes the branch and opens a draft PR via `.claude/hooks/lib/open-pr.mjs`, only when every task passed. Without the flag nothing is pushed.
-- Tasks with `runner: planner` (allowed files protected by scope-guard) are done by the orchestrator itself in the main tree, then verified and reviewed like any other task.
-- Worktrees (`isolation: "worktree"`) only for tasks marked `parallel-safe: yes` with `schema-change: no`. Dexie `version()` bumps always run alone.
-- Hooks: `scope-guard.mjs` limits what each agent may write; `verify-on-stop.mjs` also runs on the implementer's `SubagentStop`, but a background agent has already handed back by then, so `/run-spec` re-runs it with `verify-on-stop.mjs --check <tree>` before review (instant when the hook's pass stamp matches); `log-agents.mjs` and the gate log to `.claude/logs/agents.jsonl`.
+- Agent hooks: `scope-guard.mjs` limits what each agent may write, `block-inplace-edit.mjs` stops the implementer editing with `sed -i`/`perl -i`, and `log-agents.mjs` plus the verify gate log to `.claude/logs/agents.jsonl`. Batching, worktrees and the verify gate are in `/run-spec`.

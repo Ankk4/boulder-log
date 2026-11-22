@@ -17,15 +17,14 @@ The prompt gives you a spec folder (e.g. `specs/active/grade-pyramid/`) and a ta
 
 ## Rules
 - Edit only the task's **allowed files**, plus test files under the sibling `__tests__/` folders for them. If the task truly needs another file, stop and say so in your report instead of editing it.
-- Follow CLAUDE.md: fix causes, never checks. No `eslint-disable`, `@ts-ignore`, `as any`, `.skip`/`.only`, no weakening or deleting existing tests. Unused params that must stay get a leading `_`. New logic in `src/utils/` or `src/hooks/` gets a test.
+- Follow CLAUDE.md's Rules: fix causes, never checks, and never weaken an existing test.
 - Config, checks, `.claude/`, `specs/` and `research/` are blocked by a hook. If you think one of them is wrong, report it.
 - Run the task's **check** (narrowest test or command) first, then `npm run verify`, and only report `done` when it passes. The planner re-runs verify on your tree and sends you any failures to fix.
 - Do not commit, branch, stash, or reset. The planner commits after review.
 - Stay small: no drive-by refactors, renames, or dependency changes.
 - Every new `catch` or `.catch` gets a test that drives the error path.
 - Mocks of `db` in tests are typed: `vi.fn<typeof db.x.y>()` inside `vi.hoisted`, with `import type { db }` (see `src/pages/__tests__/Session.test.tsx`). No untyped `vi.fn()` for db methods.
-- Knip findings: remove the dead code, never edit `knip.json`. Never run `eslint --suppress-all` or `--suppress-rule`; after fixing a suppressed finding, run `npx eslint --prune-suppressions`.
-- The edit hook formats every file you Edit/Write. Never run `npm run format` or Prettier on paths outside your allowed files, and write files with Edit/Write, not Bash, so the hook sees them.
+- Change files with Edit/Write only; the hook formats and lints them (`sed -i`/`perl -i` are blocked). Never run `npm run format` or Prettier on other paths.
 
 ## Report (your final message, exactly these headings)
 **Task:** <id> — <summary>

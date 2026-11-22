@@ -29,7 +29,7 @@ if (hook_event_name === 'SubagentStop' && agent_type !== 'implementer') process.
 ensureDeps(cwd);
 
 // One line per gate run in .claude/logs/agents.jsonl, next to log-agents.mjs entries.
-const trace = (result) => {
+const trace = (result, tail) => {
   try {
     const dir = join(process.env.CLAUDE_PROJECT_DIR ?? cwd, '.claude', 'logs');
     mkdirSync(dir, { recursive: true });
@@ -43,6 +43,7 @@ const trace = (result) => {
         cwd,
         stop_hook_active,
         result,
+        tail,
       }) + '\n',
     );
   } catch {
@@ -104,20 +105,21 @@ if (run.status === 0) {
   process.exit(0);
 }
 
-const output = `${run.stdout}\n${run.stderr}`
+const exit = run.signal ? `killed by ${run.signal}` : `exit ${String(run.status)}`;
+const output = `${exit}\n${run.stdout}\n${run.stderr}`
   .split('\n')
   .filter((l) => l.trim() && !/MODULE_TYPELESS|Reparsing|trace-warnings|To eliminate/.test(l))
   .slice(-60)
   .join('\n');
 
 if (cli) {
-  trace('fail');
+  trace('fail', output.split('\n').slice(-15).join('\n'));
   process.stdout.write(`npm run verify failed. Last lines:\n${output}\n`);
   process.exit(1);
 }
 
 if (stop_hook_active) {
-  trace('fail-gave-up');
+  trace('fail-gave-up', output.split('\n').slice(-15).join('\n'));
   console.log(
     JSON.stringify({
       systemMessage:
@@ -127,7 +129,7 @@ if (stop_hook_active) {
   process.exit(0);
 }
 
-trace('fail-block');
+trace('fail-block', output.split('\n').slice(-15).join('\n'));
 console.log(
   JSON.stringify({
     decision: 'block',
