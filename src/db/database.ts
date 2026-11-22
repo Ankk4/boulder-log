@@ -26,12 +26,12 @@ export class BoulderLogDatabase extends Dexie {
     });
   }
 
-  async getCurrentSession(): Promise<Session | undefined> {
+  async getCurrentSession(): Promise<Session | null> {
     const activeSessions = await this.sessions
       .filter((session) => session.endTime === null)
       .toArray();
 
-    return activeSessions.length > 0 ? activeSessions[0] : undefined;
+    return activeSessions[0] ?? null;
   }
 
   async getSessionWithDetails(sessionId: string): Promise<Session | undefined> {
