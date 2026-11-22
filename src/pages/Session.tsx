@@ -157,26 +157,35 @@ const SessionPage = () => {
 
   const endSession = async () => {
     if (currentSession) {
+      const savedNotes = sanitizeNotes(postSessionNotes, LIMITS.postSessionNotes);
+      const savedReview = sanitizePostSessionReview(
+        review,
+        currentSession.preSessionData.goals.length,
+      );
       const updatedSession: Session = {
         ...currentSession,
         endTime: new Date().toISOString(),
-        postSessionNotes: sanitizeNotes(postSessionNotes, LIMITS.postSessionNotes),
-        postSessionReview: sanitizePostSessionReview(
-          review,
-          currentSession.preSessionData.goals.length,
-        ),
+        postSessionNotes: savedNotes,
+        postSessionReview: savedReview,
         duration: Math.round(
           (new Date().getTime() - new Date(currentSession.startTime).getTime()) / (1000 * 60),
         ),
       };
+      const sessionId = currentSession.id;
       try {
         await db.sessions.put(updatedSession);
         setPreSessionData(defaultPreSessionData);
         setPostSessionNotes('');
         setReview(emptyReview);
         void requestPersistentStorage();
+        showFeedback('Session ended', 'info', async () => {
+          await db.sessions.update(sessionId, { endTime: null, duration: undefined });
+          setPostSessionNotes(savedNotes);
+          setReview(savedReview);
+        });
       } catch (error) {
         console.error('Error ending session:', error);
+        showSaveError();
       }
     }
   };

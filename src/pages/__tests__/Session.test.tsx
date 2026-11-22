@@ -630,6 +630,72 @@ describe('Session Page', () => {
       errorSpy.mockRestore();
     });
 
+    it('undo End reopens the session with its notes and review', async () => {
+      const ended = {
+        ...mockSession,
+        postSessionNotes: 'Saved notes',
+        postSessionReview: {
+          rpe: 8,
+          energyAfter: null,
+          accomplishments: ['Did A'],
+          workOn: [],
+          achievedGoals: [],
+        },
+      };
+      vi.mocked(useCurrentSession).mockReturnValue(ended);
+      mockDb.sessions.put.mockResolvedValue('1');
+      mockDb.sessions.update.mockResolvedValue(1);
+      const view = render(ui());
+
+      fireEvent.click(screen.getByText(/end session/i));
+      expect(await screen.findByText('Session ended')).toBeInTheDocument();
+      vi.mocked(useCurrentSession).mockReturnValue(null);
+      view.rerender(ui());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalledWith('1', {
+          endTime: null,
+          duration: undefined,
+        });
+      });
+
+      vi.mocked(useCurrentSession).mockReturnValue(ended);
+      view.rerender(ui());
+      expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('Saved notes');
+      expect(screen.getByText('Did A')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '8' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('shows an error when ending fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.sessions.put.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByText(/end session/i));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      errorSpy.mockRestore();
+    });
+
+    it('shows an error when undoing End fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.sessions.put.mockResolvedValue('1');
+      mockDb.sessions.update.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByText(/end session/i));
+      fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      expect(errorSpy).toHaveBeenCalledWith('Error undoing action:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
+
     it('shows an error when undo fails', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       setupAttempt();
