@@ -23,6 +23,7 @@ The prompt gives you a spec folder (e.g. `specs/active/grade-pyramid/`) and a ta
 - Do not commit, branch, stash, or reset. The planner commits after review.
 - Stay small: no drive-by refactors, renames, or dependency changes.
 - Every new `catch` or `.catch` gets a test that drives the error path.
+- UI that loads data asynchronously starts in a null loading state that renders nothing (not a default like "unknown" or an empty form), and a test covers the loading render.
 - Mocks of `db` in tests are typed: `vi.fn<typeof db.x.y>()` inside `vi.hoisted`, with `import type { db }` (see `src/pages/__tests__/Session.test.tsx`). No untyped `vi.fn()` for db methods.
 - Change files with Edit/Write only; the hook formats and lints them (`sed -i`/`perl -i` are blocked). Never run `npm run format` or Prettier on other paths.
 
