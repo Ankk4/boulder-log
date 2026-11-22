@@ -1,24 +1,61 @@
 #!/usr/bin/env node
-// PreToolUse (Edit|Write|MultiEdit|NotebookEdit): limit what each subagent may write.
+// PreToolUse (Edit|Write|MultiEdit|NotebookEdit|Read|Grep|Glob): limit what each
+// subagent may write, and what the researcher may read.
 // Settings-level hooks also fire inside subagents, with `agent_type` set to the
 // agent's name. The main session (no agent_type) is never restricted here.
 //
+// Writes:
 //   researcher  -> only research/ (the private research repo)
 //   reviewer    -> nothing (it reports, it doesn't fix)
 //   implementer -> anything except checks/config/specs, so it can't loosen a
 //                  check to get green or rewrite the spec it's measured against
+// Reads (Read/Grep/Glob):
+//   researcher  -> only inside the project
 //
 // Exit 2 blocks the call and sends the reason back to the agent.
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { dirname, relative, resolve, sep } from 'node:path';
+import { existsSync, realpathSync } from 'node:fs';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
-const { agent_type, tool_input = {}, cwd = process.cwd() } = JSON.parse(input || '{}');
+const { agent_type, tool_name, tool_input = {}, cwd = process.cwd() } = JSON.parse(input || '{}');
+
+if (!agent_type) process.exit(0);
+
+// Resolves symlinks through the nearest existing ancestor, so a link inside the
+// project that points outside it is caught, even when the leaf doesn't exist.
+const real = (p) => {
+  let head = p;
+  const tail = [];
+  while (!existsSync(head) && dirname(head) !== head) {
+    tail.unshift(basename(head));
+    head = dirname(head);
+  }
+  return join(realpathSync(head), ...tail);
+};
+
+if (['Read', 'Grep', 'Glob'].includes(tool_name)) {
+  if (agent_type !== 'researcher') process.exit(0);
+  const project = real(resolve(process.env.CLAUDE_PROJECT_DIR ?? cwd));
+  const base = resolve(cwd, tool_input.file_path ?? tool_input.path ?? '.');
+  const targets = [base];
+  if (tool_name === 'Glob' && tool_input.pattern) targets.push(resolve(base, tool_input.pattern));
+  if (tool_name === 'Grep' && tool_input.glob) targets.push(resolve(base, tool_input.glob));
+  for (const t of targets) {
+    const abs = real(t);
+    if (abs !== project && !abs.startsWith(project + sep)) {
+      process.stderr.write(
+        `scope-guard: researcher may not read ${t}. Researchers read only inside the project.\n`,
+      );
+      process.exit(2);
+    }
+  }
+  process.exit(0);
+}
 
 const target = tool_input.file_path ?? tool_input.notebook_path;
-if (!agent_type || !target) process.exit(0);
+if (!target) process.exit(0);
 
 const file = resolve(cwd, target);
 const block = (reason) => {
