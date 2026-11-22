@@ -63,6 +63,6 @@ A climber's logbook lives only in this browser. After this ships, the app asks t
 
 ## Open questions
 Decided in an auto-approved run (2026-11-21):
-- The card goes in History, not Home: the bottom nav never leads to Home, and History is where the data is.
+- The card goes in History for now, where the data is. Home is planned to become an overview page (its own spec, with a Home tab in the bottom nav); the card can move there then.
 - `persist()` is asked after End Session because that is a meaningful moment (Firefox may prompt). It is only asked again while the browser hasn't granted it.
 - The first reminder comes after 3 sessions, not 1, so a new user isn't nagged on day one.
