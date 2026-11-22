@@ -7,6 +7,7 @@ import { Session as SessionType, SessionProblem, AttemptType } from '../../types
 import { useCurrentSession } from '../../db/index';
 import type { db } from '../../db/index';
 import type { WhereClause } from 'dexie';
+import { requestPersistentStorage } from '../../utils/storage';
 
 // Mock database functions
 const { mockDb } = vi.hoisted(() => ({
@@ -37,6 +38,15 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock('../../db/index', () => ({
   db: mockDb,
   useCurrentSession: vi.fn(),
+}));
+
+vi.mock('../../utils/storage', () => ({
+  requestPersistentStorage: vi.fn<typeof requestPersistentStorage>().mockResolvedValue('persisted'),
+}));
+
+vi.mock('../../components/DataCard', () => ({ default: () => <div>DataCard stub</div> }));
+vi.mock('../../components/BackupReminder', () => ({
+  default: () => <div>BackupReminder stub</div>,
 }));
 
 // Mock MUI components
@@ -368,6 +378,59 @@ describe('Session Page', () => {
         }),
       );
     });
+  });
+
+  it('requests persistent storage after End Session', async () => {
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    mockDb.sessions.put.mockResolvedValue(1);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText(/end session/i));
+    await waitFor(() => {
+      expect(requestPersistentStorage).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('does not request persistent storage when End fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    mockDb.sessions.put.mockRejectedValue(new Error('boom'));
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText(/end session/i));
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Error ending session:', expect.any(Error));
+    });
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('renders Your data card in History mode', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText('DataCard stub')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+    expect(screen.getByText('DataCard stub')).toBeInTheDocument();
+  });
+
+  it('renders the backup reminder in the check-in', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('BackupReminder stub')).toBeInTheDocument();
   });
 
   it('logs an error when starting a session fails', async () => {
