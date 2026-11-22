@@ -29,6 +29,14 @@ describe('createAppTheme', () => {
     expect(createAppTheme('light').typography.fontFamily).toMatch(/^system-ui/);
   });
 
+  it('contains vertical overscroll on html and body', () => {
+    const overrides = createAppTheme('dark').components?.MuiCssBaseline?.styleOverrides;
+    expect(overrides).toMatchObject({
+      html: { overscrollBehaviorY: 'contain' },
+      body: { overscrollBehaviorY: 'contain' },
+    });
+  });
+
   it.each(['light', 'dark'] as const)('%s text pairings reach 4.5:1', (mode) => {
     const p = createAppTheme(mode).palette;
     expect(contrastRatio(p.primary.contrastText, p.primary.main)).toBeGreaterThanOrEqual(4.5);

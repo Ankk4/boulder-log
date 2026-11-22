@@ -38,5 +38,13 @@ export function createAppTheme(mode: 'light' | 'dark'): Theme {
     typography: {
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          html: { overscrollBehaviorY: 'contain' },
+          body: { overscrollBehaviorY: 'contain' },
+        },
+      },
+    },
   });
 }

@@ -88,7 +88,7 @@ describe('Session Page', () => {
   });
 
   it('renders pre-session form when no active session exists', () => {
-    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(null);
     render(
       <MemoryRouter>
         <Session />
@@ -97,8 +97,19 @@ describe('Session Page', () => {
     expect(screen.getByText(/pre-session check-in/i)).toBeInTheDocument();
   });
 
-  it('starts a new session', async () => {
+  it('renders no check-in while the current session is loading', () => {
     vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/pre-session check-in/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /end session/i })).not.toBeInTheDocument();
+  });
+
+  it('starts a new session', async () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
     mockDb.sessions.add.mockResolvedValue('1');
 
     render(
@@ -282,7 +293,7 @@ describe('Session Page', () => {
   it('resets check-in and notes for the next session after ending one', async () => {
     mockDb.sessions.add.mockResolvedValue('1');
     mockDb.sessions.put.mockResolvedValue(1);
-    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(null);
     const { rerender } = render(ui());
 
     addGoal('Send the red');
@@ -306,7 +317,7 @@ describe('Session Page', () => {
     });
 
     mockDb.sessions.add.mockClear();
-    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(null);
     rerender(ui());
     fireEvent.click(screen.getByText(/start session/i));
     await waitFor(() => {
@@ -322,7 +333,7 @@ describe('Session Page', () => {
 
   it('saves the form defaults after switching to History and back', async () => {
     mockDb.sessions.add.mockResolvedValue('1');
-    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(null);
     render(ui());
 
     addGoal('Stale goal');
@@ -361,7 +372,7 @@ describe('Session Page', () => {
 
   it('logs an error when starting a session fails', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(useCurrentSession).mockReturnValue(undefined);
+    vi.mocked(useCurrentSession).mockReturnValue(null);
     mockDb.sessions.add.mockRejectedValue(new Error('boom'));
 
     render(
@@ -589,7 +600,7 @@ describe('Session Page', () => {
         expect(mockDb.sessions.put).toHaveBeenCalled();
       });
 
-      vi.mocked(useCurrentSession).mockReturnValue(undefined);
+      vi.mocked(useCurrentSession).mockReturnValue(null);
       view.rerender(ui());
       fireEvent.click(screen.getByText(/start session/i));
       await waitFor(() => {

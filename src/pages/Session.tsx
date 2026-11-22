@@ -243,7 +243,7 @@ const SessionPage = () => {
 
       {mode === 'history' ? (
         <PastSessionsList />
-      ) : !currentSession ? (
+      ) : currentSession === undefined ? null : currentSession === null ? (
         <Paper sx={{ p: 2, mb: 2 }}>
           <Typography variant="h6" gutterBottom>
             Pre-Session Check-in
