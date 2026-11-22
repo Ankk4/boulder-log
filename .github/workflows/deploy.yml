@@ -36,8 +36,8 @@ jobs:
       - name: Typecheck, lint, test
         run: npm run verify
 
-      - name: Build with Vite
-        run: npx vite build
+      - name: Build
+        run: npm run build
 
       - name: Measure coverage
         run: npx vitest run --coverage --coverage.reporter=json-summary
