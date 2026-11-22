@@ -12,10 +12,13 @@ import PageHeader from '../components/PageHeader';
 import QuickLog from '../components/QuickLog';
 import PreSessionForm from '../components/PreSessionForm';
 import PastSessionsList from '../components/PastSessionsList';
+import DataCard from '../components/DataCard';
+import BackupReminder from '../components/BackupReminder';
 import PostSessionReviewSection from '../components/PostSessionReview';
 import type { Session, SessionProblem, PreSessionData, PostSessionReview } from '../types';
 import { AttemptType } from '../types';
 import { db, useCurrentSession } from '../db';
+import { requestPersistentStorage } from '../utils/storage';
 import {
   sanitizeGoals,
   sanitizeGrade,
@@ -132,6 +135,7 @@ const SessionPage = () => {
         setPreSessionData(defaultPreSessionData);
         setPostSessionNotes('');
         setReview(emptyReview);
+        void requestPersistentStorage();
       } catch (error) {
         console.error('Error ending session:', error);
       }
@@ -242,9 +246,13 @@ const SessionPage = () => {
       </ToggleButtonGroup>
 
       {mode === 'history' ? (
-        <PastSessionsList />
+        <>
+          <DataCard />
+          <PastSessionsList />
+        </>
       ) : currentSession === undefined ? null : currentSession === null ? (
         <Paper sx={{ p: 2, mb: 2 }}>
+          <BackupReminder />
           <Typography variant="h6" gutterBottom>
             Pre-Session Check-in
           </Typography>
