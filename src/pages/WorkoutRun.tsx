@@ -234,7 +234,7 @@ const WorkoutRun = () => {
             sx={{
               fontVariantNumeric: 'tabular-nums',
               my: 1,
-              fontSize: { xs: '5rem', sm: '6.5rem' },
+              fontSize: 'clamp(4rem, min(26vw, 22vh), 10rem)',
               fontWeight: 700,
               color: theme.color,
               lineHeight: 1,
