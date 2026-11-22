@@ -8,8 +8,8 @@ export default function Home() {
     <>
       <PageHeader title="Matside" />
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        An offline-first PWA for logging bouldering sessions, problems, attempts, benchmarks and
-        everything related to the sport.
+        Log your bouldering sessions, problems, attempts and hangboard timers. Your data stays on
+        this device.
       </Typography>
       <Stack spacing={2}>
         <Button
