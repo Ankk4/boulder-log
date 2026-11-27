@@ -91,3 +91,17 @@ Rules for splitting:
   - Count `problem.attempts.length` (all attempt types) instead of only `AttemptType.ATTEMPT`.
   - `disabled={problem.flash || problem.send}` on Attempt too.
   - Update existing assertions on the count text only where this changes them, and say which.
+
+## T7 — Colour chips show the French range
+- covers: [R2]
+- runner: implementer
+- allowed files: `src/components/GradePicker.tsx`, `src/components/__tests__/GradePicker.test.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/pages/__tests__/Session.test.tsx`
+- check: `npx vitest run src/components/__tests__/GradePicker.test.tsx src/components/__tests__/QuickLog.test.tsx src/pages/__tests__/Session.test.tsx`
+- tests to add: "colour chips show the French range" (label is `grade.range`, the Finnish name is not shown, and clicking still calls `onColorGradeChange` with `grade.name`).
+- parallel-safe: no
+- schema-change: no
+- depends-on: [T6]
+- notes:
+  - Chip `label={grade.range}`; keep `key`, selection and callbacks on `grade.name`. Keep the `swatch-<name>` testid.
+  - Don't change `grades.ts`, stored data, the row's "Color: <name>" text or auto-names.
+  - Tests that find colour chips by Finnish name switch to the range.
