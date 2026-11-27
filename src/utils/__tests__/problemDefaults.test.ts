@@ -49,6 +49,7 @@ describe('autoName', () => {
     expect(autoName(problems, '6a')).toBe('6a #3');
     expect(autoName(problems, '5')).toBe('5 #2');
     expect(autoName(problems, '7a')).toBe('7a #1');
+    expect(autoName(problems, 'Napakka')).toBe('6a+-6b+ #1');
   });
 });
 
@@ -103,7 +104,7 @@ describe('summarizeLastTime', () => {
       }),
     ];
     const result = summarizeLastTime(problems, 'cur', 'Napakka');
-    expect(result).toMatchObject({ label: 'Napakka', count: 1, sent: 1, flashed: 0 });
+    expect(result).toMatchObject({ label: '6a+-6b+', count: 1, sent: 1, flashed: 0 });
   });
 
   it('a flash counts as sent', () => {

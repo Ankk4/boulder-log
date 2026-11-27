@@ -15,6 +15,7 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import GradePicker from './GradePicker';
 import { useProblemsAtGrade } from '../db/index';
+import { colorRange } from '../utils/grades';
 import { autoName, gradeLabel, lastUsedGrades, summarizeLastTime } from '../utils/problemDefaults';
 import { AttemptType } from '../types';
 import type { SessionProblem } from '../types';
@@ -116,7 +117,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
               <Typography variant="body2" color="text.secondary">
                 {problem.frenchGrade && `French Grade: ${problem.frenchGrade}`}
                 {problem.frenchGrade && problem.colorGrade && ' | '}
-                {problem.colorGrade && `Color: ${problem.colorGrade}`}
+                {problem.colorGrade && `Color: ${colorRange(problem.colorGrade)}`}
                 {(problem.flash || problem.send) && ' • Completed'}
               </Typography>
               <Stack direction="row" sx={{ gap: 1, mt: 1 }}>

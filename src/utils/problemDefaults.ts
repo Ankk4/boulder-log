@@ -1,5 +1,5 @@
 import type { SessionProblem } from '../types';
-import { frenchGrades } from './grades';
+import { colorRange, frenchGrades } from './grades';
 
 type GradeFields = Pick<SessionProblem, 'frenchGrade' | 'colorGrade'>;
 
@@ -28,7 +28,8 @@ export const lastUsedGrades = (
 /** `<label> #<n>` where n is 1 + the number of problems with the same label. */
 export const autoName = (problems: SessionProblem[], label: string): string => {
   const same = problems.filter((p) => gradeLabel(p) === label).length;
-  return `${label} #${String(same + 1)}`;
+  const shown = frenchGrades.includes(label) ? label : colorRange(label);
+  return `${shown} #${String(same + 1)}`;
 };
 
 /** Summary of the most recent earlier session's problems at this label, or null. */
@@ -53,7 +54,7 @@ export const summarizeLastTime = (
 
   const group = matches.filter((p) => p.sessionId === latestSessionId);
   return {
-    label,
+    label: isFrench ? label : colorRange(label),
     date: new Date(latestCreatedAt).toLocaleDateString(),
     count: group.length,
     sent: group.filter((p) => p.send || p.flash).length,

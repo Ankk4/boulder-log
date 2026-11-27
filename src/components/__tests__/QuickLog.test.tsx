@@ -153,6 +153,12 @@ describe('QuickLog rows', () => {
     timestamp: '2025-01-02T10:00:00.000Z',
   };
 
+  it('rows show the colour range', () => {
+    renderLog([makeProblem({ id: 'a', colorGrade: 'Napakka' })]);
+    expect(screen.getByText(/Color: 6a\+-6b\+/)).toBeInTheDocument();
+    expect(screen.queryByText(/Napakka/)).not.toBeInTheDocument();
+  });
+
   it('row buttons have visible labels and no flash button', () => {
     renderLog([makeProblem({ id: 'a', frenchGrade: '6b', attempts: [attempt] })]);
     expect(screen.getByTestId('attempt-button')).toHaveTextContent('Attempt (1)');

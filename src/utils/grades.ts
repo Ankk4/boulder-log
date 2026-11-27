@@ -30,5 +30,9 @@ export const colorGrades = [
   { name: 'Napakka', color: '#FF69B4', range: '6a+-6b+' },
   { name: 'Haastava', color: '#FF0000', range: '6c-7a' },
   { name: 'Vaikea', color: '#800080', range: '7a+-7b' },
-  { name: 'Erittäin Vaikea', color: '#000000', range: '7b+->' },
+  { name: 'Erittäin Vaikea', color: '#000000', range: '7b+ and up' },
 ];
+
+/** French grade range for a colour name, or the name itself when unknown. */
+export const colorRange = (name: string): string =>
+  colorGrades.find((c) => c.name === name)?.range ?? name;
