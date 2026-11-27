@@ -6,11 +6,10 @@ import {
   Chip,
   FormControlLabel,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import type { PostSessionReview as PostSessionReviewData } from '../types';
+import RatingPicker from './RatingPicker';
 import { LIMITS } from '../utils/validation';
 
 interface PostSessionReviewProps {
@@ -18,40 +17,6 @@ interface PostSessionReviewProps {
   goals: string[];
   onChange: (next: PostSessionReviewData) => void;
 }
-
-const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-const RatingPicker = ({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number | null;
-  onChange: (next: number | null) => void;
-}) => (
-  <Box sx={{ mb: 2 }}>
-    <Typography variant="subtitle2" gutterBottom>
-      {label}
-    </Typography>
-    <ToggleButtonGroup
-      exclusive
-      size="small"
-      value={value}
-      aria-label={label}
-      onChange={(_event, next: number | null) => {
-        onChange(next);
-      }}
-      sx={{ flexWrap: 'wrap' }}
-    >
-      {RATINGS.map((n) => (
-        <ToggleButton key={n} value={n} sx={{ minWidth: 40, minHeight: 40 }}>
-          {n}
-        </ToggleButton>
-      ))}
-    </ToggleButtonGroup>
-  </Box>
-);
 
 const ItemList = ({
   title,
