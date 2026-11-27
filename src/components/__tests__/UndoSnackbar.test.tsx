@@ -67,6 +67,48 @@ describe('UndoSnackbar', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('info uses status role', () => {
+    render(<UndoSnackbar open message="Send logged" severity="info" onClose={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Send logged');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('error uses alert role', () => {
+    render(<UndoSnackbar open message="Couldn't save" severity="error" onClose={vi.fn()} />);
+    expect(screen.getByRole('alert')).toHaveTextContent("Couldn't save");
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('does not auto-hide while Undo has focus', () => {
+    vi.useFakeTimers();
+    const onClose = vi.fn<() => void>();
+    render(
+      <UndoSnackbar
+        open
+        message="Send logged"
+        severity="info"
+        onUndo={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    act(() => {
+      undo.focus();
+    });
+    act(() => {
+      vi.advanceTimersByTime(9000);
+    });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('Send logged')).toBeInTheDocument();
+    act(() => {
+      undo.blur();
+    });
+    act(() => {
+      vi.advanceTimersByTime(8100);
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores clicks elsewhere', async () => {
     const onClose = vi.fn<() => void>();
     render(

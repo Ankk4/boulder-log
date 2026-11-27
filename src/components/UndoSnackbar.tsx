@@ -1,4 +1,5 @@
 import { Alert, Button, Snackbar } from '@mui/material';
+import { useState } from 'react';
 import type { SyntheticEvent } from 'react';
 
 interface UndoSnackbarProps {
@@ -21,15 +22,24 @@ export default function UndoSnackbar({
     onClose();
   };
 
+  const [focused, setFocused] = useState(false);
+
   return (
     <Snackbar
       open={open}
-      autoHideDuration={8000}
+      autoHideDuration={focused ? null : 8000}
       onClose={handleClose}
       sx={{ bottom: { xs: 'calc(64px + env(safe-area-inset-bottom))', md: 24 } }}
     >
       <Alert
         severity={severity}
+        role={severity === 'error' ? 'alert' : 'status'}
+        onFocus={() => {
+          setFocused(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+        }}
         variant="filled"
         action={
           onUndo ? (
