@@ -77,3 +77,17 @@ Rules for splitting:
   - Remove the one-tap add button, `handleOneTapAdd` and anything only it used (knip).
   - `summarizeLastTime`: `sent` counts `p.send || p.flash`.
   - Session.test: tests that click `flash-button` switch to `send-button` on a problem with no attempts. Keep their assertions (FLASH attempt type, "Flash logged" snackbar, undo).
+
+## T6 — Attempt after a send: disabled, count includes the topping try
+- covers: [R1]
+- runner: implementer
+- allowed files: `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/pages/__tests__/Session.test.tsx`
+- check: `npx vitest run src/components/__tests__/QuickLog.test.tsx src/pages/__tests__/Session.test.tsx`
+- tests to add: "attempt disabled and counts the flash after a flash", plus a send-after-attempts case (2 attempts then Send → "Attempt (3)", disabled).
+- parallel-safe: no
+- schema-change: no
+- depends-on: [T5]
+- notes:
+  - Count `problem.attempts.length` (all attempt types) instead of only `AttemptType.ATTEMPT`.
+  - `disabled={problem.flash || problem.send}` on Attempt too.
+  - Update existing assertions on the count text only where this changes them, and say which.
