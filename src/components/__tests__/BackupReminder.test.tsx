@@ -59,13 +59,13 @@ describe('BackupReminder', () => {
     expect(screen.queryByRole('button', { name: 'Export now' })).not.toBeInTheDocument();
   });
 
-  it('Later snoozes for 7 days', async () => {
+  it('Remind me in 7 days snoozes for 7 days', async () => {
     render(<BackupReminder />);
-    await userEvent.click(screen.getByRole('button', { name: 'Later' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remind me in 7 days' }));
     const snoozeArg = vi.mocked(storage.setBackupSnoozeUntil).mock.calls[0]?.[0] ?? '';
     const expectedMs = NOW.getTime() + 7 * 24 * 60 * 60 * 1000;
     expect(Math.abs(new Date(snoozeArg).getTime() - expectedMs)).toBeLessThan(5000);
-    expect(screen.queryByRole('button', { name: 'Later' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remind me in 7 days' })).not.toBeInTheDocument();
   });
 
   it('Export now exports and hides', async () => {

@@ -54,7 +54,7 @@ const BackupReminder = () => {
             Export now
           </Button>
           <Button color="inherit" size="small" onClick={snooze}>
-            Later
+            Remind me in 7 days
           </Button>
         </>
       }
