@@ -36,7 +36,7 @@ Rules for splitting:
 ## T3 — Faster Add Problem dialog
 - covers: [R2, R3, R4, R5, R7]
 - runner: implementer
-- allowed files: `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/db/index.ts`, `src/components/DifficultySelect.tsx`
+- allowed files: `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/db/index.ts`, `src/components/DifficultySelect.tsx`, `src/pages/__tests__/Session.test.tsx`
 - check: `npx vitest run src/components/__tests__/QuickLog.test.tsx`
 - tests to add: the R2, R3, R4, R5 and R7 `QuickLog.test.tsx` cases. Mock `../../db/index` for the history hook.
 - parallel-safe: no
@@ -46,11 +46,12 @@ Rules for splitting:
   - Add `useProblemsAtGrade(label)` to `src/db/index.ts`: `useLiveQuery` over `db.problems.where('frenchGrade').equals(label)`, or `colorGrade` when no French grade.
   - Remove `autoFocus`. Name passes through `sanitizeProblemName`; an empty result uses `autoName`.
   - Delete `DifficultySelect.tsx` once QuickLog no longer imports it. `src/__tests__/theme-usage.test.ts` keeps working: its DifficultySelect exception just stops matching.
+  - Add `useProblemsAtGrade` to the `../../db/index` mock in `Session.test.tsx` (Session renders QuickLog).
 
 ## T4 — Labelled row buttons, one-tap add, sticky add bar
 - covers: [R1, R6, R8]
 - runner: implementer
-- allowed files: `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`
+- allowed files: `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/pages/__tests__/Session.test.tsx`
 - check: `npx vitest run src/components/__tests__/QuickLog.test.tsx src/pages/__tests__/Session.test.tsx`
 - tests to add: the R1 and R6 `QuickLog.test.tsx` cases.
 - parallel-safe: no
