@@ -22,6 +22,9 @@ declare module '@mui/material/styles' {
   }
 }
 
+// Height of MUI's dense Toolbar (the sticky app bar in Layout), per MUI's Toolbar styles.
+const DENSE_TOOLBAR_HEIGHT = 48;
+
 export const DEFAULT_THEME_MODE = 'dark' as const;
 
 export function createAppTheme(mode: 'light' | 'dark'): Theme {
@@ -39,9 +42,30 @@ export function createAppTheme(mode: 'light' | 'dark'): Theme {
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     },
     components: {
+      MuiTypography: {
+        defaultProps: {
+          // Replaces MUI's whole mapping, so repeat its defaults; only subtitle1/2 differ (p, not h6).
+          variantMapping: {
+            h1: 'h1',
+            h2: 'h2',
+            h3: 'h3',
+            h4: 'h4',
+            h5: 'h5',
+            h6: 'h6',
+            subtitle1: 'p',
+            subtitle2: 'p',
+            body1: 'p',
+            body2: 'p',
+            inherit: 'p',
+          },
+        },
+      },
       MuiCssBaseline: {
         styleOverrides: {
-          html: { overscrollBehaviorY: 'contain' },
+          html: {
+            overscrollBehaviorY: 'contain',
+            scrollPaddingTop: DENSE_TOOLBAR_HEIGHT,
+          },
           body: { overscrollBehaviorY: 'contain' },
         },
       },
