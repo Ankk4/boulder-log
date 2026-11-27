@@ -8,14 +8,9 @@ import {
   DialogActions,
   TextField,
   Stack,
-  IconButton,
   Typography,
   List,
-  ListItem,
-  ListItemText,
   Paper,
-  Badge,
-  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -48,11 +43,26 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
   const lastTime = label && history ? summarizeLastTime(history, sessionId, label) : null;
 
   const openDialog = () => {
-    const last = lastUsedGrades(problems);
     setNewFrenchGrade(last?.frenchGrade ?? '');
     setNewColorGrade(last?.colorGrade ?? '');
     setNewProblemName('');
     setIsAddingProblem(true);
+  };
+
+  const last = lastUsedGrades(problems);
+  const lastLabel = last ? gradeLabel(last) : '';
+
+  const handleOneTapAdd = () => {
+    if (!last || !lastLabel) return;
+    onAddProblem({
+      name: autoName(problems, lastLabel),
+      frenchGrade: last.frenchGrade,
+      colorGrade: last.colorGrade,
+      sessionId,
+      createdAt: new Date().toISOString(),
+      flash: false,
+      send: false,
+    });
   };
 
   const handleAddProblem = () => {
@@ -90,101 +100,93 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openDialog}>
+      <Stack
+        direction="row"
+        sx={{
+          gap: 1,
+          mb: 2,
+          py: 1,
+          position: { xs: 'sticky', md: 'static' },
+          bottom: 'calc(56px + env(safe-area-inset-bottom))',
+          bgcolor: 'background.default',
+          zIndex: 1,
+        }}
+      >
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openDialog}
+          sx={{ minHeight: 48 }}
+        >
           Add Problem
         </Button>
+        {last && (
+          <Button variant="outlined" onClick={handleOneTapAdd} sx={{ minHeight: 48 }}>
+            {`Add ${lastLabel}`}
+          </Button>
+        )}
       </Stack>
 
       <List>
-        {problems.map((problem) => (
-          <Paper key={problem.id} sx={{ mb: 2, p: 1 }}>
-            <ListItem
-              secondaryAction={
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Tooltip title="Mark as flashed (completed first try)">
-                    <span>
-                      <IconButton
-                        onClick={() => {
-                          onAddAttempt(problem.id, AttemptType.FLASH);
-                        }}
-                        color={problem.flash ? 'success' : 'default'}
-                        disabled={problem.flash || problem.send || problem.attempts.length > 0}
-                        data-testid="flash-button"
-                      >
-                        <FlashIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="Mark as sent (completed)">
-                    <span>
-                      <IconButton
-                        onClick={() => {
-                          onAddAttempt(problem.id, AttemptType.SEND);
-                        }}
-                        color={problem.send ? 'success' : 'default'}
-                        disabled={problem.flash || problem.send}
-                        data-testid="send-button"
-                      >
-                        <SendIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="Log an attempt">
-                    <Badge
-                      badgeContent={
-                        problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length
-                      }
-                      color="primary"
-                      sx={{ '& .MuiBadge-badge': { fontSize: '0.8rem' } }}
-                    >
-                      <IconButton
-                        onClick={() => {
-                          onAddAttempt(problem.id, AttemptType.ATTEMPT);
-                        }}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
-                        }}
-                        data-testid="attempt-button"
-                      >
-                        <AttemptIcon />
-                      </IconButton>
-                    </Badge>
-                  </Tooltip>
-                </Stack>
-              }
-              sx={{
-                '& .MuiListItemText-root': {
-                  marginRight: '120px', // Add space for the icons
-                },
-              }}
-            >
-              <ListItemText
-                primary={
-                  <Typography variant="subtitle1" noWrap>
-                    {problem.name}
-                    {problem.flash && ' 🌟'}
-                    {problem.send && ' ✓'}
-                  </Typography>
-                }
-                secondary={
-                  <>
-                    {problem.frenchGrade && `French Grade: ${problem.frenchGrade}`}
-                    {problem.frenchGrade && problem.colorGrade && ' | '}
-                    {problem.colorGrade && `Color: ${problem.colorGrade}`}
-                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                      Attempts:{' '}
-                      {problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length}
-                      {(problem.flash || problem.send) && ' • Completed'}
-                    </Typography>
-                  </>
-                }
-              />
-            </ListItem>
-          </Paper>
-        ))}
+        {problems.map((problem) => {
+          const attemptCount = problem.attempts.filter(
+            (a) => a.type === AttemptType.ATTEMPT,
+          ).length;
+          return (
+            <Paper key={problem.id} sx={{ mb: 2, p: 1.5 }}>
+              <Typography variant="subtitle1" noWrap>
+                {problem.name}
+                {problem.flash && ' 🌟'}
+                {problem.send && ' ✓'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {problem.frenchGrade && `French Grade: ${problem.frenchGrade}`}
+                {problem.frenchGrade && problem.colorGrade && ' | '}
+                {problem.colorGrade && `Color: ${problem.colorGrade}`}
+                {(problem.flash || problem.send) && ' • Completed'}
+              </Typography>
+              <Stack direction="row" sx={{ gap: 1, mt: 1 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<AttemptIcon />}
+                  onClick={() => {
+                    onAddAttempt(problem.id, AttemptType.ATTEMPT);
+                  }}
+                  sx={{ minHeight: 48, flex: 1 }}
+                  data-testid="attempt-button"
+                >
+                  {`Attempt (${String(attemptCount)})`}
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<FlashIcon />}
+                  color={problem.flash ? 'success' : 'primary'}
+                  onClick={() => {
+                    onAddAttempt(problem.id, AttemptType.FLASH);
+                  }}
+                  disabled={problem.flash || problem.send || problem.attempts.length > 0}
+                  sx={{ minHeight: 48, flex: 1 }}
+                  data-testid="flash-button"
+                >
+                  Flash
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<SendIcon />}
+                  color={problem.send ? 'success' : 'primary'}
+                  onClick={() => {
+                    onAddAttempt(problem.id, AttemptType.SEND);
+                  }}
+                  disabled={problem.flash || problem.send}
+                  sx={{ minHeight: 48, flex: 1 }}
+                  data-testid="send-button"
+                >
+                  Send
+                </Button>
+              </Stack>
+            </Paper>
+          );
+        })}
       </List>
 
       <Dialog

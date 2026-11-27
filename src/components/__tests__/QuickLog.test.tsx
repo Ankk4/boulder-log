@@ -2,6 +2,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import QuickLog from '../QuickLog';
 import type { SessionProblem } from '../../types';
+import { AttemptType } from '../../types';
 import { useProblemsAtGrade } from '../../db/index';
 
 vi.mock('../../db/index', () => ({
@@ -122,5 +123,67 @@ describe('QuickLog add dialog', () => {
     const dialog = openDialog();
     fireEvent.click(within(dialog).getByRole('button', { name: '6a' }));
     expect(within(dialog).queryByText(/Last time at/)).not.toBeInTheDocument();
+  });
+});
+
+describe('QuickLog rows and one-tap add', () => {
+  beforeEach(() => {
+    mockHistory.mockReset();
+    mockHistory.mockReturnValue([]);
+  });
+
+  it('row buttons have visible labels', () => {
+    renderLog([
+      makeProblem({
+        id: 'a',
+        frenchGrade: '6b',
+        attempts: [
+          {
+            id: 'x',
+            problemId: 'a',
+            sessionId: 's1',
+            type: AttemptType.ATTEMPT,
+            timestamp: '2025-01-02T10:00:00.000Z',
+          },
+        ],
+      }),
+    ]);
+    expect(screen.getByTestId('attempt-button')).toHaveTextContent('Attempt (1)');
+    expect(screen.getByTestId('flash-button')).toHaveTextContent('Flash');
+    expect(screen.getByTestId('send-button')).toHaveTextContent('Send');
+  });
+
+  it('flash disabled after an attempt', () => {
+    renderLog([
+      makeProblem({
+        id: 'a',
+        frenchGrade: '6b',
+        attempts: [
+          {
+            id: 'x',
+            problemId: 'a',
+            sessionId: 's1',
+            type: AttemptType.ATTEMPT,
+            timestamp: '2025-01-02T10:00:00.000Z',
+          },
+        ],
+      }),
+    ]);
+    expect(screen.getByTestId('flash-button')).toBeDisabled();
+    expect(screen.getByTestId('send-button')).toBeEnabled();
+  });
+
+  it('one-tap add repeats the last grades', () => {
+    const onAdd = renderLog([makeProblem({ id: 'a', frenchGrade: '6b' })]);
+    fireEvent.click(screen.getByRole('button', { name: 'Add 6b' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: '6b #2', frenchGrade: '6b', sessionId: 's1' }),
+    );
+  });
+
+  it('no one-tap add in an empty session', () => {
+    renderLog();
+    expect(screen.queryByRole('button', { name: /^Add (?!Problem)/ })).not.toBeInTheDocument();
   });
 });
