@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { MouseEvent, ReactNode } from 'react';
 import {
   AppBar,
   Box,
@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import { FitnessCenter, Timer } from '@mui/icons-material';
 import { Link as RouterLink, useLocation } from 'react-router';
-import { useAppNavigate } from '../hooks/useAppNavigate';
 import { FocusModeProvider } from '../hooks/FocusModeProvider';
 import { useFocusMode } from '../hooks/useFocusMode';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
@@ -25,8 +24,32 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+const skipLinkSx = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  m: -1 / 8,
+  p: 0,
+  border: 0,
+  '&:focus-visible': {
+    width: 'auto',
+    height: 'auto',
+    overflow: 'visible',
+    clip: 'auto',
+    m: 0,
+    p: 1,
+    top: 8,
+    left: 8,
+    zIndex: 'tooltip',
+    bgcolor: 'background.paper',
+    color: 'text.primary',
+  },
+} as const;
+
 const LayoutShell = ({ children }: LayoutProps) => {
-  const navigate = useAppNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -38,8 +61,19 @@ const LayoutShell = ({ children }: LayoutProps) => {
     return false;
   };
 
-  const goToTab = (value: number) => {
-    navigate(value === 0 ? '/session' : '/workouts');
+  // MUI's Tab is role="tab" with roving tabindex; as links they need neither.
+  const tabLinkProps = (to: string, index: number) => ({
+    component: RouterLink,
+    to,
+    role: undefined,
+    tabIndex: 0,
+    'aria-selected': undefined,
+    'aria-current': getCurrentTab() === index ? ('page' as const) : undefined,
+  });
+
+  const skipToMain = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    document.getElementById('main-content')?.focus();
   };
 
   return (
@@ -51,6 +85,11 @@ const LayoutShell = ({ children }: LayoutProps) => {
         flexDirection: 'column',
       }}
     >
+      {!focus && (
+        <Box component="a" href="#main-content" onClick={skipToMain} sx={skipLinkSx}>
+          Skip to main content
+        </Box>
+      )}
       {!focus && (
         <AppBar position="sticky" color="primary" elevation={0}>
           <Toolbar variant="dense" sx={{ gap: 1 }}>
@@ -69,15 +108,14 @@ const LayoutShell = ({ children }: LayoutProps) => {
             {isDesktop && (
               <Tabs
                 value={getCurrentTab()}
-                onChange={(_event, newValue: number) => {
-                  goToTab(newValue);
-                }}
+                component="nav"
+                slotProps={{ root: { 'aria-label': 'Main' }, list: { role: undefined } }}
                 textColor="inherit"
                 indicatorColor="secondary"
                 sx={{ ml: 2, minHeight: 48 }}
               >
-                <Tab label="Session" />
-                <Tab label="Timer" />
+                <Tab {...tabLinkProps('/session', 0)} label="Session" />
+                <Tab {...tabLinkProps('/workouts', 1)} label="Timer" />
               </Tabs>
             )}
           </Toolbar>
@@ -87,6 +125,9 @@ const LayoutShell = ({ children }: LayoutProps) => {
           remount the page and reset its state (e.g. the running timer). Focus mode
           only drops the width limit and padding. */}
       <Container
+        component="main"
+        id="main-content"
+        tabIndex={-1}
         maxWidth={false}
         disableGutters={focus}
         sx={
@@ -113,15 +154,21 @@ const LayoutShell = ({ children }: LayoutProps) => {
           }}
           elevation={3}
         >
-          <BottomNavigation
-            showLabels
-            value={getCurrentTab()}
-            onChange={(_event, newValue: number) => {
-              goToTab(newValue);
-            }}
-          >
-            <BottomNavigationAction label="Session" icon={<FitnessCenter />} />
-            <BottomNavigationAction label="Timer" icon={<Timer />} />
+          <BottomNavigation component="nav" aria-label="Main" showLabels value={getCurrentTab()}>
+            <BottomNavigationAction
+              component={RouterLink}
+              to="/session"
+              aria-current={getCurrentTab() === 0 ? 'page' : undefined}
+              label="Session"
+              icon={<FitnessCenter />}
+            />
+            <BottomNavigationAction
+              component={RouterLink}
+              to="/workouts"
+              aria-current={getCurrentTab() === 1 ? 'page' : undefined}
+              label="Timer"
+              icon={<Timer />}
+            />
           </BottomNavigation>
         </Paper>
       )}
