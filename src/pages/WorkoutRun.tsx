@@ -122,7 +122,7 @@ const WorkoutRun = () => {
   if (workout === undefined) {
     return (
       <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
+        <CircularProgress aria-label="Loading workout" />
       </Box>
     );
   }
@@ -130,7 +130,9 @@ const WorkoutRun = () => {
   if (workout === null || !id) {
     return (
       <Box sx={{ p: 2 }}>
-        <Typography variant="h6">Workout not found</Typography>
+        <Typography variant="h6" component="h2">
+          Workout not found
+        </Typography>
         <Button
           startIcon={<BackIcon />}
           onClick={() => {
@@ -162,6 +164,27 @@ const WorkoutRun = () => {
               ? 'DONE'
               : 'STOPPED'
             : 'READY';
+
+  const doneSentence =
+    timer.completedIntervals >= workout.intervals
+      ? 'Set complete. Saved to history.'
+      : `Stopped after ${String(timer.completedIntervals)} interval${timer.completedIntervals === 1 ? '' : 's'}.`;
+
+  const phaseWord =
+    timer.phase === 'idle'
+      ? ''
+      : timer.phase === 'done'
+        ? timer.completedIntervals >= workout.intervals
+          ? 'Done'
+          : 'Stopped'
+        : timer.isPaused
+          ? 'Paused'
+          : timer.phase === 'prepare'
+            ? 'Prepare'
+            : timer.phase === 'work'
+              ? 'Work'
+              : 'Rest';
+  const announcement = timer.phase === 'done' ? `${phaseWord}. ${doneSentence}` : phaseWord;
 
   const progress =
     workout.intervals > 0 ? Math.min(100, (timer.completedIntervals / workout.intervals) * 100) : 0;
@@ -196,13 +219,33 @@ const WorkoutRun = () => {
         transition: 'background-color 0.25s ease',
       }}
     >
+      <Box
+        aria-live="polite"
+        sx={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          whiteSpace: 'nowrap',
+          margin: '-1px',
+          padding: 0,
+          border: 0,
+        }}
+      >
+        {announcement}
+      </Box>
       <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto', p: 2 }}>
         <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: 'center' }}>
-          <IconButton aria-label="back" onClick={handleBack} sx={{ color: theme.color }}>
+          <IconButton
+            aria-label="Back to workouts"
+            onClick={handleBack}
+            sx={{ color: theme.color }}
+          >
             <BackIcon />
           </IconButton>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h5" sx={{ color: theme.color }}>
+            <Typography variant="h5" component="h2" sx={{ color: theme.color }}>
               {workout.name}
             </Typography>
             <Typography variant="body2" sx={{ color: theme.muted }}>
@@ -211,7 +254,7 @@ const WorkoutRun = () => {
             </Typography>
           </Box>
           <IconButton
-            aria-label={timer.muted ? 'unmute' : 'mute'}
+            aria-label={timer.muted ? 'Unmute beeps' : 'Mute beeps'}
             onClick={() => {
               timer.setMuted(!timer.muted);
             }}
@@ -231,6 +274,7 @@ const WorkoutRun = () => {
           </Typography>
           <Typography
             variant="h1"
+            component="p"
             sx={{
               fontVariantNumeric: 'tabular-nums',
               my: 1,
@@ -244,7 +288,7 @@ const WorkoutRun = () => {
               ? formatCountdown(workout.workSeconds)
               : formatCountdown(timer.secondsRemaining)}
           </Typography>
-          <Typography variant="h6" sx={{ color: theme.muted }}>
+          <Typography variant="h6" component="p" sx={{ color: theme.muted }}>
             {timer.phase === 'prepare'
               ? 'Get ready'
               : timer.phase === 'idle'
@@ -254,6 +298,8 @@ const WorkoutRun = () => {
           <LinearProgress
             variant="determinate"
             value={progress}
+            aria-label="Intervals completed"
+            aria-valuetext={`${String(timer.completedIntervals)} of ${String(workout.intervals)} intervals`}
             sx={{
               mt: 3,
               height: 10,
@@ -326,9 +372,7 @@ const WorkoutRun = () => {
         {timer.phase === 'done' && (
           <Stack spacing={1}>
             <Typography align="center" sx={{ color: theme.muted }}>
-              {timer.completedIntervals >= workout.intervals
-                ? 'Set complete. Saved to history.'
-                : `Stopped after ${String(timer.completedIntervals)} interval${timer.completedIntervals === 1 ? '' : 's'}.`}
+              {doneSentence}
             </Typography>
             <Button fullWidth variant="contained" onClick={handleBack} sx={filledSx}>
               Back to workouts
