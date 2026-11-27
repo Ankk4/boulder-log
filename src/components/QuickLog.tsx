@@ -105,9 +105,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
 
       <List>
         {problems.map((problem) => {
-          const attemptCount = problem.attempts.filter(
-            (a) => a.type === AttemptType.ATTEMPT,
-          ).length;
+          const attemptCount = problem.attempts.length;
           return (
             <Paper key={problem.id} sx={{ mb: 2, p: 1.5 }}>
               <Typography variant="subtitle1" noWrap>
@@ -127,6 +125,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                   onClick={() => {
                     onAddAttempt(problem.id, AttemptType.ATTEMPT);
                   }}
+                  disabled={problem.flash || problem.send}
                   sx={{ minHeight: 48, flex: 1, minWidth: 0 }}
                   data-testid="attempt-button"
                 >

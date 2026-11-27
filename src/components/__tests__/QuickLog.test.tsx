@@ -179,6 +179,27 @@ describe('QuickLog rows', () => {
     expect(screen.getByTestId('send-button')).toBeDisabled();
   });
 
+  it('attempt disabled and counts the flash after a flash', () => {
+    const flashAttempt = { ...attempt, type: AttemptType.FLASH };
+    renderLog([makeProblem({ id: 'a', frenchGrade: '6b', flash: true, attempts: [flashAttempt] })]);
+    expect(screen.getByTestId('attempt-button')).toBeDisabled();
+    expect(screen.getByTestId('attempt-button')).toHaveTextContent('Attempt (1)');
+  });
+
+  it('attempt counts the send after two attempts and is disabled', () => {
+    const sendAttempt = { ...attempt, type: AttemptType.SEND };
+    renderLog([
+      makeProblem({
+        id: 'a',
+        frenchGrade: '6b',
+        send: true,
+        attempts: [attempt, { ...attempt, id: 'y' }, sendAttempt],
+      }),
+    ]);
+    expect(screen.getByTestId('attempt-button')).toHaveTextContent('Attempt (3)');
+    expect(screen.getByTestId('attempt-button')).toBeDisabled();
+  });
+
   it('no one-tap add button', () => {
     renderLog([makeProblem({ id: 'a', frenchGrade: '6b' })]);
     expect(screen.queryByRole('button', { name: /^Add (?!Problem)/ })).not.toBeInTheDocument();

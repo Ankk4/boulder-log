@@ -254,14 +254,9 @@ describe('Session Page', () => {
   it.each([
     ['send', { send: true }],
     ['flash', { flash: true }],
-  ] as const)('keeps %s sticky when another attempt is logged', async (_name, status) => {
+  ] as const)('disables Attempt once the problem is %s', (_name, status) => {
     const problem: SessionProblem = { ...mockProblem, ...status };
     vi.mocked(useCurrentSession).mockReturnValue({ ...mockSession, problems: [problem] });
-    mockDb.problems.get.mockResolvedValue(problem);
-    mockDb.problems.put.mockResolvedValue(1);
-    mockDb.attempts.add.mockResolvedValue('a2');
-    mockDb.sessions.put.mockResolvedValue(1);
-    mockDb.attempts.toArray.mockResolvedValue([]);
 
     render(
       <MemoryRouter>
@@ -271,9 +266,8 @@ describe('Session Page', () => {
 
     fireEvent.click(screen.getByTestId('attempt-button'));
 
-    await waitFor(() => {
-      expect(mockDb.problems.put).toHaveBeenCalledWith(expect.objectContaining(status));
-    });
+    expect(screen.getByTestId('attempt-button')).toBeDisabled();
+    expect(mockDb.attempts.add).not.toHaveBeenCalled();
   });
 
   const ui = () => (
