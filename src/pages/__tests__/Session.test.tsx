@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
 import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
-import { useCurrentSession, useProblemsAtGrade } from '../../db/index';
+import { useCurrentSession, useLatestEndedSession, useProblemsAtGrade } from '../../db/index';
 import type { db } from '../../db/index';
 import type { WhereClause } from 'dexie';
 import { requestPersistentStorage } from '../../utils/storage';
@@ -41,6 +41,7 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock('../../db/index', () => ({
   db: mockDb,
   useCurrentSession: vi.fn(),
+  useLatestEndedSession: vi.fn<typeof useLatestEndedSession>(),
   useProblemsAtGrade: vi.fn<typeof useProblemsAtGrade>().mockReturnValue([]),
 }));
 
@@ -65,6 +66,11 @@ vi.mock('@mui/material', async () => {
     DialogActions: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });
+
+const LocationDisplay = () => {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname + location.search}</div>;
+};
 
 describe('Session Page', () => {
   const mockSession: SessionType = {
@@ -99,16 +105,138 @@ describe('Session Page', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useLatestEndedSession).mockReturnValue(null);
   });
 
-  it('renders pre-session form when no active session exists', () => {
+  it('renders the new session screen when no active session exists', () => {
     vi.mocked(useCurrentSession).mockReturnValue(null);
     render(
       <MemoryRouter>
         <Session />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/pre-session check-in/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'New session' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/add a goal/i)).toBeInTheDocument();
+  });
+
+  it('no check-in heading', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/pre-session check-in/i)).not.toBeInTheDocument();
+  });
+
+  it('close on new session goes home', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter initialEntries={['/session']}>
+        <Session />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+  });
+
+  it('starts a session without touching the check-in', async () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    mockDb.sessions.add.mockResolvedValue('1');
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    const start = screen.getByRole('button', { name: /start session/i });
+    const goalInput = screen.getByPlaceholderText(/add a goal/i);
+    expect(
+      start.compareDocumentPosition(goalInput) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(start);
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('history button opens history', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    render(
+      <MemoryRouter initialEntries={['/session']}>
+        <Session />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByTestId('location')).toHaveTextContent('/session?view=history');
+    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+  });
+
+  it('back from history returns to climb', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter initialEntries={['/session?view=history']}>
+        <Session />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/session$/);
+    expect(screen.getByRole('heading', { name: 'New session' })).toBeInTheDocument();
+  });
+
+  it('history mode follows the view query', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter initialEntries={['/session?view=history']}>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('DataCard stub')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'New session' })).not.toBeInTheDocument();
+  });
+
+  it('passes the last session work-on items to the check-in', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    vi.mocked(useLatestEndedSession).mockReturnValue({
+      ...mockSession,
+      endTime: new Date().toISOString(),
+      postSessionReview: {
+        rpe: null,
+        energyAfter: null,
+        accomplishments: [],
+        workOn: ['Heel hooks'],
+        achievedGoals: [],
+      },
+    });
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Heel hooks')).toBeInTheDocument();
+  });
+
+  it('saves picked check-in values', async () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    mockDb.sessions.add.mockResolvedValue('1');
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^Physical/ }));
+    const sleep = screen.getByRole('group', { name: /Sleep quality/ });
+    fireEvent.click(within(sleep).getByRole('button', { name: '7' }));
+    fireEvent.click(screen.getByRole('button', { name: /start session/i }));
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preSessionData: expect.objectContaining({ sleepQuality: 7 }) as unknown,
+        }),
+      );
+    });
   });
 
   it('renders no check-in while the current session is loading', () => {
@@ -118,7 +246,7 @@ describe('Session Page', () => {
         <Session />
       </MemoryRouter>,
     );
-    expect(screen.queryByText(/pre-session check-in/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/add a goal/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /end session/i })).not.toBeInTheDocument();
   });
 
@@ -139,6 +267,7 @@ describe('Session Page', () => {
         expect.objectContaining({
           startTime: expect.any(String) as string,
           endTime: null,
+          preSessionData: { goals: [], additionalNotes: '' },
         }),
       );
     });
@@ -283,13 +412,6 @@ describe('Session Page', () => {
   );
 
   const defaultPre = {
-    sleepQuality: 5,
-    energyLevel: 5,
-    fingerSoreness: 5,
-    motivation: 5,
-    restDays: 1,
-    nutrition: 'moderate',
-    stress: 'medium',
     goals: [],
     additionalNotes: '',
   };
@@ -347,8 +469,8 @@ describe('Session Page', () => {
     render(ui());
 
     addGoal('Stale goal');
-    fireEvent.click(screen.getByRole('button', { name: /history/i }));
-    fireEvent.click(screen.getByRole('button', { name: /climb/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     fireEvent.click(screen.getByText(/start session/i));
 
     await waitFor(() => {
@@ -419,7 +541,7 @@ describe('Session Page', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByText('DataCard stub')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
     expect(screen.getByText('DataCard stub')).toBeInTheDocument();
   });
 
