@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Typography, Button, TextField, Paper, IconButton, Stack, Chip } from '@mui/material';
+import { Typography, Button, Paper, IconButton, Stack, Chip } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import HistoryIcon from '@mui/icons-material/History';
@@ -11,7 +11,7 @@ import PastSessionsList from '../components/PastSessionsList';
 import DataCard from '../components/DataCard';
 import BackupReminder from '../components/BackupReminder';
 import UndoSnackbar from '../components/UndoSnackbar';
-import PostSessionReviewSection from '../components/PostSessionReview';
+import SessionWrapUp from '../components/SessionWrapUp';
 import type { Session, SessionProblem, PreSessionData, PostSessionReview } from '../types';
 import { AttemptType } from '../types';
 import { db, useCurrentSession, useLatestEndedSession } from '../db';
@@ -434,45 +434,19 @@ const SessionPage = () => {
                 </Button>
               </>
             ) : view === 'wrapup' ? (
-              <>
-                <PostSessionReviewSection
-                  value={review}
-                  goals={currentSession.preSessionData.goals}
-                  onChange={changeReview}
-                />
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Post-session notes"
-                  value={postSessionNotes}
-                  slotProps={{ htmlInput: { maxLength: LIMITS.postSessionNotes } }}
-                  onChange={(e) => {
-                    changeNotes(e.target.value);
-                  }}
-                  sx={{ mt: 2 }}
-                />
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  onClick={() => {
-                    void endSession();
-                  }}
-                >
-                  End Session
-                </Button>
-                <Button
-                  fullWidth
-                  sx={{ mt: 1 }}
-                  onClick={() => {
-                    setView('live');
-                  }}
-                >
-                  Back to climbing
-                </Button>
-              </>
+              <SessionWrapUp
+                session={currentSession}
+                review={review}
+                notes={postSessionNotes}
+                onReviewChange={changeReview}
+                onNotesChange={changeNotes}
+                onSave={() => {
+                  void endSession();
+                }}
+                onBack={() => {
+                  setView('live');
+                }}
+              />
             ) : (
               <>
                 {currentSession.preSessionData.goals.length > 0 && (
