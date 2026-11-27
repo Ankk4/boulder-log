@@ -14,7 +14,7 @@ const theme = createAppTheme(DEFAULT_THEME_MODE);
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
+      <CssBaseline enableColorScheme />
       <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
         <Layout>
           <Routes>

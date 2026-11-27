@@ -21,6 +21,11 @@ describe('DataCard', () => {
     vi.mocked(storage.getLastBackupAt).mockReturnValue(null);
   });
 
+  it('title is a level-3 heading', async () => {
+    render(<DataCard />);
+    expect(await screen.findByRole('heading', { level: 3, name: 'Your data' })).toBeInTheDocument();
+  });
+
   it('shows each storage status', async () => {
     const lines = {
       persistent: 'Stored persistently on this device',

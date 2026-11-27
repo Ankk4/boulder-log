@@ -40,7 +40,7 @@ const DataCard = () => {
 
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" component="h3" gutterBottom>
         Your data
       </Typography>
       {status !== null && <Typography variant="body2">{STORAGE_LINES[status]}</Typography>}

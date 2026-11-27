@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { MockInstance } from 'vitest';
@@ -6,6 +6,9 @@ import WorkoutRun from '../WorkoutRun';
 import type { IntervalWorkout } from '../../types';
 import type { db } from '../../db/index';
 import { unlockAudio } from '../../utils/beep';
+import { ThemeProvider } from '@mui/material/styles';
+import { createAppTheme } from '../../theme/theme';
+import { PREPARE_SECONDS } from '../../utils/duration';
 
 const workout: IntervalWorkout = {
   id: 'w1',
@@ -65,5 +68,62 @@ describe('WorkoutRun page error handling', () => {
     });
     expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument();
     expect(screen.getByText('READY')).toBeInTheDocument();
+  });
+
+  describe('accessibility', () => {
+    const renderRun = () =>
+      render(
+        <ThemeProvider theme={createAppTheme('dark')}>
+          <MemoryRouter initialEntries={['/workouts/w1/run']}>
+            <Routes>
+              <Route path="/workouts/:id/run" element={<WorkoutRun />} />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>,
+      );
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('workout name is the heading and the countdown is not', () => {
+      renderRun();
+      expect(screen.getByRole('heading', { level: 2, name: 'Tabata' })).toBeInTheDocument();
+      for (const h of screen.getAllByRole('heading')) {
+        expect(h.textContent).not.toMatch(/\d/);
+      }
+    });
+
+    it('announces phase changes, not ticks', async () => {
+      vi.useFakeTimers();
+      vi.mocked(unlockAudio).mockResolvedValue(undefined);
+      renderRun();
+      const region = document.querySelector('[aria-live="polite"]');
+      if (!region) throw new Error('live region missing');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(region).toHaveTextContent('Prepare');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PREPARE_SECONDS * 1000 + 100);
+      });
+      expect(region.textContent).toBe('Work');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(region.textContent).toBe('Work');
+    });
+
+    it('progress and controls have names', () => {
+      renderRun();
+      const bar = screen.getByRole('progressbar', { name: 'Intervals completed' });
+      expect(bar).toHaveAttribute('aria-valuetext', '0 of 8 intervals');
+      expect(screen.getByRole('button', { name: 'Back to workouts' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mute beeps' })).toBeInTheDocument();
+    });
   });
 });

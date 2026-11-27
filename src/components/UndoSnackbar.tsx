@@ -31,6 +31,8 @@ export default function UndoSnackbar({
     onClose();
   };
 
+  const [focused, setFocused] = useState(false);
+
   const handlePointerDown = (e: PointerEvent) => {
     startX.current = e.clientX;
   };
@@ -63,13 +65,20 @@ export default function UndoSnackbar({
   return (
     <Snackbar
       open={open}
-      autoHideDuration={5000}
+      autoHideDuration={focused ? null : 5000}
       onClose={handleClose}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       sx={{ top: TOP_OFFSET }}
     >
       <Alert
         severity={severity}
+        role={severity === 'error' ? 'alert' : 'status'}
+        onFocus={() => {
+          setFocused(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+        }}
         variant="outlined"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

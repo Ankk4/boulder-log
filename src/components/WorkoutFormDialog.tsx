@@ -1,5 +1,6 @@
 import { useState, type FocusEvent } from 'react';
 import {
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -35,6 +36,7 @@ interface WorkoutFormDialogProps {
   initial?: WorkoutFormInitial | IntervalWorkout | null;
   onClose: () => void;
   onSave: (values: WorkoutFormValues) => void;
+  error?: string;
 }
 
 const defaults: WorkoutFormValues = {
@@ -48,13 +50,16 @@ const defaults: WorkoutFormValues = {
 const parseDigits = (text: string): number | null =>
   /^\d+$/.test(text) ? parseInt(text, 10) : null;
 
+const WHOLE_1 = 'Enter a whole number, 1 or more';
+const WHOLE_0 = 'Enter a whole number, 0 or more';
+
 const numericInput = { inputMode: 'numeric', pattern: '[0-9]*' } as const;
 
 const selectOnFocus = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
   e.target.select();
 };
 
-const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialogProps) => {
+const WorkoutFormDialog = ({ open, initial, onClose, onSave, error }: WorkoutFormDialogProps) => {
   // The parent remounts this dialog (via `key`) each time it opens, so state starts from `initial`.
   const start = initial ? { ...initial, muted: initial.muted ?? false } : defaults;
   const [name, setName] = useState(start.name);
@@ -71,6 +76,19 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
   const valid = workSeconds !== null && restSeconds !== null && intervals !== null;
   const canSave =
     name.trim().length > 0 && valid && workSeconds >= 1 && restSeconds >= 0 && intervals >= 1;
+  const [touched, setTouched] = useState({
+    name: false,
+    work: false,
+    rest: false,
+    intervals: false,
+  });
+  const touch = (field: keyof typeof touched) => () => {
+    setTouched((t) => ({ ...t, [field]: true }));
+  };
+  const nameInvalid = touched.name && name.trim().length === 0;
+  const workInvalid = touched.work && (workSeconds === null || workSeconds < 1);
+  const restInvalid = touched.rest && restSeconds === null;
+  const intervalsInvalid = touched.intervals && (intervals === null || intervals < 1);
   const totalSeconds = valid ? calculateTotalSeconds(workSeconds, restSeconds, intervals) : null;
 
   const handleSave = () => {
@@ -89,13 +107,18 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
       <DialogTitle>{isEditing ? 'Edit workout' : 'New interval workout'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label="Name"
             value={name}
             onChange={(e) => {
               setName(e.target.value);
             }}
-            placeholder="e.g. 5 second holds"
+            placeholder="e.g. 5-second holds…"
+            onBlur={touch('name')}
+            error={nameInvalid}
+            helperText={nameInvalid ? 'Enter a name' : undefined}
+            slotProps={{ htmlInput: { autoComplete: 'off' } }}
             fullWidth
             autoFocus
           />
@@ -108,7 +131,9 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
               setWorkText(e.target.value);
             }}
             fullWidth
-            helperText="Length of each interval / hold"
+            onBlur={touch('work')}
+            error={workInvalid}
+            helperText={workInvalid ? WHOLE_1 : 'Length of each interval / hold'}
           />
           <TextField
             label="Rest (seconds)"
@@ -119,7 +144,9 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
               setRestText(e.target.value);
             }}
             fullWidth
-            helperText="Rest between intervals"
+            onBlur={touch('rest')}
+            error={restInvalid}
+            helperText={restInvalid ? WHOLE_0 : 'Rest between intervals'}
           />
           <TextField
             label="Intervals"
@@ -130,7 +157,9 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
               setIntervalsText(e.target.value);
             }}
             fullWidth
-            helperText="How many work intervals in the set"
+            onBlur={touch('intervals')}
+            error={intervalsInvalid}
+            helperText={intervalsInvalid ? WHOLE_1 : 'How many work intervals in the set'}
           />
           <FormControlLabel
             control={

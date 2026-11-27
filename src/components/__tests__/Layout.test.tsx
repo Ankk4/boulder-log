@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { ThemeProvider } from '@mui/material';
@@ -86,22 +86,25 @@ describe('Layout', () => {
   it('bottom navigation still switches tabs', async () => {
     const user = userEvent.setup();
     renderLayout();
-    await user.click(screen.getByText('Timer'));
+    await user.click(screen.getByRole('link', { name: /Timer/ }));
     expect(screen.getByTestId('path')).toHaveTextContent('/workouts');
-    await user.click(screen.getByText('Session'));
+    await user.click(screen.getByRole('link', { name: /Session/ }));
     expect(screen.getByTestId('path')).toHaveTextContent('/session');
   });
 
   it('mobile shows bottom nav', () => {
     renderLayout();
-    expect(screen.getByRole('button', { name: /Session/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Session/ })).toBeInTheDocument();
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   it('desktop shows app bar tabs and no bottom nav', () => {
     mockDesktop();
     renderLayout();
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getAllByRole('link')).toHaveLength(2);
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Session/ })).not.toBeInTheDocument();
   });
 
@@ -109,17 +112,19 @@ describe('Layout', () => {
     mockDesktop();
     const user = userEvent.setup();
     renderLayout();
-    await user.click(screen.getByRole('tab', { name: /Timer/ }));
+    await user.click(screen.getByRole('link', { name: /Timer/ }));
     expect(screen.getByTestId('path')).toHaveTextContent('/workouts');
-    await user.click(screen.getByRole('tab', { name: /Session/ }));
+    await user.click(screen.getByRole('link', { name: /Session/ }));
     expect(screen.getByTestId('path')).toHaveTextContent('/session');
   });
 
   it('home selects no tab', () => {
     mockDesktop();
     renderLayout('/');
-    for (const tab of screen.getAllByRole('tab')) {
-      expect(tab).toHaveAttribute('aria-selected', 'false');
+    for (const link of within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole(
+      'link',
+    )) {
+      expect(link).not.toHaveAttribute('aria-current');
     }
   });
 
@@ -133,7 +138,43 @@ describe('Layout', () => {
     renderLayout('/session', <Focus />);
     expect(screen.getByText('focused page')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Matside' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Session/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Session/ })).not.toBeInTheDocument();
+  });
+
+  it('renders one main landmark', () => {
+    const { unmount } = renderLayout();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    unmount();
+    renderLayout('/session', <Focus />);
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'Skip to main content' })).not.toBeInTheDocument();
+  });
+
+  it('skip link moves focus to main', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+    await user.tab();
+    const skip = screen.getByRole('link', { name: 'Skip to main content' });
+    expect(skip).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  describe.each([
+    ['desktop', true],
+    ['mobile', false],
+  ])('nav items are links with aria-current (%s)', (_name, desktop) => {
+    it('marks only the active link', () => {
+      if (desktop) mockDesktop();
+      renderLayout('/workouts/abc');
+      const nav = screen.getByRole('navigation', { name: 'Main' });
+      const session = within(nav).getByRole('link', { name: /Session/ });
+      const timer = within(nav).getByRole('link', { name: /Timer/ });
+      expect(session.getAttribute('href')).toMatch(/\/session$/);
+      expect(timer.getAttribute('href')).toMatch(/\/workouts$/);
+      expect(timer).toHaveAttribute('aria-current', 'page');
+      expect(session).not.toHaveAttribute('aria-current');
+    });
   });
 
   it('entering focus mode keeps the page mounted and its state', async () => {
@@ -158,6 +199,6 @@ describe('Layout', () => {
   it('highlights Session on a session page', () => {
     mockDesktop();
     renderLayout('/sessions/abc');
-    expect(screen.getByRole('tab', { name: /Session/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('link', { name: 'Session' })).toHaveAttribute('aria-current', 'page');
   });
 });
