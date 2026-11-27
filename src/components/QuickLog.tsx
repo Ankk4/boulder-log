@@ -23,7 +23,9 @@ import {
   Check as SendIcon,
   FitnessCenterRounded as AttemptIcon,
 } from '@mui/icons-material';
-import DifficultySelect from './DifficultySelect';
+import GradePicker from './GradePicker';
+import { useProblemsAtGrade } from '../db/index';
+import { autoName, gradeLabel, lastUsedGrades, summarizeLastTime } from '../utils/problemDefaults';
 import { AttemptType } from '../types';
 import type { SessionProblem } from '../types';
 import { LIMITS, sanitizeGrade, sanitizeProblemName } from '../utils/validation';
@@ -41,12 +43,25 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
   const [newFrenchGrade, setNewFrenchGrade] = useState('');
   const [newColorGrade, setNewColorGrade] = useState('');
 
+  const label = gradeLabel({ frenchGrade: newFrenchGrade, colorGrade: newColorGrade });
+  const history = useProblemsAtGrade(label);
+  const lastTime = label && history ? summarizeLastTime(history, sessionId, label) : null;
+
+  const openDialog = () => {
+    const last = lastUsedGrades(problems);
+    setNewFrenchGrade(last?.frenchGrade ?? '');
+    setNewColorGrade(last?.colorGrade ?? '');
+    setNewProblemName('');
+    setIsAddingProblem(true);
+  };
+
   const handleAddProblem = () => {
-    const name = sanitizeProblemName(newProblemName);
     const frenchGrade = sanitizeGrade(newFrenchGrade);
     const colorGrade = sanitizeGrade(newColorGrade);
+    const gradeText = gradeLabel({ frenchGrade, colorGrade });
+    const name = sanitizeProblemName(newProblemName) || autoName(problems, gradeText);
 
-    if (name && (frenchGrade || colorGrade)) {
+    if (gradeText) {
       if (import.meta.env.DEV) {
         console.log('QuickLog: Adding new problem');
         console.log('Name:', name);
@@ -76,13 +91,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
   return (
     <Box>
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setIsAddingProblem(true);
-          }}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={openDialog}>
           Add Problem
         </Button>
       </Stack>
@@ -187,7 +196,6 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         <DialogTitle>Add New Problem</DialogTitle>
         <DialogContent>
           <TextField
-            autoFocus
             margin="dense"
             label="Problem Name"
             fullWidth
@@ -198,12 +206,17 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
             }}
             sx={{ mb: 2 }}
           />
-          <DifficultySelect
+          <GradePicker
             frenchGrade={newFrenchGrade}
             colorGrade={newColorGrade}
             onFrenchGradeChange={setNewFrenchGrade}
             onColorGradeChange={setNewColorGrade}
           />
+          {lastTime && (
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              {`Last time at ${lastTime.label} (${lastTime.date}): ${String(lastTime.count)} problems, ${String(lastTime.sent)} sent, ${String(lastTime.flashed)} flashed`}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button
@@ -213,7 +226,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
           >
             Cancel
           </Button>
-          <Button onClick={handleAddProblem} variant="contained">
+          <Button onClick={handleAddProblem} variant="contained" disabled={!label}>
             Add
           </Button>
         </DialogActions>

@@ -22,3 +22,12 @@ export function useIntervalWorkout(id: string | undefined) {
 export function useRecentIntervalRuns(limit = 20) {
   return useLiveQuery(() => db.getRecentIntervalRuns(limit), [limit]);
 }
+
+export function useProblemsAtGrade(label: string) {
+  return useLiveQuery(async () => {
+    if (!label) return [];
+    const french = await db.problems.where('frenchGrade').equals(label).toArray();
+    if (french.length > 0) return french;
+    return db.problems.where('colorGrade').equals(label).toArray();
+  }, [label]);
+}

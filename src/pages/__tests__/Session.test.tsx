@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
 import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
-import { useCurrentSession } from '../../db/index';
+import { useCurrentSession, useProblemsAtGrade } from '../../db/index';
 import type { db } from '../../db/index';
 import type { WhereClause } from 'dexie';
 import { requestPersistentStorage } from '../../utils/storage';
@@ -41,6 +41,7 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock('../../db/index', () => ({
   db: mockDb,
   useCurrentSession: vi.fn(),
+  useProblemsAtGrade: vi.fn<typeof useProblemsAtGrade>().mockReturnValue([]),
 }));
 
 vi.mock('../../utils/storage', () => ({
@@ -158,11 +159,7 @@ describe('Session Page', () => {
     const nameInput = screen.getByLabelText(/problem name/i);
     fireEvent.change(nameInput, { target: { value: 'Test Problem' } });
 
-    const [frenchGradeSelect] = screen.getAllByRole('combobox');
-    expect(frenchGradeSelect).toBeDefined();
-    if (!frenchGradeSelect) return;
-    fireEvent.mouseDown(frenchGradeSelect);
-    fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+    fireEvent.click(screen.getByRole('button', { name: '6a' }));
 
     const addButton = screen.getByRole('button', { name: /^add$/i });
     fireEvent.click(addButton);
@@ -548,8 +545,7 @@ describe('Session Page', () => {
 
       fireEvent.click(screen.getByText(/add problem/i));
       fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
-      fireEvent.mouseDown(screen.getAllByRole('combobox')[0] as HTMLElement);
-      fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+      fireEvent.click(screen.getByRole('button', { name: '6a' }));
       fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
 
       expect(await screen.findByText('Problem added')).toBeInTheDocument();
@@ -621,8 +617,7 @@ describe('Session Page', () => {
       render(ui());
       fireEvent.click(screen.getByText(/add problem/i));
       fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
-      fireEvent.mouseDown(screen.getAllByRole('combobox')[0] as HTMLElement);
-      fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+      fireEvent.click(screen.getByRole('button', { name: '6a' }));
       fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
 
       expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
