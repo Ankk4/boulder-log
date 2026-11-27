@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, Button, TextField, Paper, IconButton, Stack } from '@mui/material';
+import { useRef, useState } from 'react';
+import { Typography, Button, TextField, Paper, IconButton, Stack, Chip } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import HistoryIcon from '@mui/icons-material/History';
@@ -17,6 +17,7 @@ import { AttemptType } from '../types';
 import { db, useCurrentSession, useLatestEndedSession } from '../db';
 import { requestPersistentStorage } from '../utils/storage';
 import { removeProblem, replaceProblem } from '../utils/undo';
+import { removeGoalAt } from '../utils/sessions';
 import {
   sanitizeGoals,
   sanitizeGrade,
@@ -27,6 +28,7 @@ import {
 } from '../utils/validation';
 
 type SessionMode = 'climb' | 'history';
+type SessionView = 'live' | 'checkin' | 'wrapup';
 
 const defaultPreSessionData: PreSessionData = {
   goals: [],
@@ -60,7 +62,8 @@ const SessionPage = () => {
   const [preSessionData, setPreSessionData] = useState<PreSessionData>(defaultPreSessionData);
   const [postSessionNotes, setPostSessionNotes] = useState('');
   const [review, setReview] = useState<PostSessionReview>(emptyReview);
-  const [now, setNow] = useState(() => Date.now());
+  const [view, setView] = useState<SessionView>('live');
+  const [liveCheckIn, setLiveCheckIn] = useState<PreSessionData>(defaultPreSessionData);
   const [loadedId, setLoadedId] = useState<string | undefined>(undefined);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const feedbackId = useRef(0);
@@ -94,6 +97,7 @@ const SessionPage = () => {
   if (mode !== prevMode) {
     setPrevMode(mode);
     setPreSessionData(defaultPreSessionData);
+    setView('live');
   }
 
   const changeMode = (next: SessionMode) => {
@@ -102,6 +106,7 @@ const SessionPage = () => {
 
   if (currentSession?.id !== loadedId) {
     setLoadedId(currentSession?.id);
+    setView('live');
     setReview(currentSession?.postSessionReview ?? emptyReview);
     setPostSessionNotes(currentSession?.postSessionNotes ?? '');
   }
@@ -128,14 +133,34 @@ const SessionPage = () => {
     void saveDraft(review, next);
   };
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(Date.now());
-    }, 30_000);
-    return () => {
-      clearInterval(id);
+  const changeLiveCheckIn = (next: PreSessionData) => {
+    if (!currentSession) return;
+    const prevGoals = liveCheckIn.goals;
+    setLiveCheckIn(next);
+    const sanitized: PreSessionData = {
+      ...next,
+      goals: sanitizeGoals(next.goals),
+      additionalNotes: sanitizeNotes(next.additionalNotes),
     };
-  }, []);
+    const changes: Partial<Session> = { preSessionData: sanitized };
+    if (next.goals.length < prevGoals.length) {
+      let removed = next.goals.findIndex((goal, i) => goal !== prevGoals[i]);
+      if (removed === -1) removed = prevGoals.length - 1;
+      const nextReview: PostSessionReview = {
+        ...review,
+        achievedGoals: removeGoalAt(review.achievedGoals, removed),
+      };
+      setReview(nextReview);
+      changes.postSessionReview = nextReview;
+    }
+    void (async () => {
+      try {
+        await db.sessions.update(currentSession.id, changes);
+      } catch (error) {
+        console.error('Error saving check-in:', error);
+      }
+    })();
+  };
 
   const startSession = async () => {
     const sanitizedPreSession: PreSessionData = {
@@ -177,6 +202,7 @@ const SessionPage = () => {
       try {
         await db.sessions.put(updatedSession);
         setPreSessionData(defaultPreSessionData);
+        setView('live');
         setPostSessionNotes('');
         setReview(emptyReview);
         void requestPersistentStorage();
@@ -389,88 +415,107 @@ const SessionPage = () => {
             }
           />
           <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6">Session Details</Typography>
-            <Typography>
-              Started: {new Date(currentSession.startTime).toLocaleTimeString()}
-            </Typography>
-            <Typography>
-              Duration:{' '}
-              {Math.round((now - new Date(currentSession.startTime).getTime()) / (1000 * 60))}{' '}
-              minutes
-            </Typography>
-
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <Typography variant="h6">Session Stats</Typography>
-              <Typography>Unique Problems: {currentSession.problems.length}</Typography>
-              <Typography>
-                Total Attempts:{' '}
-                {currentSession.problems.reduce((sum, p) => sum + p.attempts.length, 0)}
-              </Typography>
-              <Typography>
-                Flashes: {currentSession.problems.filter((p) => p.flash).length}
-              </Typography>
-              <Typography>Sends: {currentSession.problems.filter((p) => p.send).length}</Typography>
-              <Typography>
-                Success Rate:{' '}
-                {Math.round(
-                  (currentSession.problems.filter((p) => p.flash || p.send).length /
-                    Math.max(currentSession.problems.length, 1)) *
-                    100,
+            {view === 'checkin' ? (
+              <>
+                <PreSessionForm
+                  value={liveCheckIn}
+                  onChange={changeLiveCheckIn}
+                  lastWorkOn={latestEnded?.postSessionReview?.workOn}
+                />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  onClick={() => {
+                    setView('live');
+                  }}
+                >
+                  Done
+                </Button>
+              </>
+            ) : view === 'wrapup' ? (
+              <>
+                <PostSessionReviewSection
+                  value={review}
+                  goals={currentSession.preSessionData.goals}
+                  onChange={changeReview}
+                />
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Post-session notes"
+                  value={postSessionNotes}
+                  slotProps={{ htmlInput: { maxLength: LIMITS.postSessionNotes } }}
+                  onChange={(e) => {
+                    changeNotes(e.target.value);
+                  }}
+                  sx={{ mt: 2 }}
+                />
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  onClick={() => {
+                    void endSession();
+                  }}
+                >
+                  End Session
+                </Button>
+                <Button
+                  fullWidth
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    setView('live');
+                  }}
+                >
+                  Back to climbing
+                </Button>
+              </>
+            ) : (
+              <>
+                {currentSession.preSessionData.goals.length > 0 && (
+                  <Stack direction="row" sx={{ mb: 2, flexWrap: 'wrap', gap: 0.5 }}>
+                    {currentSession.preSessionData.goals.map((goal, index) => (
+                      <Chip key={index} size="small" label={goal} />
+                    ))}
+                  </Stack>
                 )}
-                %
-              </Typography>
-            </Box>
-
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <Typography variant="h6">Session Goals</Typography>
-              {currentSession.preSessionData.goals.map((goal, index) => (
-                <Typography key={index} color="text.secondary">
-                  • {goal}
-                </Typography>
-              ))}
-            </Box>
-
-            <QuickLog
-              sessionId={currentSession.id}
-              problems={currentSession.problems}
-              onAddProblem={(problem) => {
-                void handleAddProblem(problem);
-              }}
-              onAddAttempt={(problemId, type) => {
-                void handleAddAttempt(problemId, type);
-              }}
-            />
-
-            <PostSessionReviewSection
-              value={review}
-              goals={currentSession.preSessionData.goals}
-              onChange={changeReview}
-            />
-
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Post-session notes"
-              value={postSessionNotes}
-              slotProps={{ htmlInput: { maxLength: LIMITS.postSessionNotes } }}
-              onChange={(e) => {
-                changeNotes(e.target.value);
-              }}
-              sx={{ mt: 2 }}
-            />
-
-            <Button
-              variant="contained"
-              color="secondary"
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={() => {
-                void endSession();
-              }}
-            >
-              End Session
-            </Button>
+                <QuickLog
+                  sessionId={currentSession.id}
+                  problems={currentSession.problems}
+                  onAddProblem={(problem) => {
+                    void handleAddProblem(problem);
+                  }}
+                  onAddAttempt={(problemId, type) => {
+                    void handleAddAttempt(problemId, type);
+                  }}
+                />
+                <Stack direction="row" sx={{ mt: 2, gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => {
+                      setLiveCheckIn(currentSession.preSessionData);
+                      setView('checkin');
+                    }}
+                  >
+                    Check-in
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    fullWidth
+                    onClick={() => {
+                      setView('wrapup');
+                    }}
+                  >
+                    Finish session
+                  </Button>
+                </Stack>
+              </>
+            )}
           </Paper>
         </>
       )}

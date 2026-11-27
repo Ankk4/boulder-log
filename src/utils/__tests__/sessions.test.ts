@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatElapsed, latestEndedSession, sessionStats } from '../sessions';
+import { formatElapsed, latestEndedSession, removeGoalAt, sessionStats } from '../sessions';
 import type { Session, SessionProblem } from '../../types';
 
 function session(id: string, startTime: string, endTime: string | null): Session {
@@ -83,5 +83,13 @@ describe('formatElapsed', () => {
   it('uses h:mm:ss from an hour', () => {
     expect(formatElapsed(3_600_000)).toBe('1:00:00');
     expect(formatElapsed(3_725_000)).toBe('1:02:05');
+  });
+});
+
+describe('removeGoalAt', () => {
+  it('drops the removed index and shifts later ones down', () => {
+    expect(removeGoalAt([0, 1, 2, 3], 1)).toEqual([0, 1, 2]);
+    expect(removeGoalAt([0, 2], 0)).toEqual([1]);
+    expect(removeGoalAt([0], 1)).toEqual([0]);
   });
 });

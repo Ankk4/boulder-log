@@ -42,3 +42,8 @@ export function formatElapsed(ms: number): string {
   if (hours === 0) return `${String(minutes)}:${seconds}`;
   return `${String(hours)}:${String(minutes).padStart(2, '0')}:${seconds}`;
 }
+
+/** Drop the goal at `index` from achieved-goal indexes and shift later ones down. */
+export function removeGoalAt(achievedGoals: number[], index: number): number[] {
+  return achievedGoals.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i));
+}
