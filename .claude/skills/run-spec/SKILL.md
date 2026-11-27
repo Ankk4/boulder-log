@@ -71,7 +71,7 @@ With `--draft-pr`, the command is the user's OK for these steps, but only if eve
 1. **Retro**, hands-off: write `specs/active/<feature>/retro.md` from the template with the same candidate rows, but set every `Fix kind` to `proposed` and apply no fixes; the user approves them later. Commit as `<feature>: retro`.
 2. Move the spec folder to `specs/done/` (set `status: done` if `spec.md` exists) and commit it as `<feature>: mark spec done`.
 3. Write the PR body to a file in the scratchpad: the spec link, the requirement table, the proposed retro rows for the user to approve, anything not verified, and the manual checks. End it with the PR attribution line from the system reminder.
-4. Run `node .claude/hooks/lib/open-pr.mjs --title "<title>" --body-file <path>`. It checks the branch, a clean tree, `npm run verify` and the `research/` guard, then pushes and opens a **draft** PR (or prints the one already open). If it refuses, show the reason and stop. Don't work around it.
+4. Run `node .claude/hooks/lib/open-pr.mjs --title "<title>" --body-file <path>`. It checks the branch, a clean tree, `npm run verify` and the `research/` guard, then pushes and opens a **draft** PR (or prints the one already open). In claude-box without a GitHub token it pushes nothing: it saves the title and body for the host and says so. Tell the user to review and push with Alt-u, and don't try to push another way. If it refuses, show the reason and stop. Don't work around it.
 5. Show the PR URL. Say it is a draft and that marking it ready or merging is the user's call.
 
 Issues found after merge (bugs the user hits later) are appended to the shipped spec's `specs/done/<feature>/retro.md` in the same row format, with their fix.
