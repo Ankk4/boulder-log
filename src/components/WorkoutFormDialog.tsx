@@ -1,5 +1,6 @@
 import { useState, type FocusEvent } from 'react';
 import {
+  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -35,6 +36,7 @@ interface WorkoutFormDialogProps {
   initial?: WorkoutFormInitial | IntervalWorkout | null;
   onClose: () => void;
   onSave: (values: WorkoutFormValues) => void;
+  error?: string;
 }
 
 const defaults: WorkoutFormValues = {
@@ -54,7 +56,7 @@ const selectOnFocus = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
   e.target.select();
 };
 
-const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialogProps) => {
+const WorkoutFormDialog = ({ open, initial, onClose, onSave, error }: WorkoutFormDialogProps) => {
   // The parent remounts this dialog (via `key`) each time it opens, so state starts from `initial`.
   const start = initial ? { ...initial, muted: initial.muted ?? false } : defaults;
   const [name, setName] = useState(start.name);
@@ -89,6 +91,7 @@ const WorkoutFormDialog = ({ open, initial, onClose, onSave }: WorkoutFormDialog
       <DialogTitle>{isEditing ? 'Edit workout' : 'New interval workout'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label="Name"
             value={name}

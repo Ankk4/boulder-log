@@ -16,6 +16,7 @@ import {
   DialogContentText,
   DialogActions,
   Chip,
+  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -23,8 +24,8 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router';
 import PageHeader from '../components/PageHeader';
-import { useAppNavigate } from '../hooks/useAppNavigate';
 import type { IntervalWorkout } from '../types';
 import { db, useIntervalWorkouts, useRecentIntervalRuns } from '../db';
 import WorkoutFormDialog, {
@@ -35,27 +36,31 @@ import { calculateTotalSeconds, formatDuration } from '../utils/duration';
 import { WORKOUT_PRESETS, type WorkoutPreset } from '../utils/workoutPresets';
 
 const Workouts = () => {
-  const navigate = useAppNavigate();
   const workouts = useIntervalWorkouts();
   const runs = useRecentIntervalRuns(15);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
   const [formInitial, setFormInitial] = useState<WorkoutFormInitial | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<IntervalWorkout | null>(null);
+  const [saveError, setSaveError] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   const openCreate = () => {
+    setSaveError(false);
     setFormInitial(null);
     setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
   const openEdit = (workout: IntervalWorkout) => {
+    setSaveError(false);
     setFormInitial(workout);
     setDialogKey((key) => key + 1);
     setDialogOpen(true);
   };
 
   const openPreset = (preset: WorkoutPreset) => {
+    setSaveError(false);
     setFormInitial({
       name: preset.name,
       workSeconds: preset.workSeconds,
@@ -68,6 +73,7 @@ const Workouts = () => {
   };
 
   const handleSave = async (values: WorkoutFormValues) => {
+    setSaveError(false);
     const editingId = formInitial && 'id' in formInitial ? formInitial.id : undefined;
     try {
       await db.saveIntervalWorkout({
@@ -77,6 +83,7 @@ const Workouts = () => {
       });
     } catch (error) {
       console.error('Error saving workout:', error);
+      setSaveError(true);
       return;
     }
     setDialogOpen(false);
@@ -85,10 +92,12 @@ const Workouts = () => {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setDeleteError(false);
     try {
       await db.deleteIntervalWorkout(deleteTarget.id);
     } catch (error) {
       console.error('Error deleting workout:', error);
+      setDeleteError(true);
       return;
     }
     setDeleteTarget(null);
@@ -105,7 +114,7 @@ const Workouts = () => {
         }
       />
 
-      <Typography variant="h6" sx={{ mb: 1 }}>
+      <Typography variant="h6" component="h3" sx={{ mb: 1 }}>
         Presets
       </Typography>
       <Stack direction="row" sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
@@ -122,7 +131,7 @@ const Workouts = () => {
         ))}
       </Stack>
 
-      <Typography variant="h6" sx={{ mb: 1 }}>
+      <Typography variant="h6" component="h3" sx={{ mb: 1 }}>
         Workouts
       </Typography>
 
@@ -149,17 +158,16 @@ const Workouts = () => {
                     <Stack direction="row" spacing={0.5}>
                       <IconButton
                         edge="end"
-                        aria-label="start"
+                        aria-label={`Start ${workout.name}`}
                         color="primary"
-                        onClick={() => {
-                          navigate(`/workouts/${workout.id}/run`);
-                        }}
+                        component={RouterLink}
+                        to={`/workouts/${workout.id}/run`}
                       >
                         <PlayIcon />
                       </IconButton>
                       <IconButton
                         edge="end"
-                        aria-label="edit"
+                        aria-label={`Edit ${workout.name}`}
                         onClick={() => {
                           openEdit(workout);
                         }}
@@ -168,8 +176,9 @@ const Workouts = () => {
                       </IconButton>
                       <IconButton
                         edge="end"
-                        aria-label="delete"
+                        aria-label={`Delete ${workout.name}`}
                         onClick={() => {
+                          setDeleteError(false);
                           setDeleteTarget(workout);
                         }}
                       >
@@ -192,7 +201,7 @@ const Workouts = () => {
 
       <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="h6" sx={{ mb: 1 }}>
+      <Typography variant="h6" component="h3" sx={{ mb: 1 }}>
         Recent runs
       </Typography>
 
@@ -220,7 +229,7 @@ const Workouts = () => {
                 </Box>
                 <Chip
                   size="small"
-                  label={run.status}
+                  label={run.status === 'completed' ? 'Completed' : 'Aborted'}
                   color={run.status === 'completed' ? 'success' : 'default'}
                 />
               </Stack>
@@ -233,7 +242,9 @@ const Workouts = () => {
         key={dialogKey}
         open={dialogOpen}
         initial={formInitial}
+        error={saveError ? "Couldn't save. Try again." : undefined}
         onClose={() => {
+          setSaveError(false);
           setDialogOpen(false);
           setFormInitial(null);
         }}
@@ -253,6 +264,11 @@ const Workouts = () => {
           <DialogContentText>
             Delete “{deleteTarget?.name}”? Past runs stay in history.
           </DialogContentText>
+          {deleteError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Couldn&apos;t delete. Try again.
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button
