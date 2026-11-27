@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import UndoSnackbar from '../UndoSnackbar';
@@ -45,7 +45,7 @@ describe('UndoSnackbar', () => {
     expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
   });
 
-  it('auto-hides after 8 s', () => {
+  it('auto-hides after 5 s', () => {
     vi.useFakeTimers();
     const onClose = vi.fn<() => void>();
     render(
@@ -58,7 +58,7 @@ describe('UndoSnackbar', () => {
       />,
     );
     act(() => {
-      vi.advanceTimersByTime(7900);
+      vi.advanceTimersByTime(4900);
     });
     expect(onClose).not.toHaveBeenCalled();
     act(() => {
@@ -83,5 +83,80 @@ describe('UndoSnackbar', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'outside' }));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('closes on the close button', async () => {
+    const onClose = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={vi.fn()} onClose={onClose} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on a horizontal swipe', () => {
+    const onClose = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={vi.fn()} onClose={onClose} />);
+    const alert = screen.getByRole('alert');
+    fireEvent.pointerDown(alert, { clientX: 200 });
+    fireEvent.pointerMove(alert, { clientX: 260 });
+    fireEvent.pointerUp(alert, { clientX: 320 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a short swipe', () => {
+    const onClose = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={vi.fn()} onClose={onClose} />);
+    const alert = screen.getByRole('alert');
+    fireEvent.pointerDown(alert, { clientX: 200 });
+    fireEvent.pointerMove(alert, { clientX: 220 });
+    fireEvent.pointerUp(alert, { clientX: 230 });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('a tap on Undo is not treated as a swipe', () => {
+    const onUndo = vi.fn<() => void>();
+    const onClose = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={onUndo} onClose={onClose} />);
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    fireEvent.pointerDown(undo, { clientX: 150 });
+    fireEvent.pointerUp(undo, { clientX: 150 });
+    fireEvent.click(undo);
+    expect(onUndo).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('captures the pointer once a drag passes the slop, and survives capture errors', () => {
+    const onClose = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={vi.fn()} onClose={onClose} />);
+    const alert = screen.getByRole('alert');
+    const setCapture = vi.fn<(id: number) => void>(() => {
+      throw new Error('InvalidStateError');
+    });
+    Object.assign(alert, { setPointerCapture: setCapture, hasPointerCapture: () => false });
+    fireEvent.pointerDown(alert, { clientX: 200 });
+    fireEvent.pointerMove(alert, { clientX: 205 });
+    expect(setCapture).not.toHaveBeenCalled();
+    fireEvent.pointerMove(alert, { clientX: 230 });
+    expect(setCapture).toHaveBeenCalledTimes(1);
+    fireEvent.pointerUp(alert, { clientX: 330 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets the drag when pointer capture is lost', () => {
+    const onClose = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={vi.fn()} onClose={onClose} />);
+    const alert = screen.getByRole('alert');
+    fireEvent.pointerDown(alert, { clientX: 200 });
+    fireEvent.pointerMove(alert, { clientX: 250 });
+    fireEvent.lostPointerCapture(alert);
+    fireEvent.pointerUp(alert, { clientX: 400 });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(alert.style.transform || '').not.toContain('50px');
+  });
+
+  it('undo still calls onUndo', async () => {
+    const onUndo = vi.fn<() => void>();
+    render(<UndoSnackbar open message="m" severity="info" onUndo={onUndo} onClose={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(onUndo).toHaveBeenCalledTimes(1);
   });
 });
