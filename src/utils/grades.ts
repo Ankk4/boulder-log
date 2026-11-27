@@ -1,0 +1,38 @@
+export const frenchGrades = [
+  '3',
+  '3+',
+  '4',
+  '4+',
+  '5',
+  '5+',
+  '6a',
+  '6a+',
+  '6b',
+  '6b+',
+  '6c',
+  '6c+',
+  '7a',
+  '7a+',
+  '7b',
+  '7b+',
+  '7c',
+  '7c+',
+  '8a',
+  '8a+',
+  '8b',
+  '8b+',
+];
+
+export const colorGrades = [
+  { name: 'Aloittelija', color: '#FFFF00', range: '3-4+' },
+  { name: 'Helppo', color: '#00FF00', range: '4+-5' },
+  { name: 'Leppoisa', color: '#0000FF', range: '5+-6a' },
+  { name: 'Napakka', color: '#FF69B4', range: '6a+-6b+' },
+  { name: 'Haastava', color: '#FF0000', range: '6c-7a' },
+  { name: 'Vaikea', color: '#800080', range: '7a+-7b' },
+  { name: 'Erittäin Vaikea', color: '#000000', range: '7b+ and up' },
+];
+
+/** French grade range for a colour name, or the name itself when unknown. */
+export const colorRange = (name: string): string =>
+  colorGrades.find((c) => c.name === name)?.range ?? name;

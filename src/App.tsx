@@ -4,6 +4,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Session from './pages/Session';
+import SessionDetail from './pages/SessionDetail';
 import Workouts from './pages/Workouts';
 import WorkoutRun from './pages/WorkoutRun';
 import { createAppTheme, DEFAULT_THEME_MODE } from './theme/theme';
@@ -19,6 +20,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/session" element={<Session />} />
+            <Route path="/sessions/:id" element={<SessionDetail />} />
             <Route path="/sessions" element={<Navigate to="/session" replace />} />
             <Route path="/problems" element={<Navigate to="/session" replace />} />
             <Route path="/workouts" element={<Workouts />} />

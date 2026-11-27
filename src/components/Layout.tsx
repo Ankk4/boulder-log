@@ -19,6 +19,7 @@ import { Link as RouterLink, useLocation } from 'react-router';
 import { FocusModeProvider } from '../hooks/FocusModeProvider';
 import { useFocusMode } from '../hooks/useFocusMode';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
+import ActiveSessionBar from './ActiveSessionBar';
 
 interface LayoutProps {
   children: ReactNode;
@@ -119,6 +120,7 @@ const LayoutShell = ({ children }: LayoutProps) => {
               </Tabs>
             )}
           </Toolbar>
+          <ActiveSessionBar />
         </AppBar>
       )}
       {/* Always the same Container element: swapping it out for bare children would

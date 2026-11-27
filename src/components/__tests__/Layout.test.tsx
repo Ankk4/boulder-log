@@ -6,6 +6,20 @@ import { ThemeProvider } from '@mui/material';
 import Layout from '../Layout';
 import { createAppTheme } from '../../theme/theme';
 import { useRequestFocusMode } from '../../hooks/useFocusMode';
+import { useCurrentSession } from '../../db/index';
+import type { Session } from '../../types';
+
+vi.mock('../../db/index', () => ({
+  useCurrentSession: vi.fn<typeof useCurrentSession>(),
+}));
+
+const activeSession: Session = {
+  id: '1',
+  startTime: new Date().toISOString(),
+  endTime: null,
+  preSessionData: { goals: [], additionalNotes: '' },
+  problems: [],
+};
 
 const Path = () => <div data-testid="path">{useLocation().pathname}</div>;
 
@@ -53,6 +67,10 @@ const mockDesktop = () => {
     dispatchEvent: vi.fn(),
   }));
 };
+
+beforeEach(() => {
+  vi.mocked(useCurrentSession).mockReturnValue(null);
+});
 
 afterEach(() => {
   window.matchMedia = originalMatchMedia;
@@ -164,5 +182,23 @@ describe('Layout', () => {
     await userEvent.click(screen.getByRole('button', { name: 'start' }));
     expect(screen.getByRole('button', { name: 'running' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Matside' })).not.toBeInTheDocument();
+  });
+
+  it('shows the active session bar on other pages', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(activeSession);
+    renderLayout('/workouts');
+    expect(screen.getByRole('region', { name: 'Active session' })).toBeInTheDocument();
+  });
+
+  it('hides the active session bar in focus mode', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(activeSession);
+    renderLayout('/workouts/1', <Focus />);
+    expect(screen.queryByRole('region', { name: 'Active session' })).not.toBeInTheDocument();
+  });
+
+  it('highlights Session on a session page', () => {
+    mockDesktop();
+    renderLayout('/sessions/abc');
+    expect(screen.getByRole('link', { name: 'Session' })).toHaveAttribute('aria-current', 'page');
   });
 });
