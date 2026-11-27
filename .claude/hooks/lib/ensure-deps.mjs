@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // A fresh git worktree (e.g. a subagent run with isolation: "worktree") has no
 // node_modules, so lint/typecheck/tests can't run there. If `dir` is inside a
-// linked worktree without node_modules, symlink the main checkout's node_modules.
+// linked worktree without node_modules, symlink the main checkout's node_modules
+// (or, when that isn't visible, e.g. inside claude-box, another worktree's).
 // `node_modules` is gitignored, so the symlink never shows up in git status.
 //
 // Library: ensureDeps(dir) -> worktree root it linked, or null.
@@ -26,8 +27,22 @@ export function ensureDeps(dir) {
   if (existsSync(join(top, 'node_modules'))) return null;
   const mainRoot = dirname(common); // the common dir is <main checkout>/.git
   if (resolve(mainRoot) === resolve(top)) return null; // main checkout: run npm install yourself
-  const source = join(mainRoot, 'node_modules');
-  if (!existsSync(source)) return null;
+  // Prefer the main checkout's node_modules. In claude-box a session started in a worktree
+  // can't see the main checkout, so fall back to any other worktree that has one.
+  let others = [];
+  try {
+    others = git(dir, 'worktree', 'list', '--porcelain')
+      .split('\n')
+      .filter((l) => l.startsWith('worktree '))
+      .map((l) => l.slice('worktree '.length));
+  } catch {
+    // keep just the main checkout
+  }
+  const source = [mainRoot, ...others]
+    .filter((p) => resolve(p) !== resolve(top))
+    .map((p) => join(p, 'node_modules'))
+    .find((p) => existsSync(p));
+  if (!source) return null;
   symlinkSync(source, join(top, 'node_modules'), 'dir');
   return top;
 }
