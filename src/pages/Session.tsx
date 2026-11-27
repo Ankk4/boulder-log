@@ -21,6 +21,7 @@ import { AttemptType } from '../types';
 import { db, useCurrentSession } from '../db';
 import { requestPersistentStorage } from '../utils/storage';
 import { removeProblem, replaceProblem } from '../utils/undo';
+import { newId } from '../utils/id';
 import {
   sanitizeGoals,
   sanitizeGrade,
@@ -142,7 +143,7 @@ const SessionPage = () => {
       additionalNotes: sanitizeNotes(preSessionData.additionalNotes),
     };
     const newSession: Session = {
-      id: crypto.randomUUID(),
+      id: newId(),
       startTime: new Date().toISOString(),
       endTime: null,
       preSessionData: sanitizedPreSession,
@@ -202,7 +203,7 @@ const SessionPage = () => {
         name: sanitizeProblemName(problemData.name),
         frenchGrade: sanitizeGrade(problemData.frenchGrade),
         colorGrade: sanitizeGrade(problemData.colorGrade),
-        id: crypto.randomUUID(),
+        id: newId(),
         attempts: [],
       };
       if (import.meta.env.DEV) {
@@ -244,7 +245,7 @@ const SessionPage = () => {
       }
 
       const newAttempt = {
-        id: crypto.randomUUID(),
+        id: newId(),
         problemId,
         sessionId: currentSession.id,
         timestamp: new Date().toISOString(),
