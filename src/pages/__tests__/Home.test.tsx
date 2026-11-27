@@ -23,21 +23,24 @@ describe('Home', () => {
     expect(screen.getByRole('heading', { name: 'Matside' })).toBeInTheDocument();
     expect(screen.getByText(/stays on this device/)).toBeInTheDocument();
     expect(screen.queryByText(/offline/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Interval timer' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Start session' })).toHaveAttribute('href', '/session');
+    expect(screen.getByRole('link', { name: 'Interval timer' })).toHaveAttribute(
+      'href',
+      '/workouts',
+    );
   });
 
   it('renders actions that navigate', async () => {
     const user = userEvent.setup();
     renderHome();
-    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    await user.click(screen.getByRole('link', { name: 'Start session' }));
     expect(screen.getByTestId('path')).toHaveTextContent('/session');
   });
 
   it('navigates to workouts', async () => {
     const user = userEvent.setup();
     renderHome();
-    await user.click(screen.getByRole('button', { name: 'Interval timer' }));
+    await user.click(screen.getByRole('link', { name: 'Interval timer' }));
     expect(screen.getByTestId('path')).toHaveTextContent('/workouts');
   });
 });

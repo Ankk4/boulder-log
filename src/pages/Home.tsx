@@ -1,9 +1,8 @@
 import { Button, Stack, Typography } from '@mui/material';
-import { useAppNavigate } from '../hooks/useAppNavigate';
+import { Link as RouterLink } from 'react-router';
 import PageHeader from '../components/PageHeader';
 
 export default function Home() {
-  const navigate = useAppNavigate();
   return (
     <>
       <PageHeader title="Matside" />
@@ -12,20 +11,10 @@ export default function Home() {
         this device.
       </Typography>
       <Stack spacing={2}>
-        <Button
-          variant="contained"
-          onClick={() => {
-            navigate('/session');
-          }}
-        >
+        <Button variant="contained" component={RouterLink} to="/session">
           Start session
         </Button>
-        <Button
-          variant="outlined"
-          onClick={() => {
-            navigate('/workouts');
-          }}
-        >
+        <Button variant="outlined" component={RouterLink} to="/workouts">
           Interval timer
         </Button>
       </Stack>
