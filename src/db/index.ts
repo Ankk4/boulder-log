@@ -1,10 +1,18 @@
 import { BoulderLogDatabase } from './database';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { latestEndedSession } from '../utils/sessions';
 
 export const db = new BoulderLogDatabase();
 
 export function useCurrentSession() {
   return useLiveQuery(() => db.getCurrentSession());
+}
+
+export function useLatestEndedSession() {
+  return useLiveQuery(async () => {
+    const sessions = await db.sessions.toArray();
+    return latestEndedSession(sessions) ?? null;
+  });
 }
 
 export function useIntervalWorkouts() {
@@ -30,4 +38,8 @@ export function useProblemsAtGrade(label: string) {
     if (french.length > 0) return french;
     return db.problems.where('colorGrade').equals(label).toArray();
   }, [label]);
+}
+
+export function useSessionById(id: string | undefined) {
+  return useLiveQuery(async () => (id ? ((await db.sessions.get(id)) ?? null) : null), [id]);
 }

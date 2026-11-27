@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes, useParams } from 'react-router';
 import PastSessionsList from '../PastSessionsList';
 import type { db } from '../../db';
 import type { Session } from '../../types';
@@ -32,44 +33,57 @@ const makeSession = (overrides: Partial<Session> = {}): Session => ({
   ...overrides,
 });
 
+const SessionDetailStub = () => {
+  const { id } = useParams();
+  return <div>detail {id}</div>;
+};
+
 const mockSessions = (sessions: Session[]) => {
   orderBy.mockReturnValue({
     reverse: () => ({ toArray: () => Promise.resolve(sessions) }),
   } as unknown as ReturnType<typeof db.sessions.orderBy>);
 };
 
+const renderList = () =>
+  render(
+    <MemoryRouter>
+      <Routes>
+        <Route path="/" element={<PastSessionsList />} />
+        <Route path="/sessions/:id" element={<SessionDetailStub />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+
 describe('PastSessionsList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('shows each review line for a session with a full review', async () => {
+  it('omits the active session', async () => {
     mockSessions([
-      makeSession({
-        postSessionReview: {
-          rpe: 7,
-          energyAfter: 3,
-          accomplishments: ['Flashed a V3', 'Good warm-up'],
-          workOn: ['Heel hooks'],
-          achievedGoals: [1],
-        },
-      }),
+      makeSession({ id: 'active', endTime: null, startTime: '2024-02-02T10:00:00.000Z' }),
+      makeSession({ id: 'done', endTime: '2024-01-01T11:00:00.000Z' }),
     ]);
 
-    render(<PastSessionsList />);
+    renderList();
 
-    expect(await screen.findByText('RPE: 7')).toBeTruthy();
-    expect(screen.getByText('Energy: 5 → 3')).toBeTruthy();
-    expect(screen.getByText('Goals achieved: 1/2')).toBeTruthy();
-    expect(screen.getByText('Accomplished: Flashed a V3, Good warm-up')).toBeTruthy();
-    expect(screen.getByText('Work on: Heel hooks')).toBeTruthy();
+    expect(
+      await screen.findByText(new Date('2024-01-01T10:00:00.000Z').toLocaleDateString()),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'delete' })).toHaveLength(1);
   });
 
-  it('omits RPE, energy and list lines for null ratings and empty lists', async () => {
+  it('row shows the summary', async () => {
     mockSessions([
       makeSession({
+        endTime: '2024-01-01T11:00:00.000Z',
+        duration: 75,
+        problems: [
+          { id: 'p1', flash: false, send: true, attempts: [] },
+          { id: 'p2', flash: false, send: false, attempts: [] },
+        ] as unknown as Session['problems'],
         postSessionReview: {
-          rpe: null,
+          rpe: 7,
           energyAfter: null,
           accomplishments: [],
           workOn: [],
@@ -78,26 +92,42 @@ describe('PastSessionsList', () => {
       }),
     ]);
 
-    render(<PastSessionsList />);
+    renderList();
 
-    expect(await screen.findByText('Problems: 0')).toBeTruthy();
-    expect(screen.queryByText(/RPE:/)).toBeNull();
-    expect(screen.queryByText(/Energy:/)).toBeNull();
-    expect(screen.queryByText(/Accomplished:/)).toBeNull();
-    expect(screen.queryByText(/Work on:/)).toBeNull();
+    expect(await screen.findByText('1h 15m · 2 problems · 1 send · RPE 7')).toBeTruthy();
   });
 
-  it('renders no review lines for a session without a review', async () => {
-    mockSessions([makeSession()]);
+  it('row uses the singular for one problem', async () => {
+    mockSessions([
+      makeSession({
+        endTime: '2024-01-01T11:00:00.000Z',
+        duration: 30,
+        problems: [
+          { id: 'p1', flash: false, send: true, attempts: [] },
+        ] as unknown as Session['problems'],
+      }),
+    ]);
 
-    render(<PastSessionsList />);
+    renderList();
 
-    expect(await screen.findByText('Problems: 0')).toBeTruthy();
-    expect(screen.queryByText(/RPE:/)).toBeNull();
-    expect(screen.queryByText(/Energy:/)).toBeNull();
-    expect(screen.queryByText(/Goals achieved:/)).toBeNull();
-    expect(screen.queryByText(/Accomplished:/)).toBeNull();
-    expect(screen.queryByText(/Work on:/)).toBeNull();
+    expect(await screen.findByText('30 minutes · 1 problem · 1 send')).toBeTruthy();
+  });
+
+  it('row omits RPE when not set', async () => {
+    mockSessions([makeSession({ endTime: '2024-01-01T11:00:00.000Z', duration: 30 })]);
+
+    renderList();
+
+    expect(await screen.findByText('30 minutes · 0 problems · 0 sends')).toBeTruthy();
+  });
+
+  it('row opens the session page', async () => {
+    mockSessions([makeSession({ id: 'abc', endTime: '2024-01-01T11:00:00.000Z' })]);
+
+    renderList();
+
+    fireEvent.click(await screen.findByText(/0 problems/));
+    expect(await screen.findByText('detail abc')).toBeTruthy();
   });
 
   it('logs and keeps rendering when loading sessions fails', async () => {
@@ -106,12 +136,12 @@ describe('PastSessionsList', () => {
       throw new Error('boom');
     });
 
-    render(<PastSessionsList />);
+    renderList();
 
     await waitFor(() => {
       expect(errorSpy).toHaveBeenCalledWith('Error loading sessions:', expect.any(Error));
     });
-    expect(screen.queryByText(/Problems:/)).toBeNull();
+    expect(screen.queryByText(/problems/)).toBeNull();
     errorSpy.mockRestore();
   });
 });

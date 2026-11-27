@@ -1,13 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Paper,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
+import { useRef, useState } from 'react';
+import { Typography, Button, Paper, IconButton, Stack, Chip } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloseIcon from '@mui/icons-material/Close';
+import HistoryIcon from '@mui/icons-material/History';
+import { useNavigate, useSearchParams } from 'react-router';
 import PageHeader from '../components/PageHeader';
 import QuickLog from '../components/QuickLog';
 import PreSessionForm from '../components/PreSessionForm';
@@ -15,13 +11,14 @@ import PastSessionsList from '../components/PastSessionsList';
 import DataCard from '../components/DataCard';
 import BackupReminder from '../components/BackupReminder';
 import UndoSnackbar from '../components/UndoSnackbar';
-import PostSessionReviewSection from '../components/PostSessionReview';
+import SessionWrapUp from '../components/SessionWrapUp';
 import type { Session, SessionProblem, PreSessionData, PostSessionReview } from '../types';
 import { AttemptType } from '../types';
-import { db, useCurrentSession } from '../db';
+import { db, useCurrentSession, useLatestEndedSession } from '../db';
 import { requestPersistentStorage } from '../utils/storage';
 import { removeProblem, replaceProblem } from '../utils/undo';
 import { newId } from '../utils/id';
+import { removeGoalAt } from '../utils/sessions';
 import {
   sanitizeGoals,
   sanitizeGrade,
@@ -32,15 +29,9 @@ import {
 } from '../utils/validation';
 
 type SessionMode = 'climb' | 'history';
+type SessionView = 'live' | 'checkin' | 'wrapup';
 
 const defaultPreSessionData: PreSessionData = {
-  sleepQuality: 5,
-  energyLevel: 5,
-  fingerSoreness: 5,
-  motivation: 5,
-  restDays: 1,
-  nutrition: 'moderate',
-  stress: 'medium',
   goals: [],
   additionalNotes: '',
 };
@@ -64,11 +55,16 @@ const SAVE_ERROR_MESSAGE = "Couldn't save. Try again.";
 
 const SessionPage = () => {
   const currentSession = useCurrentSession();
-  const [mode, setMode] = useState<SessionMode>('climb');
+  const latestEnded = useLatestEndedSession();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mode: SessionMode = searchParams.get('view') === 'history' ? 'history' : 'climb';
+  const [prevMode, setPrevMode] = useState<SessionMode>(mode);
   const [preSessionData, setPreSessionData] = useState<PreSessionData>(defaultPreSessionData);
   const [postSessionNotes, setPostSessionNotes] = useState('');
   const [review, setReview] = useState<PostSessionReview>(emptyReview);
-  const [now, setNow] = useState(() => Date.now());
+  const [view, setView] = useState<SessionView>('live');
+  const [liveCheckIn, setLiveCheckIn] = useState<PreSessionData>(defaultPreSessionData);
   const [loadedId, setLoadedId] = useState<string | undefined>(undefined);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const feedbackId = useRef(0);
@@ -99,8 +95,19 @@ const SessionPage = () => {
     }
   };
 
+  if (mode !== prevMode) {
+    setPrevMode(mode);
+    setPreSessionData(defaultPreSessionData);
+    setView('live');
+  }
+
+  const changeMode = (next: SessionMode) => {
+    setSearchParams(next === 'history' ? { view: 'history' } : {}, { replace: true });
+  };
+
   if (currentSession?.id !== loadedId) {
     setLoadedId(currentSession?.id);
+    setView('live');
     setReview(currentSession?.postSessionReview ?? emptyReview);
     setPostSessionNotes(currentSession?.postSessionNotes ?? '');
   }
@@ -127,14 +134,34 @@ const SessionPage = () => {
     void saveDraft(review, next);
   };
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(Date.now());
-    }, 30_000);
-    return () => {
-      clearInterval(id);
+  const changeLiveCheckIn = (next: PreSessionData) => {
+    if (!currentSession) return;
+    const prevGoals = liveCheckIn.goals;
+    setLiveCheckIn(next);
+    const sanitized: PreSessionData = {
+      ...next,
+      goals: sanitizeGoals(next.goals),
+      additionalNotes: sanitizeNotes(next.additionalNotes),
     };
-  }, []);
+    const changes: Partial<Session> = { preSessionData: sanitized };
+    if (next.goals.length < prevGoals.length) {
+      let removed = next.goals.findIndex((goal, i) => goal !== prevGoals[i]);
+      if (removed === -1) removed = prevGoals.length - 1;
+      const nextReview: PostSessionReview = {
+        ...review,
+        achievedGoals: removeGoalAt(review.achievedGoals, removed),
+      };
+      setReview(nextReview);
+      changes.postSessionReview = nextReview;
+    }
+    void (async () => {
+      try {
+        await db.sessions.update(currentSession.id, changes);
+      } catch (error) {
+        console.error('Error saving check-in:', error);
+      }
+    })();
+  };
 
   const startSession = async () => {
     const sanitizedPreSession: PreSessionData = {
@@ -176,6 +203,7 @@ const SessionPage = () => {
       try {
         await db.sessions.put(updatedSession);
         setPreSessionData(defaultPreSessionData);
+        setView('live');
         setPostSessionNotes('');
         setReview(emptyReview);
         void requestPersistentStorage();
@@ -306,134 +334,165 @@ const SessionPage = () => {
 
   return (
     <>
-      <PageHeader title="Session" />
-
-      <ToggleButtonGroup
-        value={mode}
-        exclusive
-        fullWidth
-        size="small"
-        onChange={(_event, next: SessionMode | null) => {
-          if (next) {
-            if (next !== mode) setPreSessionData(defaultPreSessionData);
-            setMode(next);
-          }
-        }}
-        sx={{ mb: 2 }}
-        aria-label="Session mode"
-      >
-        <ToggleButton value="climb">Climb</ToggleButton>
-        <ToggleButton value="history">History</ToggleButton>
-      </ToggleButtonGroup>
-
       {mode === 'history' ? (
         <>
+          <Stack direction="row" sx={{ mb: 2, alignItems: 'center', gap: 1 }}>
+            <IconButton
+              aria-label="Back"
+              edge="start"
+              onClick={() => {
+                changeMode('climb');
+              }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h5" component="h2">
+              History
+            </Typography>
+          </Stack>
           <DataCard />
           <PastSessionsList />
         </>
       ) : currentSession === undefined ? null : currentSession === null ? (
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <BackupReminder />
-          <Typography variant="h6" gutterBottom>
-            Pre-Session Check-in
-          </Typography>
-          <PreSessionForm onChange={setPreSessionData} />
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={() => {
-              void startSession();
-            }}
-            sx={{ mt: 3 }}
-          >
-            Start Session
-          </Button>
-        </Paper>
+        <>
+          <PageHeader
+            title="New session"
+            action={
+              <Stack direction="row">
+                <IconButton
+                  aria-label="History"
+                  onClick={() => {
+                    changeMode('history');
+                  }}
+                >
+                  <HistoryIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="Close"
+                  edge="end"
+                  onClick={() => {
+                    void navigate('/');
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Stack>
+            }
+          />
+          <Paper sx={{ p: 2, mb: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => {
+                void startSession();
+              }}
+              sx={{ mb: 2 }}
+            >
+              Start session
+            </Button>
+            <PreSessionForm
+              value={preSessionData}
+              onChange={setPreSessionData}
+              lastWorkOn={latestEnded?.postSessionReview?.workOn}
+            />
+            <BackupReminder />
+          </Paper>
+        </>
       ) : (
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6">Session Details</Typography>
-          <Typography>
-            Started: {new Date(currentSession.startTime).toLocaleTimeString()}
-          </Typography>
-          <Typography>
-            Duration:{' '}
-            {Math.round((now - new Date(currentSession.startTime).getTime()) / (1000 * 60))} minutes
-          </Typography>
-
-          <Box sx={{ mt: 2, mb: 2 }}>
-            <Typography variant="h6">Session Stats</Typography>
-            <Typography>Unique Problems: {currentSession.problems.length}</Typography>
-            <Typography>
-              Total Attempts:{' '}
-              {currentSession.problems.reduce((sum, p) => sum + p.attempts.length, 0)}
-            </Typography>
-            <Typography>
-              Flashes: {currentSession.problems.filter((p) => p.flash).length}
-            </Typography>
-            <Typography>Sends: {currentSession.problems.filter((p) => p.send).length}</Typography>
-            <Typography>
-              Success Rate:{' '}
-              {Math.round(
-                (currentSession.problems.filter((p) => p.flash || p.send).length /
-                  Math.max(currentSession.problems.length, 1)) *
-                  100,
-              )}
-              %
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 2, mb: 2 }}>
-            <Typography variant="h6">Session Goals</Typography>
-            {currentSession.preSessionData.goals.map((goal, index) => (
-              <Typography key={index} color="text.secondary">
-                • {goal}
-              </Typography>
-            ))}
-          </Box>
-
-          <QuickLog
-            sessionId={currentSession.id}
-            problems={currentSession.problems}
-            onAddProblem={(problem) => {
-              void handleAddProblem(problem);
-            }}
-            onAddAttempt={(problemId, type) => {
-              void handleAddAttempt(problemId, type);
-            }}
+        <>
+          <PageHeader
+            title="Session"
+            action={
+              <IconButton
+                aria-label="History"
+                edge="end"
+                onClick={() => {
+                  changeMode('history');
+                }}
+              >
+                <HistoryIcon />
+              </IconButton>
+            }
           />
-
-          <PostSessionReviewSection
-            value={review}
-            goals={currentSession.preSessionData.goals}
-            onChange={changeReview}
-          />
-
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Post-session notes"
-            value={postSessionNotes}
-            slotProps={{ htmlInput: { maxLength: LIMITS.postSessionNotes } }}
-            onChange={(e) => {
-              changeNotes(e.target.value);
-            }}
-            sx={{ mt: 2 }}
-          />
-
-          <Button
-            variant="contained"
-            color="secondary"
-            fullWidth
-            sx={{ mt: 2 }}
-            onClick={() => {
-              void endSession();
-            }}
-          >
-            End Session
-          </Button>
-        </Paper>
+          <Paper sx={{ p: 2, mb: 2 }}>
+            {view === 'checkin' ? (
+              <>
+                <PreSessionForm
+                  value={liveCheckIn}
+                  onChange={changeLiveCheckIn}
+                  lastWorkOn={latestEnded?.postSessionReview?.workOn}
+                />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  onClick={() => {
+                    setView('live');
+                  }}
+                >
+                  Done
+                </Button>
+              </>
+            ) : view === 'wrapup' ? (
+              <SessionWrapUp
+                session={currentSession}
+                review={review}
+                notes={postSessionNotes}
+                onReviewChange={changeReview}
+                onNotesChange={changeNotes}
+                onSave={() => {
+                  void endSession();
+                }}
+                onBack={() => {
+                  setView('live');
+                }}
+              />
+            ) : (
+              <>
+                {currentSession.preSessionData.goals.length > 0 && (
+                  <Stack direction="row" sx={{ mb: 2, flexWrap: 'wrap', gap: 0.5 }}>
+                    {currentSession.preSessionData.goals.map((goal, index) => (
+                      <Chip key={index} size="small" label={goal} />
+                    ))}
+                  </Stack>
+                )}
+                <QuickLog
+                  sessionId={currentSession.id}
+                  problems={currentSession.problems}
+                  onAddProblem={(problem) => {
+                    void handleAddProblem(problem);
+                  }}
+                  onAddAttempt={(problemId, type) => {
+                    void handleAddAttempt(problemId, type);
+                  }}
+                />
+                <Stack direction="row" sx={{ mt: 2, gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => {
+                      setLiveCheckIn(currentSession.preSessionData);
+                      setView('checkin');
+                    }}
+                  >
+                    Check-in
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    fullWidth
+                    onClick={() => {
+                      setView('wrapup');
+                    }}
+                  >
+                    Finish session
+                  </Button>
+                </Stack>
+              </>
+            )}
+          </Paper>
+        </>
       )}
 
       {feedback && (

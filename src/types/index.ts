@@ -18,13 +18,13 @@ export interface PostSessionReview {
 }
 
 export interface PreSessionData {
-  sleepQuality: number;
-  energyLevel: number;
-  fingerSoreness: number;
-  motivation: number;
-  restDays: number;
-  nutrition: 'poor' | 'moderate' | 'good';
-  stress: 'low' | 'medium' | 'high';
+  sleepQuality?: number;
+  energyLevel?: number;
+  fingerSoreness?: number;
+  motivation?: number;
+  restDays?: number;
+  nutrition?: 'poor' | 'moderate' | 'good';
+  stress?: 'low' | 'medium' | 'high';
   goals: string[];
   additionalNotes: string;
 }
