@@ -29,6 +29,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
 1. Spawn `implementer` with the prompt: `Spec folder: specs/active/<feature>/. Task: T<n>.`
    - `runner: planner` task (its files are protected by scope-guard): spawn no implementer. Make the edits yourself in the main tree, only in the task's allowed files. Steps 2–6 are unchanged; where they say "send to the implementer", fix it yourself, within the same budget.
 2. **Verify gate (you enforce it).** When the implementer returns, run `node .claude/hooks/verify-on-stop.mjs --check <tree>` yourself (it runs `npm run verify`, exits 1 with the failing lines). Don't trust the report's "verify passed".
+   - Send its output to a file and read `$?` from the check itself, never through a pipe like `| tail`.
    - After any `npm install`, read `git diff package.json`: a package must stay in the section (`dependencies` or `devDependencies`) it was in. Install runtime packages without `-D`.
    - The `SubagentStop` hook can't stop a background agent (it has already handed back), but its pass stamp makes your `--check` instant on a green tree.
    - On failure, send the last ~40 lines of output to the same implementer with SendMessage, so it keeps its context. Wait, then verify again.
@@ -48,6 +49,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
    - `git cherry-pick <worktree-branch-sha>`
    - `npm run verify`. If it fails after a cherry-pick, the tasks weren't really independent. Report it, fix it as its own commit, and mark the spec's tasks to fix the parallel-safe flags.
    - `git worktree remove <path>` and `git branch -D <worktree-branch>`. If the agent has finished but the worktree is still locked, use `git worktree remove -f -f <path>`.
+   - Run cleanup from the repo root with `git -C <repo root>`; never `cd` into a worktree you will remove.
 4. FAIL handling is the same as 2a, inside the worktree. If a task still fails, leave its worktree in place for the user to inspect.
 
 ## 3. Final spec review (skip for quick specs)

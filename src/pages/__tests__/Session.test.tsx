@@ -16,6 +16,7 @@ const { mockDb } = vi.hoisted(() => ({
       add: vi.fn<typeof db.sessions.add>(),
       put: vi.fn<typeof db.sessions.put>(),
       update: vi.fn<typeof db.sessions.update>(),
+      get: vi.fn<typeof db.sessions.get>(),
       orderBy: vi.fn<typeof db.sessions.orderBy>().mockReturnThis(),
       reverse: vi.fn<typeof db.sessions.reverse>().mockReturnThis(),
       toArray: vi.fn<typeof db.sessions.toArray>().mockResolvedValue([]),
@@ -24,9 +25,11 @@ const { mockDb } = vi.hoisted(() => ({
       add: vi.fn<typeof db.problems.add>(),
       get: vi.fn<typeof db.problems.get>(),
       put: vi.fn<typeof db.problems.put>(),
+      delete: vi.fn<typeof db.problems.delete>(),
     },
     attempts: {
       add: vi.fn<typeof db.attempts.add>(),
+      delete: vi.fn<typeof db.attempts.delete>(),
       where: vi.fn<typeof db.attempts.where>().mockReturnThis(),
       equals: vi.fn<WhereClause['equals']>().mockReturnThis(),
       toArray: vi.fn<typeof db.attempts.toArray>().mockResolvedValue([]),
@@ -469,6 +472,243 @@ describe('Session Page', () => {
       expect(errorSpy).toHaveBeenCalledWith('Error ending session:', expect.any(Error));
     });
     errorSpy.mockRestore();
+  });
+
+  describe('undo', () => {
+    const prev: SessionProblem = { ...mockProblem, attempts: [] };
+    const sessionWithProblem = {
+      ...mockSession,
+      postSessionNotes: 'keep me',
+      problems: [prev],
+    };
+
+    const setupAttempt = () => {
+      vi.mocked(useCurrentSession).mockReturnValue(sessionWithProblem);
+      mockDb.problems.get.mockResolvedValue(prev);
+      mockDb.problems.put.mockResolvedValue('1');
+      mockDb.problems.delete.mockResolvedValue(undefined);
+      mockDb.attempts.add.mockResolvedValue('a');
+      mockDb.attempts.delete.mockResolvedValue(undefined);
+      mockDb.attempts.toArray.mockResolvedValue([]);
+      mockDb.sessions.put.mockResolvedValue('1');
+      mockDb.sessions.update.mockResolvedValue(1);
+      mockDb.sessions.get.mockResolvedValue(sessionWithProblem);
+    };
+
+    it('shows a snackbar after logging an attempt', async () => {
+      setupAttempt();
+      render(ui());
+      fireEvent.click(screen.getByTestId('attempt-button'));
+      expect(await screen.findByText('Attempt logged')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+    });
+
+    it.each([
+      ['flash-button', 'Flash logged'],
+      ['send-button', 'Send logged'],
+    ])('shows %s message', async (testId, message) => {
+      setupAttempt();
+      render(ui());
+      fireEvent.click(screen.getByTestId(testId));
+      expect(await screen.findByText(message)).toBeInTheDocument();
+    });
+
+    it('undo removes the attempt and restores the problem', async () => {
+      setupAttempt();
+      render(ui());
+      fireEvent.click(screen.getByTestId('flash-button'));
+      fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => {
+        expect(mockDb.attempts.delete).toHaveBeenCalledWith(expect.any(String) as string);
+      });
+      expect(mockDb.problems.put).toHaveBeenLastCalledWith(prev);
+      expect(mockDb.sessions.update).toHaveBeenCalledWith('1', { problems: [prev] });
+    });
+
+    it('undo leaves other session fields untouched', async () => {
+      setupAttempt();
+      render(ui());
+      fireEvent.click(screen.getByTestId('attempt-button'));
+      fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalled();
+      });
+      const calls = mockDb.sessions.update.mock.calls;
+      expect(calls).toHaveLength(1);
+      expect(Object.keys(calls[0]?.[1] ?? {})).toEqual(['problems']);
+    });
+
+    it('undo removes an added problem', async () => {
+      setupAttempt();
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.problems.add.mockResolvedValue('2');
+      render(ui());
+
+      fireEvent.click(screen.getByText(/add problem/i));
+      fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
+      fireEvent.mouseDown(screen.getAllByRole('combobox')[0] as HTMLElement);
+      fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+      fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
+
+      expect(await screen.findByText('Problem added')).toBeInTheDocument();
+      const added = mockDb.problems.add.mock.calls[0]?.[0];
+      mockDb.sessions.get.mockResolvedValue({
+        ...mockSession,
+        problems: [prev, added as SessionProblem],
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => {
+        expect(mockDb.problems.delete).toHaveBeenCalledWith(added?.id);
+      });
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalledWith('1', { problems: [prev] });
+      });
+    });
+
+    it('undo after two actions reverts only the latest', async () => {
+      setupAttempt();
+      render(ui());
+      fireEvent.click(screen.getByTestId('attempt-button'));
+      await screen.findByText('Attempt logged');
+      fireEvent.click(screen.getByTestId('send-button'));
+      expect(await screen.findByText('Send logged')).toBeInTheDocument();
+      expect(screen.queryByText('Attempt logged')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => {
+        expect(mockDb.attempts.delete).toHaveBeenCalledTimes(1);
+      });
+      const sendCall = mockDb.attempts.add.mock.calls[1]?.[0];
+      expect(mockDb.attempts.delete).toHaveBeenCalledWith(sendCall?.id);
+    });
+
+    it('Undo can only be pressed once', async () => {
+      setupAttempt();
+      render(ui());
+      fireEvent.click(screen.getByTestId('attempt-button'));
+      const undo = await screen.findByRole('button', { name: 'Undo' });
+      fireEvent.click(undo);
+      fireEvent.click(undo);
+
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalled();
+      });
+      expect(mockDb.attempts.delete).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+    });
+
+    it('shows an error when logging fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      setupAttempt();
+      mockDb.attempts.add.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByTestId('attempt-button'));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      expect(errorSpy).toHaveBeenCalledWith('Error adding attempt:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
+
+    it('shows an error when adding a problem fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      setupAttempt();
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.problems.add.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByText(/add problem/i));
+      fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
+      fireEvent.mouseDown(screen.getAllByRole('combobox')[0] as HTMLElement);
+      fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+      fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(errorSpy).toHaveBeenCalledWith('Error adding problem:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
+
+    it('undo End reopens the session with its notes and review', async () => {
+      const ended = {
+        ...mockSession,
+        postSessionNotes: 'Saved notes',
+        postSessionReview: {
+          rpe: 8,
+          energyAfter: null,
+          accomplishments: ['Did A'],
+          workOn: [],
+          achievedGoals: [],
+        },
+      };
+      vi.mocked(useCurrentSession).mockReturnValue(ended);
+      mockDb.sessions.put.mockResolvedValue('1');
+      mockDb.sessions.update.mockResolvedValue(1);
+      const view = render(ui());
+
+      fireEvent.click(screen.getByText(/end session/i));
+      expect(await screen.findByText('Session ended')).toBeInTheDocument();
+      vi.mocked(useCurrentSession).mockReturnValue(null);
+      view.rerender(ui());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalledWith('1', {
+          endTime: null,
+          duration: undefined,
+        });
+      });
+
+      vi.mocked(useCurrentSession).mockReturnValue(ended);
+      view.rerender(ui());
+      expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('Saved notes');
+      expect(screen.getByText('Did A')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '8' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('shows an error when ending fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.sessions.put.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByText(/end session/i));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      errorSpy.mockRestore();
+    });
+
+    it('shows an error when undoing End fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.sessions.put.mockResolvedValue('1');
+      mockDb.sessions.update.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByText(/end session/i));
+      fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      expect(errorSpy).toHaveBeenCalledWith('Error undoing action:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
+
+    it('shows an error when undo fails', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      setupAttempt();
+      mockDb.attempts.delete.mockRejectedValue(new Error('boom'));
+      render(ui());
+      fireEvent.click(screen.getByTestId('attempt-button'));
+      fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+
+      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      expect(errorSpy).toHaveBeenCalledWith('Error undoing action:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
   });
 
   describe('post-session review', () => {

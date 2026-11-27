@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -14,11 +14,13 @@ import PreSessionForm from '../components/PreSessionForm';
 import PastSessionsList from '../components/PastSessionsList';
 import DataCard from '../components/DataCard';
 import BackupReminder from '../components/BackupReminder';
+import UndoSnackbar from '../components/UndoSnackbar';
 import PostSessionReviewSection from '../components/PostSessionReview';
 import type { Session, SessionProblem, PreSessionData, PostSessionReview } from '../types';
 import { AttemptType } from '../types';
 import { db, useCurrentSession } from '../db';
 import { requestPersistentStorage } from '../utils/storage';
+import { removeProblem, replaceProblem } from '../utils/undo';
 import {
   sanitizeGoals,
   sanitizeGrade,
@@ -50,6 +52,15 @@ const emptyReview: PostSessionReview = {
   achievedGoals: [],
 };
 
+interface Feedback {
+  id: number;
+  message: string;
+  severity: 'info' | 'error';
+  undo?: () => Promise<void>;
+}
+
+const SAVE_ERROR_MESSAGE = "Couldn't save. Try again.";
+
 const SessionPage = () => {
   const currentSession = useCurrentSession();
   const [mode, setMode] = useState<SessionMode>('climb');
@@ -58,6 +69,34 @@ const SessionPage = () => {
   const [review, setReview] = useState<PostSessionReview>(emptyReview);
   const [now, setNow] = useState(() => Date.now());
   const [loadedId, setLoadedId] = useState<string | undefined>(undefined);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const feedbackId = useRef(0);
+
+  const showFeedback = (
+    message: string,
+    severity: 'info' | 'error',
+    undo?: () => Promise<void>,
+  ) => {
+    feedbackId.current += 1;
+    setFeedback({ id: feedbackId.current, message, severity, undo });
+  };
+
+  const showSaveError = () => {
+    showFeedback(SAVE_ERROR_MESSAGE, 'error');
+  };
+
+  const runUndo = async (action: Feedback) => {
+    if (!action.undo) return;
+    const undo = action.undo;
+    setFeedback({ ...action, undo: undefined });
+    try {
+      await undo();
+      setFeedback(null);
+    } catch (error) {
+      console.error('Error undoing action:', error);
+      showSaveError();
+    }
+  };
 
   if (currentSession?.id !== loadedId) {
     setLoadedId(currentSession?.id);
@@ -118,26 +157,35 @@ const SessionPage = () => {
 
   const endSession = async () => {
     if (currentSession) {
+      const savedNotes = sanitizeNotes(postSessionNotes, LIMITS.postSessionNotes);
+      const savedReview = sanitizePostSessionReview(
+        review,
+        currentSession.preSessionData.goals.length,
+      );
       const updatedSession: Session = {
         ...currentSession,
         endTime: new Date().toISOString(),
-        postSessionNotes: sanitizeNotes(postSessionNotes, LIMITS.postSessionNotes),
-        postSessionReview: sanitizePostSessionReview(
-          review,
-          currentSession.preSessionData.goals.length,
-        ),
+        postSessionNotes: savedNotes,
+        postSessionReview: savedReview,
         duration: Math.round(
           (new Date().getTime() - new Date(currentSession.startTime).getTime()) / (1000 * 60),
         ),
       };
+      const sessionId = currentSession.id;
       try {
         await db.sessions.put(updatedSession);
         setPreSessionData(defaultPreSessionData);
         setPostSessionNotes('');
         setReview(emptyReview);
         void requestPersistentStorage();
+        showFeedback('Session ended', 'info', async () => {
+          await db.sessions.update(sessionId, { endTime: null, duration: undefined });
+          setPostSessionNotes(savedNotes);
+          setReview(savedReview);
+        });
       } catch (error) {
         console.error('Error ending session:', error);
+        showSaveError();
       }
     }
   };
@@ -169,8 +217,19 @@ const SessionPage = () => {
           problems: [...currentSession.problems, newProblem],
         };
         await db.sessions.put(updatedSession);
+        const sessionId = currentSession.id;
+        showFeedback('Problem added', 'info', async () => {
+          await db.problems.delete(newProblem.id);
+          const current = await db.sessions.get(sessionId);
+          if (current) {
+            await db.sessions.update(sessionId, {
+              problems: removeProblem(current.problems, newProblem.id),
+            });
+          }
+        });
       } catch (error) {
         console.error('Error adding problem:', error);
+        showSaveError();
       }
     } else {
       console.error('No active session found');
@@ -193,6 +252,7 @@ const SessionPage = () => {
       };
 
       try {
+        const prevProblem = await db.problems.get(problemId);
         await db.attempts.add(newAttempt);
 
         const problem = await db.problems.get(problemId);
@@ -214,9 +274,29 @@ const SessionPage = () => {
           };
 
           await db.sessions.put(updatedSession);
+
+          const sessionId = currentSession.id;
+          const labels: Record<AttemptType, string> = {
+            [AttemptType.ATTEMPT]: 'Attempt logged',
+            [AttemptType.FLASH]: 'Flash logged',
+            [AttemptType.SEND]: 'Send logged',
+          };
+          showFeedback(labels[type], 'info', async () => {
+            await db.attempts.delete(newAttempt.id);
+            if (prevProblem) {
+              await db.problems.put(prevProblem);
+              const current = await db.sessions.get(sessionId);
+              if (current) {
+                await db.sessions.update(sessionId, {
+                  problems: replaceProblem(current.problems, prevProblem),
+                });
+              }
+            }
+          });
         }
       } catch (error) {
         console.error('Error adding attempt:', error);
+        showSaveError();
       }
     } else {
       console.error('No active session found');
@@ -353,6 +433,25 @@ const SessionPage = () => {
             End Session
           </Button>
         </Paper>
+      )}
+
+      {feedback && (
+        <UndoSnackbar
+          key={feedback.id}
+          open
+          message={feedback.message}
+          severity={feedback.severity}
+          onUndo={
+            feedback.undo
+              ? () => {
+                  void runUndo(feedback);
+                }
+              : undefined
+          }
+          onClose={() => {
+            setFeedback(null);
+          }}
+        />
       )}
     </>
   );
