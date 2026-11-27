@@ -39,3 +39,7 @@ export function useProblemsAtGrade(label: string) {
     return db.problems.where('colorGrade').equals(label).toArray();
   }, [label]);
 }
+
+export function useSessionById(id: string | undefined) {
+  return useLiveQuery(async () => (id ? ((await db.sessions.get(id)) ?? null) : null), [id]);
+}
