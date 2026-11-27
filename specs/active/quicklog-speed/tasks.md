@@ -11,14 +11,14 @@ Rules for splitting:
 ## T1 — Grade lists and problem-default helpers
 - covers: [R3, R4, R6, R7]
 - runner: implementer
-- allowed files: `src/utils/grades.ts`, `src/utils/problemDefaults.ts`, `src/utils/__tests__/problemDefaults.test.ts`
+- allowed files: `src/utils/grades.ts`, `src/utils/problemDefaults.ts`, `src/utils/__tests__/problemDefaults.test.ts`, `src/components/DifficultySelect.tsx`
 - check: `npx vitest run src/utils/__tests__/problemDefaults.test.ts`
 - tests to add: the R3, R4 and R7 `problemDefaults.test.ts` cases, plus `gradeLabel` (French over colour, empty when neither).
 - parallel-safe: yes
 - schema-change: no
 - depends-on: []
 - notes:
-  - Copy `frenchGrades` and `colorGrades` out of `DifficultySelect.tsx` into `grades.ts`, exported. Don't delete `DifficultySelect.tsx` yet (T3 does).
+  - Move `frenchGrades` and `colorGrades` out of `DifficultySelect.tsx` into `grades.ts`, exported, and have `DifficultySelect.tsx` import them from there (otherwise knip flags `grades.ts` as unused). Don't delete `DifficultySelect.tsx` yet (T3 does).
   - Pure functions: `gradeLabel(p)`, `lastUsedGrades(problems)`, `autoName(problems, label)` and `summarizeLastTime(problems, currentSessionId, label)`.
   - `summarizeLastTime` picks the earlier session whose problems at that label have the newest `createdAt`.
 
