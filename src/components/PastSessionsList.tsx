@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Box,
   Typography,
   Paper,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   IconButton,
   Dialog,
@@ -17,7 +17,9 @@ import {
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { db } from '../db';
-import type { PostSessionReview, Session } from '../types';
+import type { Session } from '../types';
+import { sessionStats } from '../utils/sessions';
+import { useAppNavigate } from '../hooks/useAppNavigate';
 
 const formatDuration = (minutes: number) => {
   if (minutes < 60) return `${String(minutes)} minutes`;
@@ -26,45 +28,20 @@ const formatDuration = (minutes: number) => {
   return `${String(hours)}h ${String(remainingMinutes)}m`;
 };
 
-const ReviewLines = ({
-  review,
-  energyBefore,
-  goalCount,
-}: {
-  review: PostSessionReview;
-  energyBefore: number;
-  goalCount: number;
-}) => (
-  <>
-    {review.rpe !== null && (
-      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-        RPE: {review.rpe}
-      </Typography>
-    )}
-    {review.energyAfter !== null && (
-      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-        Energy: {energyBefore} → {review.energyAfter}
-      </Typography>
-    )}
-    {goalCount > 0 && (
-      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-        Goals achieved: {review.achievedGoals.length}/{goalCount}
-      </Typography>
-    )}
-    {review.accomplishments.length > 0 && (
-      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-        Accomplished: {review.accomplishments.join(', ')}
-      </Typography>
-    )}
-    {review.workOn.length > 0 && (
-      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-        Work on: {review.workOn.join(', ')}
-      </Typography>
-    )}
-  </>
-);
+const summaryLine = (session: Session) => {
+  const { problems, sends } = sessionStats(session);
+  const parts = [
+    session.duration ? formatDuration(session.duration) : 'N/A',
+    `${String(problems)} ${problems === 1 ? 'problem' : 'problems'}`,
+    `${String(sends)} ${sends === 1 ? 'send' : 'sends'}`,
+  ];
+  const rpe = session.postSessionReview?.rpe;
+  if (rpe !== null && rpe !== undefined) parts.push(`RPE ${String(rpe)}`);
+  return parts.join(' · ');
+};
 
 const PastSessionsList = () => {
+  const navigate = useAppNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
@@ -73,7 +50,7 @@ const PastSessionsList = () => {
     const loadSessions = async () => {
       try {
         const allSessions = await db.sessions.orderBy('startTime').reverse().toArray();
-        setSessions(allSessions);
+        setSessions(allSessions.filter((s) => s.endTime !== null));
       } catch (error) {
         console.error('Error loading sessions:', error);
       }
@@ -122,46 +99,25 @@ const PastSessionsList = () => {
                   </IconButton>
                 }
               >
-                <ListItemText
-                  primary={
-                    <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                      <Typography variant="subtitle1">
-                        {new Date(session.startTime).toLocaleDateString()}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(session.startTime).toLocaleTimeString()}
-                      </Typography>
-                    </Stack>
-                  }
-                  secondary={
-                    <Box component="span">
-                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-                        Duration: {session.duration ? formatDuration(session.duration) : 'N/A'}
-                      </Typography>
-                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-                        Problems: {session.problems.length}
-                      </Typography>
-                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-                        Flashes: {session.problems.filter((p) => p.flash).length}
-                      </Typography>
-                      <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-                        Sends: {session.problems.filter((p) => p.send).length}
-                      </Typography>
-                      {session.preSessionData.goals.length > 0 && (
-                        <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-                          Goals: {session.preSessionData.goals.join(', ')}
+                <ListItemButton
+                  onClick={() => {
+                    navigate(`/sessions/${session.id}`);
+                  }}
+                  sx={{ pr: 7 }}
+                >
+                  <ListItemText
+                    primary={
+                      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                        <Typography variant="subtitle1">
+                          {new Date(session.startTime).toLocaleDateString()}
                         </Typography>
-                      )}
-                      {session.postSessionReview && (
-                        <ReviewLines
-                          review={session.postSessionReview}
-                          energyBefore={session.preSessionData.energyLevel}
-                          goalCount={session.preSessionData.goals.length}
-                        />
-                      )}
-                    </Box>
-                  }
-                />
+                        <Typography variant="body2" color="text.secondary">
+                          {summaryLine(session)}
+                        </Typography>
+                      </Stack>
+                    }
+                  />
+                </ListItemButton>
               </ListItem>
             ))}
           </List>

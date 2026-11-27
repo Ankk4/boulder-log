@@ -1,10 +1,10 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
 import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
-import { useCurrentSession } from '../../db/index';
+import { useCurrentSession, useLatestEndedSession, useProblemsAtGrade } from '../../db/index';
 import type { db } from '../../db/index';
 import type { WhereClause } from 'dexie';
 import { requestPersistentStorage } from '../../utils/storage';
@@ -41,6 +41,8 @@ const { mockDb } = vi.hoisted(() => ({
 vi.mock('../../db/index', () => ({
   db: mockDb,
   useCurrentSession: vi.fn(),
+  useLatestEndedSession: vi.fn<typeof useLatestEndedSession>(),
+  useProblemsAtGrade: vi.fn<typeof useProblemsAtGrade>().mockReturnValue([]),
 }));
 
 vi.mock('../../utils/storage', () => ({
@@ -64,6 +66,11 @@ vi.mock('@mui/material', async () => {
     DialogActions: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });
+
+const LocationDisplay = () => {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname + location.search}</div>;
+};
 
 describe('Session Page', () => {
   const mockSession: SessionType = {
@@ -98,16 +105,138 @@ describe('Session Page', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useLatestEndedSession).mockReturnValue(null);
   });
 
-  it('renders pre-session form when no active session exists', () => {
+  it('renders the new session screen when no active session exists', () => {
     vi.mocked(useCurrentSession).mockReturnValue(null);
     render(
       <MemoryRouter>
         <Session />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/pre-session check-in/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'New session' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/add a goal/i)).toBeInTheDocument();
+  });
+
+  it('no check-in heading', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/pre-session check-in/i)).not.toBeInTheDocument();
+  });
+
+  it('close on new session goes home', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter initialEntries={['/session']}>
+        <Session />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+  });
+
+  it('starts a session without touching the check-in', async () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    mockDb.sessions.add.mockResolvedValue('1');
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    const start = screen.getByRole('button', { name: /start session/i });
+    const goalInput = screen.getByPlaceholderText(/add a goal/i);
+    expect(
+      start.compareDocumentPosition(goalInput) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(start);
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('history button opens history', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    render(
+      <MemoryRouter initialEntries={['/session']}>
+        <Session />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByTestId('location')).toHaveTextContent('/session?view=history');
+    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
+  });
+
+  it('back from history returns to climb', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter initialEntries={['/session?view=history']}>
+        <Session />
+        <LocationDisplay />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/session$/);
+    expect(screen.getByRole('heading', { name: 'New session' })).toBeInTheDocument();
+  });
+
+  it('history mode follows the view query', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    render(
+      <MemoryRouter initialEntries={['/session?view=history']}>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('DataCard stub')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'New session' })).not.toBeInTheDocument();
+  });
+
+  it('passes the last session work-on items to the check-in', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    vi.mocked(useLatestEndedSession).mockReturnValue({
+      ...mockSession,
+      endTime: new Date().toISOString(),
+      postSessionReview: {
+        rpe: null,
+        energyAfter: null,
+        accomplishments: [],
+        workOn: ['Heel hooks'],
+        achievedGoals: [],
+      },
+    });
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Heel hooks')).toBeInTheDocument();
+  });
+
+  it('saves picked check-in values', async () => {
+    vi.mocked(useCurrentSession).mockReturnValue(null);
+    mockDb.sessions.add.mockResolvedValue('1');
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^Physical/ }));
+    const sleep = screen.getByRole('group', { name: /Sleep quality/ });
+    fireEvent.click(within(sleep).getByRole('button', { name: '7' }));
+    fireEvent.click(screen.getByRole('button', { name: /start session/i }));
+    await waitFor(() => {
+      expect(mockDb.sessions.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preSessionData: expect.objectContaining({ sleepQuality: 7 }) as unknown,
+        }),
+      );
+    });
   });
 
   it('renders no check-in while the current session is loading', () => {
@@ -117,8 +246,8 @@ describe('Session Page', () => {
         <Session />
       </MemoryRouter>,
     );
-    expect(screen.queryByText(/pre-session check-in/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /end session/i })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/add a goal/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save & end' })).not.toBeInTheDocument();
   });
 
   it('starts a new session', async () => {
@@ -138,6 +267,7 @@ describe('Session Page', () => {
         expect.objectContaining({
           startTime: expect.any(String) as string,
           endTime: null,
+          preSessionData: { goals: [], additionalNotes: '' },
         }),
       );
     });
@@ -158,11 +288,7 @@ describe('Session Page', () => {
     const nameInput = screen.getByLabelText(/problem name/i);
     fireEvent.change(nameInput, { target: { value: 'Test Problem' } });
 
-    const [frenchGradeSelect] = screen.getAllByRole('combobox');
-    expect(frenchGradeSelect).toBeDefined();
-    if (!frenchGradeSelect) return;
-    fireEvent.mouseDown(frenchGradeSelect);
-    fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+    fireEvent.click(screen.getByRole('button', { name: '6a' }));
 
     const addButton = screen.getByRole('button', { name: /^add$/i });
     fireEvent.click(addButton);
@@ -240,7 +366,7 @@ describe('Session Page', () => {
       </MemoryRouter>,
     );
 
-    const flashButton = screen.getByTestId('flash-button');
+    const flashButton = screen.getByTestId('send-button');
     fireEvent.click(flashButton);
 
     await waitFor(() => {
@@ -257,14 +383,9 @@ describe('Session Page', () => {
   it.each([
     ['send', { send: true }],
     ['flash', { flash: true }],
-  ] as const)('keeps %s sticky when another attempt is logged', async (_name, status) => {
+  ] as const)('disables Attempt once the problem is %s', (_name, status) => {
     const problem: SessionProblem = { ...mockProblem, ...status };
     vi.mocked(useCurrentSession).mockReturnValue({ ...mockSession, problems: [problem] });
-    mockDb.problems.get.mockResolvedValue(problem);
-    mockDb.problems.put.mockResolvedValue(1);
-    mockDb.attempts.add.mockResolvedValue('a2');
-    mockDb.sessions.put.mockResolvedValue(1);
-    mockDb.attempts.toArray.mockResolvedValue([]);
 
     render(
       <MemoryRouter>
@@ -274,9 +395,8 @@ describe('Session Page', () => {
 
     fireEvent.click(screen.getByTestId('attempt-button'));
 
-    await waitFor(() => {
-      expect(mockDb.problems.put).toHaveBeenCalledWith(expect.objectContaining(status));
-    });
+    expect(screen.getByTestId('attempt-button')).toBeDisabled();
+    expect(mockDb.attempts.add).not.toHaveBeenCalled();
   });
 
   const ui = () => (
@@ -285,14 +405,11 @@ describe('Session Page', () => {
     </MemoryRouter>
   );
 
+  const finish = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Finish session' }));
+  };
+
   const defaultPre = {
-    sleepQuality: 5,
-    energyLevel: 5,
-    fingerSoreness: 5,
-    motivation: 5,
-    restDays: 1,
-    nutrition: 'moderate',
-    stress: 'medium',
     goals: [],
     additionalNotes: '',
   };
@@ -321,10 +438,11 @@ describe('Session Page', () => {
 
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
     rerender(ui());
+    finish();
     fireEvent.change(screen.getByLabelText(/post-session notes/i), {
       target: { value: 'Felt strong' },
     });
-    fireEvent.click(screen.getByText(/end session/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
     await waitFor(() => {
       expect(mockDb.sessions.put).toHaveBeenCalled();
     });
@@ -341,6 +459,7 @@ describe('Session Page', () => {
 
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
     rerender(ui());
+    finish();
     expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('');
   });
 
@@ -350,8 +469,8 @@ describe('Session Page', () => {
     render(ui());
 
     addGoal('Stale goal');
-    fireEvent.click(screen.getByRole('button', { name: /history/i }));
-    fireEvent.click(screen.getByRole('button', { name: /climb/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     fireEvent.click(screen.getByText(/start session/i));
 
     await waitFor(() => {
@@ -371,7 +490,8 @@ describe('Session Page', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByText(/end session/i));
+    finish();
+    fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
 
     await waitFor(() => {
       expect(mockDb.sessions.put).toHaveBeenCalledWith(
@@ -391,7 +511,8 @@ describe('Session Page', () => {
         <Session />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByText(/end session/i));
+    finish();
+    fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
     await waitFor(() => {
       expect(requestPersistentStorage).toHaveBeenCalledTimes(1);
     });
@@ -406,7 +527,8 @@ describe('Session Page', () => {
         <Session />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByText(/end session/i));
+    finish();
+    fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
     await waitFor(() => {
       expect(errorSpy).toHaveBeenCalledWith('Error ending session:', expect.any(Error));
     });
@@ -422,7 +544,7 @@ describe('Session Page', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByText('DataCard stub')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
     expect(screen.getByText('DataCard stub')).toBeInTheDocument();
   });
 
@@ -466,12 +588,189 @@ describe('Session Page', () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByText(/end session/i));
+    finish();
+    fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
 
     await waitFor(() => {
       expect(errorSpy).toHaveBeenCalledWith('Error ending session:', expect.any(Error));
     });
     errorSpy.mockRestore();
+  });
+
+  describe('live view', () => {
+    const goalSession: SessionType = {
+      ...mockSession,
+      preSessionData: { ...mockSession.preSessionData, goals: ['Send red', 'Flash blue'] },
+    };
+
+    it('live view has no stats block', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      render(ui());
+      expect(screen.queryByText('Session Details')).not.toBeInTheDocument();
+      expect(screen.queryByText('Session Stats')).not.toBeInTheDocument();
+      expect(screen.queryByText(/total attempts/i)).not.toBeInTheDocument();
+    });
+
+    it('shows goals as chips', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      render(ui());
+      expect(screen.getByText('Send red')).toBeInTheDocument();
+      expect(screen.getByText('Flash blue')).toBeInTheDocument();
+    });
+
+    it('renders no goals block without goals', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      render(ui());
+      expect(screen.queryByText(/goal/i)).not.toBeInTheDocument();
+    });
+
+    it('live view has no review or notes', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      render(ui());
+      expect(screen.queryByRole('group', { name: 'RPE' })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/post-session notes/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Check-in' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Finish session' })).toBeInTheDocument();
+    });
+
+    it('finish opens wrap-up without ending the session', () => {
+      const withProblem: SessionType = {
+        ...goalSession,
+        problems: [{ ...mockProblem, send: true, attempts: [] }],
+      };
+      vi.mocked(useCurrentSession).mockReturnValue(withProblem);
+      render(ui());
+      finish();
+      expect(screen.getByRole('group', { name: 'RPE' })).toBeInTheDocument();
+      expect(screen.getByLabelText(/post-session notes/i)).toBeInTheDocument();
+      expect(screen.getByText('100%')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save & end' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Back to climbing' })).toBeInTheDocument();
+      expect(mockDb.sessions.put).not.toHaveBeenCalled();
+      expect(mockDb.sessions.update).not.toHaveBeenCalled();
+    });
+
+    it('wrap-up duration ticks every second', () => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(mockSession.startTime));
+        vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+        render(ui());
+        finish();
+        expect(screen.getByText('0:00')).toBeInTheDocument();
+        act(() => {
+          vi.advanceTimersByTime(3000);
+        });
+        expect(screen.getByText('0:03')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('wrap-up summary with no problems shows 0%', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      render(ui());
+      finish();
+      expect(screen.getByText('0%')).toBeInTheDocument();
+      expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+    });
+
+    it('back to climbing keeps the review draft', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.sessions.update.mockResolvedValue(1);
+      render(ui());
+      finish();
+      fireEvent.click(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '7' }),
+      );
+      fireEvent.change(screen.getByLabelText(/post-session notes/i), {
+        target: { value: 'Good day' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Back to climbing' }));
+      expect(screen.getByRole('button', { name: 'Finish session' })).toBeInTheDocument();
+      finish();
+      expect(
+        within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '7' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('Good day');
+    });
+
+    it('switching to history from wrap-up returns to the live view', () => {
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      render(ui());
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'History' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+      expect(screen.getByRole('button', { name: 'Finish session' })).toBeInTheDocument();
+      expect(screen.queryByLabelText(/post-session notes/i)).not.toBeInTheDocument();
+    });
+
+    it('edits the check-in during a session', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      mockDb.sessions.update.mockResolvedValue(1);
+      render(ui());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Check-in' }));
+      fireEvent.click(screen.getByRole('button', { name: /^Physical/ }));
+      const sleep = screen.getByRole('group', { name: /Sleep quality/ });
+      expect(within(sleep).getByRole('button', { name: '5' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      fireEvent.click(within(sleep).getByRole('button', { name: '8' }));
+
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalledWith('1', {
+          preSessionData: expect.objectContaining({
+            sleepQuality: 8,
+            goals: ['Send red', 'Flash blue'],
+          }) as unknown,
+        });
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+      expect(screen.getByRole('button', { name: 'Finish session' })).toBeInTheDocument();
+    });
+
+    it('removing a goal keeps achieved goals aligned', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue({
+        ...goalSession,
+        postSessionReview: {
+          rpe: null,
+          energyAfter: null,
+          accomplishments: [],
+          workOn: [],
+          achievedGoals: [0, 1],
+        },
+      });
+      mockDb.sessions.update.mockResolvedValue(1);
+      render(ui());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Check-in' }));
+      fireEvent.click(screen.getAllByTestId('CancelIcon')[0] as HTMLElement);
+
+      await waitFor(() => {
+        expect(mockDb.sessions.update).toHaveBeenCalledWith('1', {
+          preSessionData: expect.objectContaining({ goals: ['Flash blue'] }) as unknown,
+          postSessionReview: expect.objectContaining({ achievedGoals: [0] }) as unknown,
+        });
+      });
+    });
+
+    it('logs and swallows a failed check-in write', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(goalSession);
+      mockDb.sessions.update.mockRejectedValue(new Error('boom'));
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      render(ui());
+
+      fireEvent.click(screen.getByRole('button', { name: 'Check-in' }));
+      fireEvent.click(screen.getAllByTestId('CancelIcon')[0] as HTMLElement);
+
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledWith('Error saving check-in:', expect.any(Error));
+      });
+      spy.mockRestore();
+    });
   });
 
   describe('undo', () => {
@@ -504,19 +803,33 @@ describe('Session Page', () => {
     });
 
     it.each([
-      ['flash-button', 'Flash logged'],
-      ['send-button', 'Send logged'],
-    ])('shows %s message', async (testId, message) => {
+      ['Flash logged', []],
+      ['Send logged', [{ id: 'x', type: AttemptType.ATTEMPT }]],
+    ] as const)('Send shows %s message', async (message, existing) => {
+      const withAttempts = {
+        ...prev,
+        attempts: existing.map((a) => ({
+          ...a,
+          problemId: '1',
+          sessionId: '1',
+          timestamp: new Date().toISOString(),
+        })),
+      };
       setupAttempt();
+      vi.mocked(useCurrentSession).mockReturnValue({
+        ...sessionWithProblem,
+        problems: [withAttempts],
+      });
+      mockDb.problems.get.mockResolvedValue(withAttempts);
       render(ui());
-      fireEvent.click(screen.getByTestId(testId));
+      fireEvent.click(screen.getByTestId('send-button'));
       expect(await screen.findByText(message)).toBeInTheDocument();
     });
 
     it('undo removes the attempt and restores the problem', async () => {
       setupAttempt();
       render(ui());
-      fireEvent.click(screen.getByTestId('flash-button'));
+      fireEvent.click(screen.getByTestId('send-button'));
       fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
 
       await waitFor(() => {
@@ -548,8 +861,7 @@ describe('Session Page', () => {
 
       fireEvent.click(screen.getByText(/add problem/i));
       fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
-      fireEvent.mouseDown(screen.getAllByRole('combobox')[0] as HTMLElement);
-      fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+      fireEvent.click(screen.getByRole('button', { name: '6a' }));
       fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
 
       expect(await screen.findByText('Problem added')).toBeInTheDocument();
@@ -574,7 +886,8 @@ describe('Session Page', () => {
       fireEvent.click(screen.getByTestId('attempt-button'));
       await screen.findByText('Attempt logged');
       fireEvent.click(screen.getByTestId('send-button'));
-      expect(await screen.findByText('Send logged')).toBeInTheDocument();
+      // The mocked session keeps no attempts, so Send logs a flash here.
+      expect(await screen.findByText('Flash logged')).toBeInTheDocument();
       expect(screen.queryByText('Attempt logged')).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
 
@@ -621,8 +934,7 @@ describe('Session Page', () => {
       render(ui());
       fireEvent.click(screen.getByText(/add problem/i));
       fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
-      fireEvent.mouseDown(screen.getAllByRole('combobox')[0] as HTMLElement);
-      fireEvent.click(await screen.findByRole('option', { name: '6a' }));
+      fireEvent.click(screen.getByRole('button', { name: '6a' }));
       fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
 
       expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
@@ -647,7 +959,8 @@ describe('Session Page', () => {
       mockDb.sessions.update.mockResolvedValue(1);
       const view = render(ui());
 
-      fireEvent.click(screen.getByText(/end session/i));
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
       expect(await screen.findByText('Session ended')).toBeInTheDocument();
       vi.mocked(useCurrentSession).mockReturnValue(null);
       view.rerender(ui());
@@ -662,6 +975,7 @@ describe('Session Page', () => {
 
       vi.mocked(useCurrentSession).mockReturnValue(ended);
       view.rerender(ui());
+      finish();
       expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('Saved notes');
       expect(screen.getByText('Did A')).toBeInTheDocument();
       expect(
@@ -674,7 +988,8 @@ describe('Session Page', () => {
       vi.mocked(useCurrentSession).mockReturnValue(mockSession);
       mockDb.sessions.put.mockRejectedValue(new Error('boom'));
       render(ui());
-      fireEvent.click(screen.getByText(/end session/i));
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
 
       expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
@@ -687,7 +1002,8 @@ describe('Session Page', () => {
       mockDb.sessions.put.mockResolvedValue('1');
       mockDb.sessions.update.mockRejectedValue(new Error('boom'));
       render(ui());
-      fireEvent.click(screen.getByText(/end session/i));
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
 
       expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
@@ -721,6 +1037,7 @@ describe('Session Page', () => {
       vi.mocked(useCurrentSession).mockReturnValue(goalSession);
       mockDb.sessions.put.mockResolvedValue(1);
       render(ui());
+      finish();
 
       const rpe = screen.getByRole('group', { name: 'RPE' });
       fireEvent.click(within(rpe).getByRole('button', { name: '7' }));
@@ -738,7 +1055,7 @@ describe('Session Page', () => {
       fireEvent.change(screen.getByLabelText(/post-session notes/i), {
         target: { value: 'Good day' },
       });
-      fireEvent.click(screen.getByText(/end session/i));
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
 
       await waitFor(() => {
         expect(mockDb.sessions.put).toHaveBeenCalledWith(
@@ -761,7 +1078,8 @@ describe('Session Page', () => {
       mockDb.sessions.put.mockResolvedValue(1);
       render(ui());
 
-      fireEvent.click(screen.getByText(/end session/i));
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
 
       await waitFor(() => {
         expect(mockDb.sessions.put).toHaveBeenCalledWith(
@@ -781,6 +1099,7 @@ describe('Session Page', () => {
     it('clears a picker when the selected value is clicked again', () => {
       vi.mocked(useCurrentSession).mockReturnValue(goalSession);
       render(ui());
+      finish();
       const button = within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', {
         name: '3',
       });
@@ -807,6 +1126,7 @@ describe('Session Page', () => {
       vi.mocked(useCurrentSession).mockReturnValue(goalSession);
       mockDb.sessions.update.mockResolvedValue(1);
       render(ui());
+      finish();
 
       fireEvent.click(
         within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '6' }),
@@ -841,6 +1161,7 @@ describe('Session Page', () => {
       mockDb.sessions.update.mockRejectedValue(new Error('boom'));
       const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       render(ui());
+      finish();
 
       fireEvent.click(
         within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '6' }),
@@ -867,6 +1188,7 @@ describe('Session Page', () => {
       const first = render(ui());
       first.unmount();
       render(ui());
+      finish();
 
       expect(
         within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '8' }),
@@ -898,7 +1220,8 @@ describe('Session Page', () => {
       mockDb.sessions.add.mockResolvedValue('2');
       const view = render(ui());
 
-      fireEvent.click(screen.getByText(/end session/i));
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
       await waitFor(() => {
         expect(mockDb.sessions.put).toHaveBeenCalled();
       });
@@ -912,6 +1235,7 @@ describe('Session Page', () => {
 
       vi.mocked(useCurrentSession).mockReturnValue({ ...goalSession, id: '2' });
       view.rerender(ui());
+      finish();
 
       expect(
         within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '8' }),

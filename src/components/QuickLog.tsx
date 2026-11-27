@@ -8,22 +8,15 @@ import {
   DialogActions,
   TextField,
   Stack,
-  IconButton,
   Typography,
   List,
-  ListItem,
-  ListItemText,
   Paper,
-  Badge,
-  Tooltip,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  FlashOn as FlashIcon,
-  Check as SendIcon,
-  FitnessCenterRounded as AttemptIcon,
-} from '@mui/icons-material';
-import DifficultySelect from './DifficultySelect';
+import { Add as AddIcon } from '@mui/icons-material';
+import GradePicker from './GradePicker';
+import { useProblemsAtGrade } from '../db/index';
+import { colorRange } from '../utils/grades';
+import { autoName, gradeLabel, lastUsedGrades, summarizeLastTime } from '../utils/problemDefaults';
 import { AttemptType } from '../types';
 import type { SessionProblem } from '../types';
 import { LIMITS, sanitizeGrade, sanitizeProblemName } from '../utils/validation';
@@ -41,12 +34,26 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
   const [newFrenchGrade, setNewFrenchGrade] = useState('');
   const [newColorGrade, setNewColorGrade] = useState('');
 
+  const label = gradeLabel({ frenchGrade: newFrenchGrade, colorGrade: newColorGrade });
+  const history = useProblemsAtGrade(label);
+  const lastTime = label && history ? summarizeLastTime(history, sessionId, label) : null;
+
+  const openDialog = () => {
+    setNewFrenchGrade(last?.frenchGrade ?? '');
+    setNewColorGrade(last?.colorGrade ?? '');
+    setNewProblemName('');
+    setIsAddingProblem(true);
+  };
+
+  const last = lastUsedGrades(problems);
+
   const handleAddProblem = () => {
-    const name = sanitizeProblemName(newProblemName);
     const frenchGrade = sanitizeGrade(newFrenchGrade);
     const colorGrade = sanitizeGrade(newColorGrade);
+    const gradeText = gradeLabel({ frenchGrade, colorGrade });
+    const name = sanitizeProblemName(newProblemName) || autoName(problems, gradeText);
 
-    if (name && (frenchGrade || colorGrade)) {
+    if (gradeText) {
       if (import.meta.env.DEV) {
         console.log('QuickLog: Adding new problem');
         console.log('Name:', name);
@@ -75,107 +82,75 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+      <Stack
+        direction="row"
+        sx={{
+          gap: 1,
+          mb: 2,
+          py: 1,
+          position: { xs: 'sticky', md: 'static' },
+          bottom: 'calc(56px + env(safe-area-inset-bottom))',
+          bgcolor: 'background.default',
+          zIndex: 1,
+        }}
+      >
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => {
-            setIsAddingProblem(true);
-          }}
+          onClick={openDialog}
+          sx={{ minHeight: 48 }}
         >
           Add Problem
         </Button>
       </Stack>
 
       <List>
-        {problems.map((problem) => (
-          <Paper key={problem.id} sx={{ mb: 2, p: 1 }}>
-            <ListItem
-              secondaryAction={
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Tooltip title="Mark as flashed (completed first try)">
-                    <span>
-                      <IconButton
-                        onClick={() => {
-                          onAddAttempt(problem.id, AttemptType.FLASH);
-                        }}
-                        color={problem.flash ? 'success' : 'default'}
-                        disabled={problem.flash || problem.send || problem.attempts.length > 0}
-                        data-testid="flash-button"
-                      >
-                        <FlashIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="Mark as sent (completed)">
-                    <span>
-                      <IconButton
-                        onClick={() => {
-                          onAddAttempt(problem.id, AttemptType.SEND);
-                        }}
-                        color={problem.send ? 'success' : 'default'}
-                        disabled={problem.flash || problem.send}
-                        data-testid="send-button"
-                      >
-                        <SendIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="Log an attempt">
-                    <Badge
-                      badgeContent={
-                        problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length
-                      }
-                      color="primary"
-                      sx={{ '& .MuiBadge-badge': { fontSize: '0.8rem' } }}
-                    >
-                      <IconButton
-                        onClick={() => {
-                          onAddAttempt(problem.id, AttemptType.ATTEMPT);
-                        }}
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
-                        }}
-                        data-testid="attempt-button"
-                      >
-                        <AttemptIcon />
-                      </IconButton>
-                    </Badge>
-                  </Tooltip>
-                </Stack>
-              }
-              sx={{
-                '& .MuiListItemText-root': {
-                  marginRight: '120px', // Add space for the icons
-                },
-              }}
-            >
-              <ListItemText
-                primary={
-                  <Typography variant="subtitle1" noWrap>
-                    {problem.name}
-                    {problem.flash && ' 🌟'}
-                    {problem.send && ' ✓'}
-                  </Typography>
-                }
-                secondary={
-                  <>
-                    {problem.frenchGrade && `French Grade: ${problem.frenchGrade}`}
-                    {problem.frenchGrade && problem.colorGrade && ' | '}
-                    {problem.colorGrade && `Color: ${problem.colorGrade}`}
-                    <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                      Attempts:{' '}
-                      {problem.attempts.filter((a) => a.type === AttemptType.ATTEMPT).length}
-                      {(problem.flash || problem.send) && ' • Completed'}
-                    </Typography>
-                  </>
-                }
-              />
-            </ListItem>
-          </Paper>
-        ))}
+        {problems.map((problem) => {
+          const attemptCount = problem.attempts.length;
+          return (
+            <Paper key={problem.id} sx={{ mb: 2, p: 1.5 }}>
+              <Typography variant="subtitle1" noWrap>
+                {problem.name}
+                {problem.flash && ' 🌟'}
+                {problem.send && ' ✓'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {problem.frenchGrade && `French Grade: ${problem.frenchGrade}`}
+                {problem.frenchGrade && problem.colorGrade && ' | '}
+                {problem.colorGrade && `Color: ${colorRange(problem.colorGrade)}`}
+                {(problem.flash || problem.send) && ' • Completed'}
+              </Typography>
+              <Stack direction="row" sx={{ gap: 1, mt: 1 }}>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    onAddAttempt(problem.id, AttemptType.ATTEMPT);
+                  }}
+                  disabled={problem.flash || problem.send}
+                  sx={{ minHeight: 48, flex: 1, minWidth: 0 }}
+                  data-testid="attempt-button"
+                >
+                  {`Attempt (${String(attemptCount)})`}
+                </Button>
+                <Button
+                  variant="contained"
+                  color={problem.send || problem.flash ? 'success' : 'primary'}
+                  onClick={() => {
+                    onAddAttempt(
+                      problem.id,
+                      problem.attempts.length === 0 ? AttemptType.FLASH : AttemptType.SEND,
+                    );
+                  }}
+                  disabled={problem.flash || problem.send}
+                  sx={{ minHeight: 48, flex: 1, minWidth: 0 }}
+                  data-testid="send-button"
+                >
+                  Send
+                </Button>
+              </Stack>
+            </Paper>
+          );
+        })}
       </List>
 
       <Dialog
@@ -187,7 +162,6 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         <DialogTitle>Add New Problem</DialogTitle>
         <DialogContent>
           <TextField
-            autoFocus
             margin="dense"
             label="Problem Name"
             fullWidth
@@ -198,12 +172,17 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
             }}
             sx={{ mb: 2 }}
           />
-          <DifficultySelect
+          <GradePicker
             frenchGrade={newFrenchGrade}
             colorGrade={newColorGrade}
             onFrenchGradeChange={setNewFrenchGrade}
             onColorGradeChange={setNewColorGrade}
           />
+          {lastTime && (
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              {`Last time at ${lastTime.label} (${lastTime.date}): ${String(lastTime.count)} problems, ${String(lastTime.sent)} sent, ${String(lastTime.flashed)} flashed`}
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button
@@ -213,7 +192,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
           >
             Cancel
           </Button>
-          <Button onClick={handleAddProblem} variant="contained">
+          <Button onClick={handleAddProblem} variant="contained" disabled={!label}>
             Add
           </Button>
         </DialogActions>
