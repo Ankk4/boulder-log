@@ -1,5 +1,5 @@
 ---
-status: approved
+status: done
 commitment: spec-first
 ---
 
