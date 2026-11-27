@@ -26,12 +26,12 @@ interface LayoutProps {
 
 const skipLinkSx = {
   position: 'absolute',
-  width: 1,
-  height: 1,
+  width: '1px',
+  height: '1px',
   overflow: 'hidden',
   clip: 'rect(0 0 0 0)',
   whiteSpace: 'nowrap',
-  m: -1 / 8,
+  m: '-1px',
   p: 0,
   border: 0,
   '&:focus-visible': {
