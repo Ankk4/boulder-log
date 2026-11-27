@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import GradePicker from '../GradePicker';
+import { colorGrades } from '../../utils/grades';
 
 const setup = (frenchGrade = '', colorGrade = '') => {
   const onFrenchGradeChange = vi.fn<(g: string) => void>();
@@ -39,14 +40,22 @@ describe('GradePicker', () => {
     const user = userEvent.setup();
     const { onColorGradeChange } = setup();
     expect(screen.getByTestId('swatch-Helppo')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Helppo' }));
+    await user.click(screen.getByRole('button', { name: '4+-5' }));
     expect(onColorGradeChange).toHaveBeenCalledWith('Helppo');
+  });
+
+  it('colour chips show the French range', () => {
+    setup();
+    for (const grade of colorGrades) {
+      expect(screen.getByRole('button', { name: grade.range })).toBeInTheDocument();
+      expect(screen.queryByText(grade.name)).not.toBeInTheDocument();
+    }
   });
 
   it('deselects a selected colour', async () => {
     const user = userEvent.setup();
     const { onColorGradeChange } = setup('', 'Helppo');
-    const chip = screen.getByRole('button', { name: 'Helppo' });
+    const chip = screen.getByRole('button', { name: '4+-5' });
     expect(chip).toHaveAttribute('aria-pressed', 'true');
     await user.click(chip);
     expect(onColorGradeChange).toHaveBeenCalledWith('');

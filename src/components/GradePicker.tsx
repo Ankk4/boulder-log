@@ -53,7 +53,7 @@ const GradePicker = ({
             return (
               <Chip
                 key={grade.name}
-                label={grade.name}
+                label={grade.range}
                 clickable
                 aria-pressed={selected}
                 color={selected ? 'primary' : 'default'}
