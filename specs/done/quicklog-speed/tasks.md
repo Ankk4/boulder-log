@@ -105,3 +105,19 @@ Rules for splitting:
   - Chip `label={grade.range}`; keep `key`, selection and callbacks on `grade.name`. Keep the `swatch-<name>` testid.
   - Don't change `grades.ts`, stored data, the row's "Color: <name>" text or auto-names.
   - Tests that find colour chips by Finnish name switch to the range.
+
+## T8 — Colour ranges everywhere, "7b+ and up"
+- covers: [R2, R4, R7]
+- runner: implementer
+- allowed files: `src/utils/grades.ts`, `src/utils/__tests__/grades.test.ts`, `src/utils/problemDefaults.ts`, `src/utils/__tests__/problemDefaults.test.ts`, `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/components/__tests__/GradePicker.test.tsx`, `src/pages/__tests__/Session.test.tsx`
+- check: `npx vitest run src/utils/__tests__/grades.test.ts src/utils/__tests__/problemDefaults.test.ts src/components/__tests__/GradePicker.test.tsx src/components/__tests__/QuickLog.test.tsx src/pages/__tests__/Session.test.tsx`
+- tests to add: `grades.test.ts` › "colorRange maps names to ranges" (known name → range, top colour → "7b+ and up", unknown name → returned unchanged); `QuickLog.test.tsx` › "rows show the colour range"; update `problemDefaults.test.ts` so a colour-only auto-name is `<range> #<n>` and `summarizeLastTime(..., 'Napakka').label` is `'6a+-6b+'`.
+- parallel-safe: no
+- schema-change: no
+- depends-on: [T7]
+- notes:
+  - In `grades.ts` change the last range to `'7b+ and up'` and export `colorRange(name: string): string` (range, or the name itself when unknown).
+  - Stored values and lookups stay on the colour name: `gradeLabel`, `useProblemsAtGrade`, `lastUsedGrades`, the autoName count and the `summarizeLastTime` matching are unchanged. Only displayed text changes.
+  - `autoName`: prefix is `colorRange(label)` when `label` isn't a French grade. `summarizeLastTime`: returned `label` is the display text.
+  - QuickLog row: `Color: ${colorRange(problem.colorGrade)}`.
+  - Don't touch `backup.ts` (exports keep stored names) or already-saved names.
