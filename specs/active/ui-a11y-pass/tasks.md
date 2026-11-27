@@ -58,7 +58,7 @@ Shared notes for every task:
 ## T4: Workouts headings, named row actions, failure alerts, status copy
 - covers: [R2, R8, R9, R16, R17]
 - runner: implementer
-- allowed files: `src/pages/Workouts.tsx`, `src/pages/__tests__/Workouts.test.tsx`
+- allowed files: `src/pages/Workouts.tsx`, `src/pages/__tests__/Workouts.test.tsx`, `src/components/WorkoutFormDialog.tsx`
 - check: `npx vitest run src/pages/__tests__/Workouts.test.tsx`
 - tests to add:
   - "section headings are level 3": Presets, Workouts, Recent runs.
@@ -72,7 +72,7 @@ Shared notes for every task:
 - notes:
   - R2: `component="h3"`, `variant="h6"` unchanged.
   - R8: Start becomes `IconButton component={RouterLink} to=…`. Check whether the test's `MemoryRouter` needs routes for the click.
-  - R9: hold the error in page state and pass it into `WorkoutFormDialog` without editing that file. Render an `Alert` in the Workouts-owned delete dialog. For the save error, prefer rendering the `Alert` from Workouts too. If the only clean option is a new `WorkoutFormDialog` prop, stop and report instead (T5 owns that file).
+  - R9: hold the error in page state and pass it into `WorkoutFormDialog` without editing that file. Render an `Alert` in the Workouts-owned delete dialog. For the save error, add an optional `error?: string` prop to `WorkoutFormDialog`, rendered as an `Alert` in its `DialogContent` (an Alert outside the modal would be aria-hidden). Change nothing else in that file; T5 runs after T4 and builds on it. (Amended during the run: tasks now run sequentially.)
   - Reuse the wording style of `SAVE_ERROR_MESSAGE` in `src/pages/Session.tsx`, but don't import from that page. Clear the error when the dialog closes or reopens.
 
 ## T5: WorkoutFormDialog inline errors and name field
