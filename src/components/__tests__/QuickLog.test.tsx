@@ -36,6 +36,19 @@ const renderLog = (problems: SessionProblem[] = [], onAddProblem = vi.fn()) => {
   return onAddProblem;
 };
 
+const renderWithAttemptSpy = (problems: SessionProblem[]) => {
+  const onAddAttempt = vi.fn();
+  render(
+    <QuickLog
+      sessionId="s1"
+      problems={problems}
+      onAddProblem={vi.fn()}
+      onAddAttempt={onAddAttempt}
+    />,
+  );
+  return onAddAttempt;
+};
+
 const openDialog = () => {
   fireEvent.click(screen.getByRole('button', { name: 'Add Problem' }));
   return screen.getByRole('dialog');
@@ -113,7 +126,7 @@ describe('QuickLog add dialog', () => {
     expect(within(dialog).queryByText(/Last time at/)).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: '6a' }));
     expect(
-      within(dialog).getByText(/Last time at 6a \(.+\): 2 problems, 1 sent, 1 flashed/),
+      within(dialog).getByText(/Last time at 6a \(.+\): 2 problems, 2 sent, 1 flashed/),
     ).toBeInTheDocument();
   });
 
@@ -126,64 +139,48 @@ describe('QuickLog add dialog', () => {
   });
 });
 
-describe('QuickLog rows and one-tap add', () => {
+describe('QuickLog rows', () => {
   beforeEach(() => {
     mockHistory.mockReset();
     mockHistory.mockReturnValue([]);
   });
 
-  it('row buttons have visible labels', () => {
-    renderLog([
-      makeProblem({
-        id: 'a',
-        frenchGrade: '6b',
-        attempts: [
-          {
-            id: 'x',
-            problemId: 'a',
-            sessionId: 's1',
-            type: AttemptType.ATTEMPT,
-            timestamp: '2025-01-02T10:00:00.000Z',
-          },
-        ],
-      }),
-    ]);
+  const attempt = {
+    id: 'x',
+    problemId: 'a',
+    sessionId: 's1',
+    type: AttemptType.ATTEMPT,
+    timestamp: '2025-01-02T10:00:00.000Z',
+  };
+
+  it('row buttons have visible labels and no flash button', () => {
+    renderLog([makeProblem({ id: 'a', frenchGrade: '6b', attempts: [attempt] })]);
     expect(screen.getByTestId('attempt-button')).toHaveTextContent('Attempt (1)');
-    expect(screen.getByTestId('flash-button')).toHaveTextContent('Flash');
     expect(screen.getByTestId('send-button')).toHaveTextContent('Send');
+    expect(screen.queryByTestId('flash-button')).not.toBeInTheDocument();
   });
 
-  it('flash disabled after an attempt', () => {
-    renderLog([
-      makeProblem({
-        id: 'a',
-        frenchGrade: '6b',
-        attempts: [
-          {
-            id: 'x',
-            problemId: 'a',
-            sessionId: 's1',
-            type: AttemptType.ATTEMPT,
-            timestamp: '2025-01-02T10:00:00.000Z',
-          },
-        ],
-      }),
+  it('Send logs a flash when there are no attempts', () => {
+    const onAttempt = renderWithAttemptSpy([makeProblem({ id: 'a', frenchGrade: '6b' })]);
+    fireEvent.click(screen.getByTestId('send-button'));
+    expect(onAttempt).toHaveBeenCalledWith('a', AttemptType.FLASH);
+  });
+
+  it('Send logs a send after an attempt', () => {
+    const onAttempt = renderWithAttemptSpy([
+      makeProblem({ id: 'a', frenchGrade: '6b', attempts: [attempt] }),
     ]);
-    expect(screen.getByTestId('flash-button')).toBeDisabled();
-    expect(screen.getByTestId('send-button')).toBeEnabled();
+    fireEvent.click(screen.getByTestId('send-button'));
+    expect(onAttempt).toHaveBeenCalledWith('a', AttemptType.SEND);
   });
 
-  it('one-tap add repeats the last grades', () => {
-    const onAdd = renderLog([makeProblem({ id: 'a', frenchGrade: '6b' })]);
-    fireEvent.click(screen.getByRole('button', { name: 'Add 6b' }));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '6b #2', frenchGrade: '6b', sessionId: 's1' }),
-    );
+  it('Send is disabled once sent or flashed', () => {
+    renderLog([makeProblem({ id: 'a', frenchGrade: '6b', flash: true })]);
+    expect(screen.getByTestId('send-button')).toBeDisabled();
   });
 
-  it('no one-tap add in an empty session', () => {
-    renderLog();
+  it('no one-tap add button', () => {
+    renderLog([makeProblem({ id: 'a', frenchGrade: '6b' })]);
     expect(screen.queryByRole('button', { name: /^Add (?!Problem)/ })).not.toBeInTheDocument();
   });
 });

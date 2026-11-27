@@ -106,6 +106,18 @@ describe('summarizeLastTime', () => {
     expect(result).toMatchObject({ label: 'Napakka', count: 1, sent: 1, flashed: 0 });
   });
 
+  it('a flash counts as sent', () => {
+    const problems = [
+      make({
+        sessionId: 'old',
+        frenchGrade: '6a',
+        flash: true,
+        createdAt: '2026-01-01T10:00:00.000Z',
+      }),
+    ];
+    expect(summarizeLastTime(problems, 'cur', '6a')).toMatchObject({ sent: 1, flashed: 1 });
+  });
+
   it('is null without history', () => {
     const problems = [make({ sessionId: 'cur', frenchGrade: '6a' })];
     expect(summarizeLastTime(problems, 'cur', '6a')).toBeNull();

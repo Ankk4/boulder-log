@@ -56,7 +56,7 @@ export const summarizeLastTime = (
     label,
     date: new Date(latestCreatedAt).toLocaleDateString(),
     count: group.length,
-    sent: group.filter((p) => p.send).length,
+    sent: group.filter((p) => p.send || p.flash).length,
     flashed: group.filter((p) => p.flash).length,
   };
 };

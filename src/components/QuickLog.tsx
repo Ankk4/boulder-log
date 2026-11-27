@@ -12,12 +12,7 @@ import {
   List,
   Paper,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  FlashOn as FlashIcon,
-  Check as SendIcon,
-  FitnessCenterRounded as AttemptIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon } from '@mui/icons-material';
 import GradePicker from './GradePicker';
 import { useProblemsAtGrade } from '../db/index';
 import { autoName, gradeLabel, lastUsedGrades, summarizeLastTime } from '../utils/problemDefaults';
@@ -50,20 +45,6 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
   };
 
   const last = lastUsedGrades(problems);
-  const lastLabel = last ? gradeLabel(last) : '';
-
-  const handleOneTapAdd = () => {
-    if (!last || !lastLabel) return;
-    onAddProblem({
-      name: autoName(problems, lastLabel),
-      frenchGrade: last.frenchGrade,
-      colorGrade: last.colorGrade,
-      sessionId,
-      createdAt: new Date().toISOString(),
-      flash: false,
-      send: false,
-    });
-  };
 
   const handleAddProblem = () => {
     const frenchGrade = sanitizeGrade(newFrenchGrade);
@@ -120,11 +101,6 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
         >
           Add Problem
         </Button>
-        {last && (
-          <Button variant="outlined" onClick={handleOneTapAdd} sx={{ minHeight: 48 }}>
-            {`Add ${lastLabel}`}
-          </Button>
-        )}
       </Stack>
 
       <List>
@@ -147,38 +123,26 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
               </Typography>
               <Stack direction="row" sx={{ gap: 1, mt: 1 }}>
                 <Button
-                  variant="outlined"
-                  startIcon={<AttemptIcon />}
+                  variant="contained"
                   onClick={() => {
                     onAddAttempt(problem.id, AttemptType.ATTEMPT);
                   }}
-                  sx={{ minHeight: 48, flex: 1 }}
+                  sx={{ minHeight: 48, flex: 1, minWidth: 0 }}
                   data-testid="attempt-button"
                 >
                   {`Attempt (${String(attemptCount)})`}
                 </Button>
                 <Button
-                  variant="outlined"
-                  startIcon={<FlashIcon />}
-                  color={problem.flash ? 'success' : 'primary'}
+                  variant="contained"
+                  color={problem.send || problem.flash ? 'success' : 'primary'}
                   onClick={() => {
-                    onAddAttempt(problem.id, AttemptType.FLASH);
-                  }}
-                  disabled={problem.flash || problem.send || problem.attempts.length > 0}
-                  sx={{ minHeight: 48, flex: 1 }}
-                  data-testid="flash-button"
-                >
-                  Flash
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<SendIcon />}
-                  color={problem.send ? 'success' : 'primary'}
-                  onClick={() => {
-                    onAddAttempt(problem.id, AttemptType.SEND);
+                    onAddAttempt(
+                      problem.id,
+                      problem.attempts.length === 0 ? AttemptType.FLASH : AttemptType.SEND,
+                    );
                   }}
                   disabled={problem.flash || problem.send}
-                  sx={{ minHeight: 48, flex: 1 }}
+                  sx={{ minHeight: 48, flex: 1, minWidth: 0 }}
                   data-testid="send-button"
                 >
                   Send

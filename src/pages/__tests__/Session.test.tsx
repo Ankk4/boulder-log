@@ -237,7 +237,7 @@ describe('Session Page', () => {
       </MemoryRouter>,
     );
 
-    const flashButton = screen.getByTestId('flash-button');
+    const flashButton = screen.getByTestId('send-button');
     fireEvent.click(flashButton);
 
     await waitFor(() => {
@@ -501,19 +501,33 @@ describe('Session Page', () => {
     });
 
     it.each([
-      ['flash-button', 'Flash logged'],
-      ['send-button', 'Send logged'],
-    ])('shows %s message', async (testId, message) => {
+      ['Flash logged', []],
+      ['Send logged', [{ id: 'x', type: AttemptType.ATTEMPT }]],
+    ] as const)('Send shows %s message', async (message, existing) => {
+      const withAttempts = {
+        ...prev,
+        attempts: existing.map((a) => ({
+          ...a,
+          problemId: '1',
+          sessionId: '1',
+          timestamp: new Date().toISOString(),
+        })),
+      };
       setupAttempt();
+      vi.mocked(useCurrentSession).mockReturnValue({
+        ...sessionWithProblem,
+        problems: [withAttempts],
+      });
+      mockDb.problems.get.mockResolvedValue(withAttempts);
       render(ui());
-      fireEvent.click(screen.getByTestId(testId));
+      fireEvent.click(screen.getByTestId('send-button'));
       expect(await screen.findByText(message)).toBeInTheDocument();
     });
 
     it('undo removes the attempt and restores the problem', async () => {
       setupAttempt();
       render(ui());
-      fireEvent.click(screen.getByTestId('flash-button'));
+      fireEvent.click(screen.getByTestId('send-button'));
       fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
 
       await waitFor(() => {
@@ -570,7 +584,8 @@ describe('Session Page', () => {
       fireEvent.click(screen.getByTestId('attempt-button'));
       await screen.findByText('Attempt logged');
       fireEvent.click(screen.getByTestId('send-button'));
-      expect(await screen.findByText('Send logged')).toBeInTheDocument();
+      // The mocked session keeps no attempts, so Send logs a flash here.
+      expect(await screen.findByText('Flash logged')).toBeInTheDocument();
       expect(screen.queryByText('Attempt logged')).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
 
