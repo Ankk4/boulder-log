@@ -32,7 +32,7 @@ const ReviewLines = ({
   goalCount,
 }: {
   review: PostSessionReview;
-  energyBefore: number;
+  energyBefore: number | undefined;
   goalCount: number;
 }) => (
   <>
@@ -43,7 +43,7 @@ const ReviewLines = ({
     )}
     {review.energyAfter !== null && (
       <Typography component="span" variant="body2" sx={{ display: 'block' }}>
-        Energy: {energyBefore} → {review.energyAfter}
+        Energy: {energyBefore ?? '—'} → {review.energyAfter}
       </Typography>
     )}
     {goalCount > 0 && (

@@ -1,257 +1,291 @@
 import { useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
-  Typography,
-  Slider,
-  FormControl,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
-  TextField,
-  Stack,
+  Button,
   Chip,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
 } from '@mui/material';
-import {
-  LIMITS,
-  clampNumber,
-  sanitizeGoals,
-  sanitizeNotes,
-  sanitizeNutrition,
-  sanitizeStress,
-} from '../utils/validation';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RatingPicker from './RatingPicker';
+import { LIMITS, sanitizeGoals, sanitizeNotes } from '../utils/validation';
+import type { PreSessionData } from '../types';
 
 interface PreSessionFormProps {
+  value?: PreSessionData;
   onChange: (data: PreSessionData) => void;
+  lastWorkOn?: string[];
 }
 
-interface PreSessionData {
-  sleepQuality: number;
-  energyLevel: number;
-  fingerSoreness: number;
-  motivation: number;
-  restDays: number;
-  nutrition: 'poor' | 'moderate' | 'good';
-  stress: 'low' | 'medium' | 'high';
-  goals: string[];
-  additionalNotes: string;
-}
+type RatingField = 'sleepQuality' | 'energyLevel' | 'fingerSoreness' | 'motivation' | 'restDays';
 
-const PreSessionForm = ({ onChange }: PreSessionFormProps) => {
-  const [formData, setFormData] = useState<PreSessionData>({
-    sleepQuality: 5,
-    energyLevel: 5,
-    fingerSoreness: 5,
-    motivation: 5,
-    restDays: 1,
-    nutrition: 'moderate',
-    stress: 'medium',
-    goals: [],
-    additionalNotes: '',
-  });
+const emptyData: PreSessionData = { goals: [], additionalNotes: '' };
 
+const summarize = (parts: (string | undefined)[]): string => {
+  const set = parts.filter((p): p is string => p !== undefined);
+  return set.length > 0 ? set.join(' · ') : 'Not recorded';
+};
+
+const num = (label: string, v: number | undefined, suffix = '') =>
+  v === undefined ? undefined : `${label} ${String(v)}${suffix}`;
+
+const physicalSummary = (d: PreSessionData): string =>
+  summarize([
+    num('Sleep', d.sleepQuality),
+    num('Energy', d.energyLevel),
+    num('Fingers', d.fingerSoreness),
+    num('Rest', d.restDays, 'd'),
+  ]);
+
+const mentalSummary = (d: PreSessionData): string =>
+  summarize([
+    num('Motivation', d.motivation),
+    d.stress === undefined ? undefined : `Stress ${d.stress}`,
+  ]);
+
+const nutritionSummary = (d: PreSessionData): string =>
+  summarize([d.nutrition === undefined ? undefined : `Nutrition ${d.nutrition}`]);
+
+const goalsSummary = (d: PreSessionData): string =>
+  d.goals.length === 0
+    ? 'Not recorded'
+    : `${String(d.goals.length)} ${d.goals.length === 1 ? 'goal' : 'goals'}`;
+
+const notesSummary = (d: PreSessionData): string => {
+  const t = d.additionalNotes.trim();
+  if (!t) return 'Not recorded';
+  return t.length > 40 ? `${t.slice(0, 40)}…` : t;
+};
+
+const Group = ({
+  title,
+  summary,
+  defaultExpanded = false,
+  children,
+}: {
+  title: string;
+  summary: string;
+  defaultExpanded?: boolean;
+  children: React.ReactNode;
+}) => (
+  <Accordion defaultExpanded={defaultExpanded} disableGutters>
+    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+      <Box>
+        <Typography variant="subtitle1">{title}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {summary}
+        </Typography>
+      </Box>
+    </AccordionSummary>
+    <AccordionDetails>{children}</AccordionDetails>
+  </Accordion>
+);
+
+const PreSessionForm = ({ value, onChange, lastWorkOn = [] }: PreSessionFormProps) => {
+  const [internal, setInternal] = useState<PreSessionData>(emptyData);
   const [goalInput, setGoalInput] = useState('');
+  const data = value ?? internal;
 
-  const handleChange = (field: keyof PreSessionData, value: unknown) => {
-    let nextValue = value;
-    if (typeof value === 'number') {
-      if (field === 'restDays') {
-        nextValue = clampNumber(value, 0, 7);
-      } else {
-        nextValue = clampNumber(value, 1, 10);
-      }
-    } else if (field === 'nutrition' && typeof value === 'string') {
-      nextValue = sanitizeNutrition(value);
-    } else if (field === 'stress' && typeof value === 'string') {
-      nextValue = sanitizeStress(value);
-    } else if (field === 'additionalNotes' && typeof value === 'string') {
-      nextValue = sanitizeNotes(value);
-    } else if (field === 'goals' && Array.isArray(value)) {
-      nextValue = sanitizeGoals(value as string[]);
+  const update = (patch: Partial<PreSessionData>) => {
+    const next: PreSessionData = { ...data, ...patch };
+    // An undefined patch value means "not recorded": drop the key entirely.
+    for (const key of Object.keys(patch) as (keyof PreSessionData)[]) {
+      if (patch[key] === undefined) Reflect.deleteProperty(next, key);
     }
-
-    const newData = { ...formData, [field]: nextValue };
-    setFormData(newData);
-    onChange(newData);
+    setInternal(next);
+    onChange(next);
   };
 
-  const handleAddGoal = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const setRating = (field: RatingField, next: number | null) => {
+    update({ [field]: next ?? undefined });
+  };
+
+  const addGoal = (goal: string) => {
+    if (data.goals.length >= LIMITS.maxGoals) return;
+    update({ goals: sanitizeGoals([...data.goals, goal]) });
+  };
+
+  const isGoal = (item: string) => data.goals.includes(sanitizeGoals([item])[0] ?? item);
+
+  const atGoalLimit = data.goals.length >= LIMITS.maxGoals;
+
+  const handleGoalKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && goalInput.trim()) {
-      if (formData.goals.length >= LIMITS.maxGoals) {
-        setGoalInput('');
-        return;
-      }
-      const newGoals = sanitizeGoals([...formData.goals, goalInput.trim()]);
-      handleChange('goals', newGoals);
+      addGoal(goalInput.trim());
       setGoalInput('');
     }
   };
 
-  const handleDeleteGoal = (goalToDelete: string) => {
-    const newGoals = formData.goals.filter((goal) => goal !== goalToDelete);
-    handleChange('goals', newGoals);
+  const handleDeleteGoal = (index: number) => {
+    update({ goals: data.goals.filter((_, i) => i !== index) });
   };
 
   return (
-    <Box>
-      <Stack spacing={3}>
-        {/* Physical State */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Physical State
-          </Typography>
+    <Stack spacing={2}>
+      <Typography variant="h6">How you feel</Typography>
+      <Group title="Physical" summary={physicalSummary(data)}>
+        <RatingPicker
+          label="Sleep quality (last night)"
+          value={data.sleepQuality ?? null}
+          onChange={(n) => {
+            setRating('sleepQuality', n);
+          }}
+        />
+        <RatingPicker
+          label="Energy level"
+          value={data.energyLevel ?? null}
+          onChange={(n) => {
+            setRating('energyLevel', n);
+          }}
+        />
+        <RatingPicker
+          label="Finger soreness (1 = very sore, 10 = fresh)"
+          value={data.fingerSoreness ?? null}
+          onChange={(n) => {
+            setRating('fingerSoreness', n);
+          }}
+        />
+        <RatingPicker
+          label="Rest days since last session"
+          min={0}
+          max={7}
+          value={data.restDays ?? null}
+          onChange={(n) => {
+            setRating('restDays', n);
+          }}
+        />
+      </Group>
+      <Group title="Mental" summary={mentalSummary(data)}>
+        <RatingPicker
+          label="Motivation level"
+          value={data.motivation ?? null}
+          onChange={(n) => {
+            setRating('motivation', n);
+          }}
+        />
+        <Typography variant="subtitle2" gutterBottom>
+          Stress level
+        </Typography>
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          aria-label="Stress level"
+          value={data.stress ?? null}
+          onChange={(_e, next: PreSessionData['stress'] | null) => {
+            update({ stress: next ?? undefined });
+          }}
+          sx={{ mb: 2, display: 'flex' }}
+        >
+          <ToggleButton value="low" sx={{ minHeight: 40, flex: 1 }}>
+            Low
+          </ToggleButton>
+          <ToggleButton value="medium" sx={{ minHeight: 40, flex: 1 }}>
+            Medium
+          </ToggleButton>
+          <ToggleButton value="high" sx={{ minHeight: 40, flex: 1 }}>
+            High
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Group>
+      <Group title="Nutrition" summary={nutritionSummary(data)}>
+        <Typography variant="subtitle2" gutterBottom>
+          Today&apos;s nutrition quality
+        </Typography>
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          aria-label="Nutrition quality"
+          value={data.nutrition ?? null}
+          onChange={(_e, next: PreSessionData['nutrition'] | null) => {
+            update({ nutrition: next ?? undefined });
+          }}
+          sx={{ display: 'flex' }}
+        >
+          <ToggleButton value="poor" sx={{ minHeight: 40, flex: 1 }}>
+            Poor
+          </ToggleButton>
+          <ToggleButton value="moderate" sx={{ minHeight: 40, flex: 1 }}>
+            Moderate
+          </ToggleButton>
+          <ToggleButton value="good" sx={{ minHeight: 40, flex: 1 }}>
+            Good
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Group>
 
-          <Typography gutterBottom>Sleep Quality (Last Night)</Typography>
-          <Slider
-            value={formData.sleepQuality}
-            onChange={(_, value) => {
-              handleChange('sleepQuality', value);
-            }}
-            marks
-            min={1}
-            max={10}
-            valueLabelDisplay="auto"
-          />
-
-          <Typography gutterBottom>Energy Level</Typography>
-          <Slider
-            value={formData.energyLevel}
-            onChange={(_, value) => {
-              handleChange('energyLevel', value);
-            }}
-            marks
-            min={1}
-            max={10}
-            valueLabelDisplay="auto"
-          />
-
-          <Typography gutterBottom>Finger Soreness (1 = Very Sore, 10 = Fresh)</Typography>
-          <Slider
-            value={formData.fingerSoreness}
-            onChange={(_, value) => {
-              handleChange('fingerSoreness', value);
-            }}
-            marks
-            min={1}
-            max={10}
-            valueLabelDisplay="auto"
-          />
-
-          <Typography gutterBottom>Rest Days Since Last Session</Typography>
-          <Slider
-            value={formData.restDays}
-            onChange={(_, value) => {
-              handleChange('restDays', value);
-            }}
-            marks
-            min={0}
-            max={7}
-            valueLabelDisplay="auto"
-          />
-        </Box>
-
-        {/* Mental State */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Mental State
-          </Typography>
-
-          <Typography gutterBottom>Motivation Level</Typography>
-          <Slider
-            value={formData.motivation}
-            onChange={(_, value) => {
-              handleChange('motivation', value);
-            }}
-            marks
-            min={1}
-            max={10}
-            valueLabelDisplay="auto"
-          />
-
-          <FormControl component="fieldset">
-            <Typography gutterBottom>Stress Level</Typography>
-            <RadioGroup
-              row
-              value={formData.stress}
-              onChange={(e) => {
-                handleChange('stress', e.target.value);
+      <Typography variant="h6">Plan</Typography>
+      <Group title="Goals" summary={goalsSummary(data)} defaultExpanded>
+        <TextField
+          fullWidth
+          placeholder="Add a goal and press Enter"
+          value={goalInput}
+          slotProps={{ htmlInput: { maxLength: LIMITS.goal } }}
+          onChange={(e) => {
+            setGoalInput(e.target.value);
+          }}
+          onKeyDown={handleGoalKey}
+          sx={{ mb: 1 }}
+        />
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+          {data.goals.map((goal, index) => (
+            <Chip
+              key={index}
+              label={goal}
+              onDelete={() => {
+                handleDeleteGoal(index);
               }}
-            >
-              <FormControlLabel value="low" control={<Radio />} label="Low" />
-              <FormControlLabel value="medium" control={<Radio />} label="Medium" />
-              <FormControlLabel value="high" control={<Radio />} label="High" />
-            </RadioGroup>
-          </FormControl>
+            />
+          ))}
         </Box>
 
-        {/* Nutrition */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Nutrition
-          </Typography>
-          <FormControl component="fieldset">
-            <Typography gutterBottom>Today's Nutrition Quality</Typography>
-            <RadioGroup
-              row
-              value={formData.nutrition}
-              onChange={(e) => {
-                handleChange('nutrition', e.target.value);
-              }}
-            >
-              <FormControlLabel value="poor" control={<Radio />} label="Poor" />
-              <FormControlLabel value="moderate" control={<Radio />} label="Moderate" />
-              <FormControlLabel value="good" control={<Radio />} label="Good" />
-            </RadioGroup>
-          </FormControl>
-        </Box>
-
-        {/* Session Goals */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Session Goals
-          </Typography>
-          <TextField
-            fullWidth
-            placeholder="Add a goal and press Enter"
-            value={goalInput}
-            slotProps={{ htmlInput: { maxLength: LIMITS.goal } }}
-            onChange={(e) => {
-              setGoalInput(e.target.value);
-            }}
-            onKeyDown={handleAddGoal}
-            sx={{ mb: 1 }}
-          />
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {formData.goals.map((goal, index) => (
-              <Chip
-                key={index}
-                label={goal}
-                onDelete={() => {
-                  handleDeleteGoal(goal);
-                }}
-              />
-            ))}
+        {lastWorkOn.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Last time: work on
+            </Typography>
+            <Stack spacing={1}>
+              {lastWorkOn.map((item, index) => (
+                <Box
+                  key={index}
+                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <Typography variant="body2">{item}</Typography>
+                  <Button
+                    size="small"
+                    aria-label={`Add as goal: ${item}`}
+                    disabled={atGoalLimit || isGoal(item)}
+                    onClick={() => {
+                      addGoal(item);
+                    }}
+                  >
+                    Add as goal
+                  </Button>
+                </Box>
+              ))}
+            </Stack>
           </Box>
-        </Box>
-
-        {/* Additional Notes */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Additional Notes
-          </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            placeholder="Any other notes about your condition or goals..."
-            value={formData.additionalNotes}
-            slotProps={{ htmlInput: { maxLength: LIMITS.notes } }}
-            onChange={(e) => {
-              handleChange('additionalNotes', e.target.value);
-            }}
-          />
-        </Box>
-      </Stack>
-    </Box>
+        )}
+      </Group>
+      <Group title="Notes" summary={notesSummary(data)}>
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          placeholder="Any other notes about your condition or goals..."
+          value={data.additionalNotes}
+          slotProps={{ htmlInput: { maxLength: LIMITS.notes } }}
+          onChange={(e) => {
+            update({ additionalNotes: sanitizeNotes(e.target.value) });
+          }}
+        />
+      </Group>
+    </Stack>
   );
 };
 
