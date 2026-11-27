@@ -61,3 +61,19 @@ Rules for splitting:
   - Replace the `secondaryAction` layout and the `marginRight: '120px'` hack with name/grade on top and a row of three `Button`s (`minHeight: 48`, `flex: 1`, `gap: 1`). Keep the testids and the disable rules.
   - Sticky bar: `position: { xs: 'sticky', md: 'static' }`, `bottom: 'calc(56px + env(safe-area-inset-bottom))'`, with background from the theme.
   - Session tests use the testids, so the check runs them too.
+
+## T5 — Review changes: two filled row buttons, flash from Send, no one-tap add
+- covers: [R1, R6, R7, R8]
+- runner: implementer
+- allowed files: `src/components/QuickLog.tsx`, `src/components/__tests__/QuickLog.test.tsx`, `src/utils/problemDefaults.ts`, `src/utils/__tests__/problemDefaults.test.ts`, `src/pages/__tests__/Session.test.tsx`
+- check: `npx vitest run src/components/__tests__/QuickLog.test.tsx src/utils/__tests__/problemDefaults.test.ts src/pages/__tests__/Session.test.tsx`
+- tests to add: the new R1, R6 and R7 cases named in `spec.md`.
+- parallel-safe: no
+- schema-change: no
+- depends-on: [T4]
+- notes:
+  - Remove the Flash button and the icons on Attempt/Send. Use `variant="contained"` (or a tonal style from the theme) so the background isn't transparent; keep `minHeight: 48`, `flex: 1`, `gap: 1`, and add `minWidth: 0` so they shrink.
+  - Send calls `onAddAttempt(id, AttemptType.FLASH)` when `problem.attempts.length === 0`, else `AttemptType.SEND`. `Session.tsx` already sets `flash` for a FLASH attempt, so it needs no change.
+  - Remove the one-tap add button, `handleOneTapAdd` and anything only it used (knip).
+  - `summarizeLastTime`: `sent` counts `p.send || p.flash`.
+  - Session.test: tests that click `flash-button` switch to `send-button` on a problem with no attempts. Keep their assertions (FLASH attempt type, "Flash logged" snackbar, undo).

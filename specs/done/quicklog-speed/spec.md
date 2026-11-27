@@ -1,12 +1,12 @@
 ---
-status: done
+status: approved
 commitment: spec-anchored
 ---
 
 # Faster quick log
 
 ## Goal
-Logging a problem and its attempts takes fewer taps and less precision. Big labelled buttons, grade chips instead of dropdowns, the last grade preselected, a one-tap "add another at this grade", no keyboard unless asked for, and a hint of how that grade went last time. This is for a climber with one chalky hand and 30 seconds between attempts.
+Logging a problem and its attempts takes fewer taps and less precision. Big labelled buttons, grade chips instead of dropdowns, the last grade preselected, no keyboard unless asked for, and a hint of how that grade went last time. This is for a climber with one chalky hand and 30 seconds between attempts.
 
 ## Context
 - Research: `research/README.md` pass-2 Takeaways (conclusion 3, quick wins 3–4), `research/tracking/qol-mobile-interaction-patterns.md` (touch targets, input friction), `research/competitors/qol-logging-friction-user-feedback.md` (remembered values, inline "last time")
@@ -15,9 +15,9 @@ Logging a problem and its attempts takes fewer taps and less precision. Big labe
 
 ## Requirements
 
-- **R1** — Each problem row shows three buttons with visible text: "Attempt" (with its count), "Flash" and "Send". They sit in a row below the problem's name and grade, at least 48 × 48 px each, at least 8 px apart. There are no hover-only tooltips. The existing enable/disable rules and `data-testid`s stay.
-  - _Check:_ `src/components/__tests__/QuickLog.test.tsx` › "row buttons have visible labels", "flash disabled after an attempt"
-  - _Check:_ `manual: npm start → devtools at 360×640 → add a problem with a long name → the three buttons are large, labelled, not overlapping, and the name stays readable`
+- **R1** — Each problem row shows two text-only buttons (no icons) with a filled or tonal background, never transparent: "Attempt" (with its count) and "Send". They sit in a row below the problem's name and grade, at least 48 px tall, at least 8 px apart, and shrink without overflowing at 320 px. There are no hover-only tooltips. There is no Flash button: Send on a problem with no earlier attempts logs a flash, otherwise a send. Send is disabled once the problem is sent or flashed. The `attempt-button` and `send-button` testids stay.
+  - _Check:_ `src/components/__tests__/QuickLog.test.tsx` › "row buttons have visible labels", "send without attempts logs a flash", "send after an attempt logs a send", "no flash button"
+  - _Check:_ `manual: npm start → devtools at 320 and 360 px → add a problem with a long name → two filled, labelled buttons, no icons, no overlap; the name truncates with an ellipsis`
 - **R2** — The Add Problem dialog shows French grades as a wrap of single-select chips and gym colours as chips with a colour swatch and name. Tapping a selected chip deselects it. Add stays disabled until at least one grade is selected. _Check:_ `src/components/__tests__/GradePicker.test.tsx` › "selects and deselects a French grade", "selects a colour"; `src/components/__tests__/QuickLog.test.tsx` › "Add disabled without a grade"
 - **R3** — The dialog opens with the grades of the session's most recently created problem preselected, or nothing selected if the session has no problems. _Check:_ `src/utils/__tests__/problemDefaults.test.ts` › "lastUsedGrades picks the newest problem"; `src/components/__tests__/QuickLog.test.tsx` › "dialog preselects the last grades"
 - **R4** — The problem name is optional. An empty name saves as `<label> #<n>`:
@@ -25,9 +25,9 @@ Logging a problem and its attempts takes fewer taps and less precision. Big labe
   - `<n>` is 1 + the number of problems in this session with the same label.
   - _Check:_ `src/utils/__tests__/problemDefaults.test.ts` › "autoName numbers per label"; `src/components/__tests__/QuickLog.test.tsx` › "empty name saves an auto-name"
 - **R5** — Opening the dialog doesn't focus the name field, so no keyboard pops up. _Check:_ `src/components/__tests__/QuickLog.test.tsx` › "name field not focused on open"
-- **R6** — When the session has at least one problem, a button "Add <label>" (the last-used label) next to Add Problem adds a new problem in one tap. It has the last-used grades and an auto-name, and no dialog opens. _Check:_ `src/components/__tests__/QuickLog.test.tsx` › "one-tap add repeats the last grades", "no one-tap add in an empty session"
-- **R7** — In the dialog, once a grade is selected, a line shows the most recent earlier session's problems at that grade (French if selected, else colour): "Last time at <label> (<date>): <n> problems, <s> sent, <f> flashed". It shows nothing when no earlier session has that grade. The current session is excluded. _Check:_ `src/utils/__tests__/problemDefaults.test.ts` › "summarizeLastTime groups the latest earlier session", "summarizeLastTime null without history"; `src/components/__tests__/QuickLog.test.tsx` › "shows last time at the selected grade"
-- **R8** — On mobile, the Add Problem and one-tap add buttons stay in a bar pinned above the bottom navigation while the problem list scrolls. On desktop they stay inline. _Check:_ `manual: npm start → devtools at 360×640 → add 8 problems → scroll → the add bar stays visible above the bottom nav, never covers the last row's buttons, and the undo snackbar does not cover it`
+- **R6** — ~~One-tap "Add <label>" button~~ Dropped after review (2026-11-27): Add Problem with the last grade preselected (R3) is enough. There is no second add button. _Check:_ `src/components/__tests__/QuickLog.test.tsx` › "no one-tap add button"
+- **R7** — In the dialog, once a grade is selected, a line shows the most recent earlier session's problems at that grade (French if selected, else colour): "Last time at <label> (<date>): <n> problems, <s> sent, <f> flashed". A flash counts as sent, so `<s>` includes `<f>`. It shows nothing when no earlier session has that grade. The current session is excluded. _Check:_ `src/utils/__tests__/problemDefaults.test.ts` › "summarizeLastTime groups the latest earlier session", "summarizeLastTime null without history", "a flash counts as sent"; `src/components/__tests__/QuickLog.test.tsx` › "shows last time at the selected grade"
+- **R8** — On mobile, the Add Problem button stays in a bar pinned above the bottom navigation while the problem list scrolls. On desktop they stay inline. _Check:_ `manual: npm start → devtools at 360×640 → add 8 problems → scroll → the add bar stays visible above the bottom nav, never covers the last row's buttons, and the undo snackbar does not cover it`
 
 ## Constraints
 - No schema change; no Dexie `version()` bump. R7 reads use the existing `frenchGrade` and `colorGrade` indexes on `problems`.
@@ -47,3 +47,9 @@ Decided in an auto-approved run (2026-11-21):
 - The last-used grade comes from this session only; the first problem of a session starts blank.
 - Auto-names use the French grade when both grades are set.
 - The "last time" date is the problem's `createdAt` date in the user's locale.
+
+Changed after review on PR #34 (2026-11-27):
+- A flash counts as sent. The Flash button is removed; flash is derived from Send with no earlier attempts. Stored `flash`/`send` fields are unchanged.
+- The one-tap add button is dropped (R6).
+- Row buttons are text-only with a filled background.
+- "Problem" stays the term.
