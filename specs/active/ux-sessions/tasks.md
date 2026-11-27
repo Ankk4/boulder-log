@@ -23,16 +23,16 @@ Order: T1, T2 and T5 first (independent), then T3 and T4, then T6 → T7 → T8 
 - depends-on: []
 - notes: Move `RatingPicker` and `RATINGS` out of `PostSessionReview.tsx` (the component goes in its own file, per `react-refresh/only-export-components`). Add `min`/`max` props (default 1–10). Re-tap clears everywhere (R10), so there is no `clearable` prop. Keep the 40 px targets.
 
-## T2 — Session helpers and read hooks
+## T2 — Session helpers
 - covers: [R1, R11, R16, R22]
 - runner: implementer
-- allowed files: `src/utils/sessions.ts`, `src/utils/__tests__/sessions.test.ts`, `src/db/index.ts`
+- allowed files: `src/utils/sessions.ts`, `src/utils/__tests__/sessions.test.ts`
 - check: `npx vitest run src/utils/__tests__/sessions.test.ts`
 - tests to add: the three `sessions.test.ts` cases in R11. Also: `sessionStats` returns problems, attempts, flashes, sends and a success rate that is `0` (not `NaN`) for no problems; `formatElapsed` gives `m:ss` under an hour and `h:mm:ss` from an hour (R1).
 - parallel-safe: yes
 - schema-change: no
 - depends-on: []
-- notes: `sessionStats(session)` replaces the inline reduces/filters in `Session.tsx`, `PastSessionsList.tsx` and the detail page, with the same formulas as today (`flash || send` counts as success). `latestEndedSession(sessions)` is the one with the greatest `startTime` among `endTime !== null` (R11). `formatElapsed(ms)` sits next to `formatDuration` in `src/utils/duration.ts` if that's where it lives; otherwise put it in `sessions.ts`. In `db/index.ts`, add `useLatestEndedSession()` and `useSessionById(id)` with `useLiveQuery`. `useSessionById` must tell loading (`undefined`) from not found (`null`), following the `useCurrentSession()` pattern. Problems are embedded in `Session.problems`, so `db.sessions.get(id)` is enough.
+- notes: `sessionStats(session)` replaces the inline reduces/filters in `Session.tsx`, `PastSessionsList.tsx` and the detail page, with the same formulas as today (`flash || send` counts as success). `latestEndedSession(sessions)` is the one with the greatest `startTime` among `endTime !== null` (R11). `formatElapsed(ms)` sits next to `formatDuration` in `src/utils/duration.ts` if that's where it lives; otherwise put it in `sessions.ts`. The read hooks live with their first users (T6, T9), so knip never sees an unused export.
 
 ## T3 — Check-in form: optional values, groups, tap rows, last takeaways
 - covers: [R8, R9, R10, R11]
@@ -70,13 +70,13 @@ Order: T1, T2 and T5 first (independent), then T3 and T4, then T6 → T7 → T8 
 ## T6 — Session page header, start-first flow, history in the URL
 - covers: [R4, R5, R6, R7, R8, R11]
 - runner: implementer
-- allowed files: `src/pages/Session.tsx`, `src/pages/__tests__/Session.test.tsx`
+- allowed files: `src/pages/Session.tsx`, `src/pages/__tests__/Session.test.tsx`, `src/db/index.ts`
 - check: `npx vitest run src/pages/__tests__/Session.test.tsx`
 - tests to add: the R4, R6, R7 and R5 "history mode follows the view query" cases; update "starts a new session" for absent fields and add "saves picked check-in values" (R8); one asserting the check-in receives the last session's `workOn` (mock `useLatestEndedSession` alongside `useCurrentSession`). Say in the report which existing tests changed.
 - parallel-safe: no
 - schema-change: no
 - depends-on: [T3]
-- notes: Remove the `ToggleButtonGroup`. Derive `mode` from `useSearchParams` (`view=history`) and set it with `replace`; the existing reset of `preSessionData` on mode change stays. Use the `PageHeader` `action` slot: a History `IconButton` in climb mode, a Close `IconButton` (to `/`) on the new-session screen, and a Back `IconButton` before the title in history (extend `PageHeader` only if the slot can't hold it; that adds `src/components/PageHeader.tsx`, so report it). Default `preSessionData` becomes `{ goals: [], additionalNotes: '' }`. Put Start session above `PreSessionForm`; keep `BackupReminder` below it. Pass `useLatestEndedSession()?.postSessionReview?.workOn` into the form (R11).
+- notes: Remove the `ToggleButtonGroup`. Derive `mode` from `useSearchParams` (`view=history`) and set it with `replace`; the existing reset of `preSessionData` on mode change stays. Use the `PageHeader` `action` slot: a History `IconButton` in climb mode, a Close `IconButton` (to `/`) on the new-session screen, and a Back `IconButton` before the title in history (extend `PageHeader` only if the slot can't hold it; that adds `src/components/PageHeader.tsx`, so report it). Default `preSessionData` becomes `{ goals: [], additionalNotes: '' }`. Put Start session above `PreSessionForm`; keep `BackupReminder` below it. Add `useLatestEndedSession()` to `db/index.ts`: `useLiveQuery` over `db.sessions.toArray()` through `latestEndedSession` (T2), returning `undefined` while loading and `null` when there is none. Pass `useLatestEndedSession()?.postSessionReview?.workOn` into the form (R11).
 
 ## T7 — Live view: goal chips, check-in during the session
 - covers: [R2, R12, R13, R14, R15]
@@ -103,13 +103,13 @@ Order: T1, T2 and T5 first (independent), then T3 and T4, then T6 → T7 → T8 
 ## T9 — Session page at /sessions/:id
 - covers: [R22]
 - runner: implementer
-- allowed files: `src/pages/SessionDetail.tsx`, `src/App.tsx`, `src/pages/__tests__/SessionDetail.test.tsx`
+- allowed files: `src/pages/SessionDetail.tsx`, `src/App.tsx`, `src/pages/__tests__/SessionDetail.test.tsx`, `src/db/index.ts`
 - check: `npx vitest run src/pages/__tests__/SessionDetail.test.tsx`
 - tests to add: the five `SessionDetail.test.tsx` cases in R22 (render in a `MemoryRouter` with `Routes`; mock `../../db/index` as the page tests do)
 - parallel-safe: no
 - schema-change: no
-- depends-on: [T2, T3]
-- notes: Add the `/sessions/:id` route in `App.tsx` and keep the existing `/sessions` → `/session` redirect. Data comes from `useSessionById` (T2): `undefined` renders nothing, `null` renders "Session not found" with a link to `/session?view=history`. Copy `ReviewLines` from `PastSessionsList.tsx` into this page (T10 deletes the original). Achieved goals come from `postSessionReview.achievedGoals` (indexes into `preSessionData.goals`). Absent check-in values show "—" (R8). Use `PageHeader` with a Back button to `/session?view=history`.
+- depends-on: [T2, T3, T6]
+- notes: Add the `/sessions/:id` route in `App.tsx` and keep the existing `/sessions` → `/session` redirect. Add `useSessionById(id)` to `db/index.ts`: `useLiveQuery(async () => (id ? ((await db.sessions.get(id)) ?? null) : null), [id])`, so `null` covers a missing or unknown id (problems are embedded, so `get` is enough). Data comes from it: `undefined` renders nothing, `null` renders "Session not found" with a link to `/session?view=history`. Copy `ReviewLines` from `PastSessionsList.tsx` into this page (T10 deletes the original). Achieved goals come from `postSessionReview.achievedGoals` (indexes into `preSessionData.goals`). Absent check-in values show "—" (R8). Use `PageHeader` with a Back button to `/session?view=history`.
 
 ## T10 — History rows
 - covers: [R20, R21, R24]
