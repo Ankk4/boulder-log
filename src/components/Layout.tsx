@@ -14,12 +14,12 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { FitnessCenter, Timer } from '@mui/icons-material';
 import { Link as RouterLink, useLocation } from 'react-router';
 import { FocusModeProvider } from '../hooks/FocusModeProvider';
 import { useFocusMode } from '../hooks/useFocusMode';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import ActiveSessionBar from './ActiveSessionBar';
+import { NAV_ITEMS, getNavIndex } from './navItems';
 
 interface LayoutProps {
   children: ReactNode;
@@ -56,11 +56,7 @@ const LayoutShell = ({ children }: LayoutProps) => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const focus = useFocusMode();
 
-  const getCurrentTab = (): number | false => {
-    if (location.pathname.startsWith('/workouts')) return 1;
-    if (location.pathname.startsWith('/session')) return 0;
-    return false;
-  };
+  const currentTab = getNavIndex(location.pathname);
 
   // MUI's Tab is role="tab" with roving tabindex; as links they need neither.
   const tabLinkProps = (to: string, index: number) => ({
@@ -69,7 +65,7 @@ const LayoutShell = ({ children }: LayoutProps) => {
     role: undefined,
     tabIndex: 0,
     'aria-selected': undefined,
-    'aria-current': getCurrentTab() === index ? ('page' as const) : undefined,
+    'aria-current': currentTab === index ? ('page' as const) : undefined,
   });
 
   const skipToMain = (event: MouseEvent<HTMLElement>) => {
@@ -96,7 +92,7 @@ const LayoutShell = ({ children }: LayoutProps) => {
           <Toolbar variant="dense" sx={{ gap: 1 }}>
             <Link
               component={RouterLink}
-              to="/"
+              to="/overview"
               color="inherit"
               underline="none"
               sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
@@ -108,15 +104,16 @@ const LayoutShell = ({ children }: LayoutProps) => {
             </Link>
             {isDesktop && (
               <Tabs
-                value={getCurrentTab()}
+                value={currentTab}
                 component="nav"
                 slotProps={{ root: { 'aria-label': 'Main' }, list: { role: undefined } }}
                 textColor="inherit"
                 indicatorColor="secondary"
                 sx={{ ml: 2, minHeight: 48 }}
               >
-                <Tab {...tabLinkProps('/session', 0)} label="Session" />
-                <Tab {...tabLinkProps('/workouts', 1)} label="Timer" />
+                {NAV_ITEMS.map((item, index) => (
+                  <Tab key={item.to} {...tabLinkProps(item.to, index)} label={item.label} />
+                ))}
               </Tabs>
             )}
           </Toolbar>
@@ -156,21 +153,18 @@ const LayoutShell = ({ children }: LayoutProps) => {
           }}
           elevation={3}
         >
-          <BottomNavigation component="nav" aria-label="Main" showLabels value={getCurrentTab()}>
-            <BottomNavigationAction
-              component={RouterLink}
-              to="/session"
-              aria-current={getCurrentTab() === 0 ? 'page' : undefined}
-              label="Session"
-              icon={<FitnessCenter />}
-            />
-            <BottomNavigationAction
-              component={RouterLink}
-              to="/workouts"
-              aria-current={getCurrentTab() === 1 ? 'page' : undefined}
-              label="Timer"
-              icon={<Timer />}
-            />
+          <BottomNavigation component="nav" aria-label="Main" showLabels value={currentTab}>
+            {NAV_ITEMS.map((item, index) => (
+              <BottomNavigationAction
+                key={item.to}
+                component={RouterLink}
+                to={item.to}
+                aria-current={currentTab === index ? 'page' : undefined}
+                label={item.label}
+                icon={item.icon}
+                sx={{ minWidth: 0, px: 0.5 }}
+              />
+            ))}
           </BottomNavigation>
         </Paper>
       )}

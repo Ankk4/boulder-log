@@ -102,7 +102,7 @@ describe('Layout', () => {
     mockDesktop();
     renderLayout();
     const nav = screen.getByRole('navigation', { name: 'Main' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(2);
+    expect(within(nav).getAllByRole('link')).toHaveLength(5);
     expect(screen.getAllByRole('navigation')).toHaveLength(1);
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Session/ })).not.toBeInTheDocument();
@@ -118,20 +118,10 @@ describe('Layout', () => {
     expect(screen.getByTestId('path')).toHaveTextContent('/session');
   });
 
-  it('home selects no tab', () => {
-    mockDesktop();
-    renderLayout('/');
-    for (const link of within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole(
-      'link',
-    )) {
-      expect(link).not.toHaveAttribute('aria-current');
-    }
-  });
-
-  it('brand links home', () => {
+  it('brand links to overview', () => {
     renderLayout('/session');
     const link = screen.getByRole('heading', { name: 'Matside' }).closest('a');
-    expect(link).toHaveAttribute('href', '/');
+    expect(link).toHaveAttribute('href', '/overview');
   });
 
   it('focus mode hides app bar and nav', () => {
@@ -164,16 +154,56 @@ describe('Layout', () => {
     ['desktop', true],
     ['mobile', false],
   ])('nav items are links with aria-current (%s)', (_name, desktop) => {
-    it('marks only the active link', () => {
+    it('nav lists the five destinations in order', () => {
       if (desktop) mockDesktop();
-      renderLayout('/workouts/abc');
+      renderLayout('/overview');
+      const links = within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole('link');
+      expect(links.map((l) => l.textContent)).toEqual([
+        'Overview',
+        'Session',
+        'History',
+        'Timer',
+        'Settings',
+      ]);
+      expect(links.map((l) => l.getAttribute('href'))).toEqual([
+        '/overview',
+        '/session',
+        '/history',
+        '/workouts',
+        '/settings',
+      ]);
+    });
+
+    it.each([
+      ['/overview', 'Overview'],
+      ['/session', 'Session'],
+      ['/history', 'History'],
+      ['/sessions/abc', 'History'],
+      ['/workouts', 'Timer'],
+      ['/workouts/abc/run', 'Timer'],
+      ['/settings', 'Settings'],
+    ])('marks only the active link on %s', (path, active) => {
+      if (desktop) mockDesktop();
+      renderLayout(path);
+      const links = within(screen.getByRole('navigation', { name: 'Main' })).getAllByRole('link');
+      const current = links.filter((l) => l.getAttribute('aria-current') === 'page');
+      expect(current).toHaveLength(1);
+      expect(current[0]).toHaveTextContent(active);
+    });
+
+    it('tapping a nav link moves the highlight', async () => {
+      if (desktop) mockDesktop();
+      const user = userEvent.setup();
+      renderLayout('/overview');
       const nav = screen.getByRole('navigation', { name: 'Main' });
-      const session = within(nav).getByRole('link', { name: /Session/ });
-      const timer = within(nav).getByRole('link', { name: /Timer/ });
-      expect(session.getAttribute('href')).toMatch(/\/session$/);
-      expect(timer.getAttribute('href')).toMatch(/\/workouts$/);
-      expect(timer).toHaveAttribute('aria-current', 'page');
-      expect(session).not.toHaveAttribute('aria-current');
+      await user.click(within(nav).getByRole('link', { name: /History/ }));
+      expect(within(nav).getByRole('link', { name: /History/ })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(within(nav).getByRole('link', { name: /Overview/ })).not.toHaveAttribute(
+        'aria-current',
+      );
     });
   });
 
@@ -196,9 +226,9 @@ describe('Layout', () => {
     expect(screen.queryByRole('region', { name: 'Active session' })).not.toBeInTheDocument();
   });
 
-  it('highlights Session on a session page', () => {
+  it('highlights History on a session detail page', () => {
     mockDesktop();
     renderLayout('/sessions/abc');
-    expect(screen.getByRole('link', { name: 'Session' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page');
   });
 });
