@@ -1098,7 +1098,13 @@ describe('Session Page', () => {
 
       const alert = await screen.findByRole('alert');
       expect(alert).toHaveTextContent("Couldn't save. Try again.");
-      expect(alert.previousElementSibling).toBe(screen.getByRole('button', { name: 'Save & end' }));
+      const saveEnd = screen.getByRole('button', { name: 'Save & end' });
+      const back = screen.getByRole('button', { name: 'Back to climbing' });
+      // The alert sits between "Save & end" and "Back to climbing".
+      expect(
+        saveEnd.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(alert.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
       errorSpy.mockRestore();
     });
