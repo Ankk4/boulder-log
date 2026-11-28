@@ -66,4 +66,10 @@ describe('App routes', () => {
     render(<App />);
     expect(window.location.pathname).toBe('/overview');
   });
+
+  it('old history query shows the Session page', () => {
+    window.history.pushState({}, '', '/session?view=history');
+    render(<App />);
+    expect(screen.getByRole('heading', { level: 2, name: 'New session' })).toBeInTheDocument();
+  });
 });

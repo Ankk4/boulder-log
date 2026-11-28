@@ -1,14 +1,8 @@
 import { useState } from 'react';
-import { Typography, Button, Paper, IconButton, Stack, Chip } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CloseIcon from '@mui/icons-material/Close';
-import HistoryIcon from '@mui/icons-material/History';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Button, Paper, Stack, Chip } from '@mui/material';
 import PageHeader from '../components/PageHeader';
 import QuickLog from '../components/QuickLog';
 import PreSessionForm from '../components/PreSessionForm';
-import PastSessionsList from '../components/PastSessionsList';
-import DataCard from '../components/DataCard';
 import BackupReminder from '../components/BackupReminder';
 import InlineNotice from '../components/InlineNotice';
 import type { Notice } from '../components/InlineNotice';
@@ -29,7 +23,6 @@ import {
   LIMITS,
 } from '../utils/validation';
 
-type SessionMode = 'climb' | 'history';
 type SessionView = 'live' | 'checkin' | 'wrapup';
 
 const defaultPreSessionData: PreSessionData = {
@@ -59,10 +52,6 @@ const SAVE_ERROR_MESSAGE = "Couldn't save. Try again.";
 const SessionPage = () => {
   const currentSession = useCurrentSession();
   const latestEnded = useLatestEndedSession();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const mode: SessionMode = searchParams.get('view') === 'history' ? 'history' : 'climb';
-  const [prevMode, setPrevMode] = useState<SessionMode>(mode);
   const [preSessionData, setPreSessionData] = useState<PreSessionData>(defaultPreSessionData);
   const [postSessionNotes, setPostSessionNotes] = useState('');
   const [review, setReview] = useState<PostSessionReview>(emptyReview);
@@ -119,17 +108,6 @@ const SessionPage = () => {
     problemTarget !== undefined && baseProblemNotice
       ? { ...baseProblemNotice, problemId: problemTarget }
       : undefined;
-
-  if (mode !== prevMode) {
-    setPrevMode(mode);
-    setFeedback(null);
-    setPreSessionData(defaultPreSessionData);
-    setView('live');
-  }
-
-  const changeMode = (next: SessionMode) => {
-    setSearchParams(next === 'history' ? { view: 'history' } : {}, { replace: true });
-  };
 
   if (currentSession?.id !== loadedId) {
     setLoadedId(currentSession?.id);
@@ -361,51 +339,9 @@ const SessionPage = () => {
 
   return (
     <>
-      {mode === 'history' ? (
+      {currentSession === undefined ? null : currentSession === null ? (
         <>
-          <Stack direction="row" sx={{ mb: 2, alignItems: 'center', gap: 1 }}>
-            <IconButton
-              aria-label="Back"
-              edge="start"
-              onClick={() => {
-                changeMode('climb');
-              }}
-            >
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h5" component="h2">
-              History
-            </Typography>
-          </Stack>
-          <DataCard />
-          <PastSessionsList />
-        </>
-      ) : currentSession === undefined ? null : currentSession === null ? (
-        <>
-          <PageHeader
-            title="New session"
-            action={
-              <Stack direction="row">
-                <IconButton
-                  aria-label="History"
-                  onClick={() => {
-                    changeMode('history');
-                  }}
-                >
-                  <HistoryIcon />
-                </IconButton>
-                <IconButton
-                  aria-label="Close"
-                  edge="end"
-                  onClick={() => {
-                    void navigate('/');
-                  }}
-                >
-                  <CloseIcon />
-                </IconButton>
-              </Stack>
-            }
-          />
+          <PageHeader title="New session" />
           {topNotice && <InlineNotice {...topNotice} />}
           <Paper sx={{ p: 2, mb: 2 }}>
             <Button
@@ -429,20 +365,7 @@ const SessionPage = () => {
         </>
       ) : (
         <>
-          <PageHeader
-            title="Session"
-            action={
-              <IconButton
-                aria-label="History"
-                edge="end"
-                onClick={() => {
-                  changeMode('history');
-                }}
-              >
-                <HistoryIcon />
-              </IconButton>
-            }
-          />
+          <PageHeader title="Session" />
           {topNotice && <InlineNotice {...topNotice} />}
           <Paper sx={{ p: 2, mb: 2 }}>
             {view === 'checkin' ? (

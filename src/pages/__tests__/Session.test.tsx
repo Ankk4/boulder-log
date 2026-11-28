@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import Session from '../Session';
 import { Session as SessionType, SessionProblem, AttemptType } from '../../types';
@@ -49,7 +49,6 @@ vi.mock('../../utils/storage', () => ({
   requestPersistentStorage: vi.fn<typeof requestPersistentStorage>().mockResolvedValue('persisted'),
 }));
 
-vi.mock('../../components/DataCard', () => ({ default: () => <div>DataCard stub</div> }));
 vi.mock('../../components/BackupReminder', () => ({
   default: () => <div>BackupReminder stub</div>,
 }));
@@ -66,11 +65,6 @@ vi.mock('@mui/material', async () => {
     DialogActions: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   };
 });
-
-const LocationDisplay = () => {
-  const location = useLocation();
-  return <div data-testid="location">{location.pathname + location.search}</div>;
-};
 
 describe('Session Page', () => {
   const mockSession: SessionType = {
@@ -129,16 +123,27 @@ describe('Session Page', () => {
     expect(screen.queryByText(/pre-session check-in/i)).not.toBeInTheDocument();
   });
 
-  it('close on new session goes home', () => {
+  it('new session header has no History or Close buttons', () => {
     vi.mocked(useCurrentSession).mockReturnValue(null);
     render(
-      <MemoryRouter initialEntries={['/session']}>
+      <MemoryRouter>
         <Session />
-        <LocationDisplay />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/);
+    expect(screen.getByRole('heading', { name: 'New session' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'History' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+  });
+
+  it('active session header has no History button', () => {
+    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+    render(
+      <MemoryRouter>
+        <Session />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Session' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'History' })).not.toBeInTheDocument();
   });
 
   it('starts a session without touching the check-in', async () => {
@@ -158,43 +163,6 @@ describe('Session Page', () => {
     await waitFor(() => {
       expect(mockDb.sessions.add).toHaveBeenCalledTimes(1);
     });
-  });
-
-  it('history button opens history', () => {
-    vi.mocked(useCurrentSession).mockReturnValue(mockSession);
-    render(
-      <MemoryRouter initialEntries={['/session']}>
-        <Session />
-        <LocationDisplay />
-      </MemoryRouter>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-    expect(screen.getByTestId('location')).toHaveTextContent('/session?view=history');
-    expect(screen.getByRole('heading', { name: 'History' })).toBeInTheDocument();
-  });
-
-  it('back from history returns to climb', () => {
-    vi.mocked(useCurrentSession).mockReturnValue(null);
-    render(
-      <MemoryRouter initialEntries={['/session?view=history']}>
-        <Session />
-        <LocationDisplay />
-      </MemoryRouter>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByTestId('location')).toHaveTextContent(/^\/session$/);
-    expect(screen.getByRole('heading', { name: 'New session' })).toBeInTheDocument();
-  });
-
-  it('history mode follows the view query', () => {
-    vi.mocked(useCurrentSession).mockReturnValue(null);
-    render(
-      <MemoryRouter initialEntries={['/session?view=history']}>
-        <Session />
-      </MemoryRouter>,
-    );
-    expect(screen.getByText('DataCard stub')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'New session' })).not.toBeInTheDocument();
   });
 
   it('passes the last session work-on items to the check-in', () => {
@@ -463,23 +431,6 @@ describe('Session Page', () => {
     expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('');
   });
 
-  it('saves the form defaults after switching to History and back', async () => {
-    mockDb.sessions.add.mockResolvedValue('1');
-    vi.mocked(useCurrentSession).mockReturnValue(null);
-    render(ui());
-
-    addGoal('Stale goal');
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    fireEvent.click(screen.getByText(/start session/i));
-
-    await waitFor(() => {
-      expect(mockDb.sessions.add).toHaveBeenCalledWith(
-        expect.objectContaining({ preSessionData: defaultPre }),
-      );
-    });
-  });
-
   it('ends current session', async () => {
     vi.mocked(useCurrentSession).mockReturnValue(mockSession);
     mockDb.sessions.put.mockResolvedValue(1);
@@ -534,18 +485,6 @@ describe('Session Page', () => {
     });
     expect(requestPersistentStorage).not.toHaveBeenCalled();
     errorSpy.mockRestore();
-  });
-
-  it('renders Your data card in History mode', () => {
-    vi.mocked(useCurrentSession).mockReturnValue(null);
-    render(
-      <MemoryRouter>
-        <Session />
-      </MemoryRouter>,
-    );
-    expect(screen.queryByText('DataCard stub')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'History' }));
-    expect(screen.getByText('DataCard stub')).toBeInTheDocument();
   });
 
   it('renders the backup reminder in the check-in', () => {
@@ -693,16 +632,6 @@ describe('Session Page', () => {
         within(screen.getByRole('group', { name: 'RPE' })).getByRole('button', { name: '7' }),
       ).toHaveAttribute('aria-pressed', 'true');
       expect(screen.getByLabelText(/post-session notes/i)).toHaveValue('Good day');
-    });
-
-    it('switching to history from wrap-up returns to the live view', () => {
-      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
-      render(ui());
-      finish();
-      fireEvent.click(screen.getByRole('button', { name: 'History' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-      expect(screen.getByRole('button', { name: 'Finish session' })).toBeInTheDocument();
-      expect(screen.queryByLabelText(/post-session notes/i)).not.toBeInTheDocument();
     });
 
     it('edits the check-in during a session', async () => {
@@ -875,19 +804,29 @@ describe('Session Page', () => {
       expect(screen.queryByText('Session ended')).not.toBeInTheDocument();
     });
 
-    it('switching to History clears the inline undo', async () => {
+    it('leaving the page clears the inline undo', async () => {
       setupAttempt();
       render(
-        <MemoryRouter>
-          <Session />
-          <LocationDisplay />
+        <MemoryRouter initialEntries={['/session']}>
+          <Routes>
+            <Route
+              path="/session"
+              element={
+                <>
+                  <Session />
+                  <Link to="/history">To history</Link>
+                </>
+              }
+            />
+            <Route path="/history" element={<Link to="/session">To session</Link>} />
+          </Routes>
         </MemoryRouter>,
       );
       fireEvent.click(screen.getByTestId('attempt-button'));
       expect(await screen.findByText('Attempt logged')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole('button', { name: 'History' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+      fireEvent.click(screen.getByRole('link', { name: 'To history' }));
+      fireEvent.click(screen.getByRole('link', { name: 'To session' }));
 
       expect(screen.queryByText('Attempt logged')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
