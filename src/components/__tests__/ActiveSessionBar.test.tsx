@@ -126,7 +126,7 @@ describe('ActiveSessionBar', () => {
 
   it('omits attempts and flashes in history view', () => {
     vi.mocked(useCurrentSession).mockReturnValue(session);
-    renderBar('/session?view=history');
+    renderBar('/history');
     expect(screen.getByRole('region', { name: 'Active session' })).not.toHaveTextContent(
       'attempts',
     );

@@ -56,7 +56,7 @@ const renderAt = (entries: string[], initialIndex: number) =>
     <MemoryRouter initialEntries={entries} initialIndex={initialIndex}>
       <Routes>
         <Route path="/sessions/:id" element={<SessionDetail />} />
-        <Route path="/session" element={<div>History marker</div>} />
+        <Route path="/history" element={<div>History marker</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -149,13 +149,13 @@ describe('SessionDetail', () => {
     expect(screen.getByText('Session not found')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to history' })).toHaveAttribute(
       'href',
-      '/session?view=history',
+      '/history',
     );
   });
 
   it('goes back in history when opened from the app', () => {
     vi.mocked(useSessionById).mockReturnValue(makeSession());
-    renderAt(['/session?view=history', '/sessions/s1'], 1);
+    renderAt(['/history', '/sessions/s1'], 1);
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByText('History marker')).toBeInTheDocument();
   });

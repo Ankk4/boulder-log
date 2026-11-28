@@ -6,7 +6,7 @@ import { useSessionById } from '../db/index';
 import { sessionStats } from '../utils/sessions';
 import type { PostSessionReview } from '../types';
 
-const HISTORY_PATH = '/session?view=history';
+const HISTORY_PATH = '/history';
 
 const ReviewLines = ({
   review,
