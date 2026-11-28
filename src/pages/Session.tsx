@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Typography, Button, Paper, IconButton, Stack, Chip } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
@@ -10,7 +10,8 @@ import PreSessionForm from '../components/PreSessionForm';
 import PastSessionsList from '../components/PastSessionsList';
 import DataCard from '../components/DataCard';
 import BackupReminder from '../components/BackupReminder';
-import UndoSnackbar from '../components/UndoSnackbar';
+import InlineNotice from '../components/InlineNotice';
+import type { Notice } from '../components/InlineNotice';
 import SessionWrapUp from '../components/SessionWrapUp';
 import type { Session, SessionProblem, PreSessionData, PostSessionReview } from '../types';
 import { AttemptType } from '../types';
@@ -44,8 +45,10 @@ const emptyReview: PostSessionReview = {
   achievedGoals: [],
 };
 
+type FeedbackTarget = { kind: 'problem'; id: string } | { kind: 'add' | 'top' | 'wrapup' };
+
 interface Feedback {
-  id: number;
+  target: FeedbackTarget;
   message: string;
   severity: 'info' | 'error';
   undo?: () => Promise<void>;
@@ -67,19 +70,18 @@ const SessionPage = () => {
   const [liveCheckIn, setLiveCheckIn] = useState<PreSessionData>(defaultPreSessionData);
   const [loadedId, setLoadedId] = useState<string | undefined>(undefined);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const feedbackId = useRef(0);
 
   const showFeedback = (
+    target: FeedbackTarget,
     message: string,
     severity: 'info' | 'error',
     undo?: () => Promise<void>,
   ) => {
-    feedbackId.current += 1;
-    setFeedback({ id: feedbackId.current, message, severity, undo });
+    setFeedback({ target, message, severity, undo });
   };
 
-  const showSaveError = () => {
-    showFeedback(SAVE_ERROR_MESSAGE, 'error');
+  const showSaveError = (target: FeedbackTarget) => {
+    showFeedback(target, SAVE_ERROR_MESSAGE, 'error');
   };
 
   const runUndo = async (action: Feedback) => {
@@ -91,12 +93,36 @@ const SessionPage = () => {
       setFeedback(null);
     } catch (error) {
       console.error('Error undoing action:', error);
-      showSaveError();
+      showSaveError(action.target);
     }
   };
 
+  const noticeFor = (match: (target: FeedbackTarget) => boolean): Notice | undefined => {
+    if (!feedback || !match(feedback.target)) return undefined;
+    return {
+      message: feedback.message,
+      severity: feedback.severity,
+      onUndo: feedback.undo
+        ? () => {
+            void runUndo(feedback);
+          }
+        : undefined,
+    };
+  };
+
+  const topNotice = noticeFor((t) => t.kind === 'top');
+  const addNotice = noticeFor((t) => t.kind === 'add');
+  const wrapUpNotice = noticeFor((t) => t.kind === 'wrapup');
+  const problemTarget = feedback?.target.kind === 'problem' ? feedback.target.id : undefined;
+  const baseProblemNotice = noticeFor((t) => t.kind === 'problem');
+  const problemNotice =
+    problemTarget !== undefined && baseProblemNotice
+      ? { ...baseProblemNotice, problemId: problemTarget }
+      : undefined;
+
   if (mode !== prevMode) {
     setPrevMode(mode);
+    setFeedback(null);
     setPreSessionData(defaultPreSessionData);
     setView('live');
   }
@@ -164,6 +190,7 @@ const SessionPage = () => {
   };
 
   const startSession = async () => {
+    setFeedback(null);
     const sanitizedPreSession: PreSessionData = {
       ...preSessionData,
       goals: sanitizeGoals(preSessionData.goals),
@@ -207,14 +234,14 @@ const SessionPage = () => {
         setPostSessionNotes('');
         setReview(emptyReview);
         void requestPersistentStorage();
-        showFeedback('Session ended', 'info', async () => {
+        showFeedback({ kind: 'top' }, 'Session ended', 'info', async () => {
           await db.sessions.update(sessionId, { endTime: null, duration: undefined });
           setPostSessionNotes(savedNotes);
           setReview(savedReview);
         });
       } catch (error) {
         console.error('Error ending session:', error);
-        showSaveError();
+        showSaveError({ kind: 'wrapup' });
       }
     }
   };
@@ -247,7 +274,7 @@ const SessionPage = () => {
         };
         await db.sessions.put(updatedSession);
         const sessionId = currentSession.id;
-        showFeedback('Problem added', 'info', async () => {
+        showFeedback({ kind: 'problem', id: newProblem.id }, 'Problem added', 'info', async () => {
           await db.problems.delete(newProblem.id);
           const current = await db.sessions.get(sessionId);
           if (current) {
@@ -258,7 +285,7 @@ const SessionPage = () => {
         });
       } catch (error) {
         console.error('Error adding problem:', error);
-        showSaveError();
+        showSaveError({ kind: 'add' });
       }
     } else {
       console.error('No active session found');
@@ -310,7 +337,7 @@ const SessionPage = () => {
             [AttemptType.FLASH]: 'Flash logged',
             [AttemptType.SEND]: 'Send logged',
           };
-          showFeedback(labels[type], 'info', async () => {
+          showFeedback({ kind: 'problem', id: problemId }, labels[type], 'info', async () => {
             await db.attempts.delete(newAttempt.id);
             if (prevProblem) {
               await db.problems.put(prevProblem);
@@ -325,7 +352,7 @@ const SessionPage = () => {
         }
       } catch (error) {
         console.error('Error adding attempt:', error);
-        showSaveError();
+        showSaveError({ kind: 'problem', id: problemId });
       }
     } else {
       console.error('No active session found');
@@ -379,6 +406,7 @@ const SessionPage = () => {
               </Stack>
             }
           />
+          {topNotice && <InlineNotice {...topNotice} />}
           <Paper sx={{ p: 2, mb: 2 }}>
             <Button
               variant="contained"
@@ -415,6 +443,7 @@ const SessionPage = () => {
               </IconButton>
             }
           />
+          {topNotice && <InlineNotice {...topNotice} />}
           <Paper sx={{ p: 2, mb: 2 }}>
             {view === 'checkin' ? (
               <>
@@ -447,6 +476,7 @@ const SessionPage = () => {
                 onBack={() => {
                   setView('live');
                 }}
+                notice={wrapUpNotice}
               />
             ) : (
               <>
@@ -466,6 +496,8 @@ const SessionPage = () => {
                   onAddAttempt={(problemId, type) => {
                     void handleAddAttempt(problemId, type);
                   }}
+                  problemNotice={problemNotice}
+                  addNotice={addNotice}
                 />
                 <Stack direction="row" sx={{ mt: 2, gap: 1 }}>
                   <Button
@@ -493,25 +525,6 @@ const SessionPage = () => {
             )}
           </Paper>
         </>
-      )}
-
-      {feedback && (
-        <UndoSnackbar
-          key={feedback.id}
-          open
-          message={feedback.message}
-          severity={feedback.severity}
-          onUndo={
-            feedback.undo
-              ? () => {
-                  void runUndo(feedback);
-                }
-              : undefined
-          }
-          onClose={() => {
-            setFeedback(null);
-          }}
-        />
       )}
     </>
   );
