@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button, Stack, TextField, Typography } from '@mui/material';
 import PostSessionReviewSection from './PostSessionReview';
+import InlineNotice from './InlineNotice';
+import type { Notice } from './InlineNotice';
 import type { PostSessionReview, Session } from '../types';
 import { formatElapsed, sessionStats } from '../utils/sessions';
 import { LIMITS } from '../utils/validation';
@@ -13,6 +15,7 @@ interface SessionWrapUpProps {
   onNotesChange: (notes: string) => void;
   onSave: () => void;
   onBack: () => void;
+  notice?: Notice;
 }
 
 const SessionWrapUp = ({
@@ -23,6 +26,7 @@ const SessionWrapUp = ({
   onNotesChange,
   onSave,
   onBack,
+  notice,
 }: SessionWrapUpProps) => {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -76,6 +80,7 @@ const SessionWrapUp = ({
       <Button variant="contained" color="secondary" fullWidth sx={{ mt: 2 }} onClick={onSave}>
         Save & end
       </Button>
+      {notice && <InlineNotice {...notice} />}
       <Button fullWidth sx={{ mt: 1 }} onClick={onBack}>
         Back to climbing
       </Button>

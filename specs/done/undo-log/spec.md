@@ -16,7 +16,7 @@ A mis-tapped Attempt, Flash, Send, Add Problem or End Session can be taken back 
 
 ## Requirements
 
-- **R1** — After logging an attempt, flash or send, a snackbar shows "Attempt logged", "Flash logged" or "Send logged" with an Undo button. It hides on its own after 8 seconds. _Check:_ `src/pages/__tests__/Session.test.tsx` › "shows a snackbar after logging an attempt"; `src/components/__tests__/UndoSnackbar.test.tsx` › "renders message and Undo", "auto-hides after 8 s" (fake timers)
+- **R1** — After logging an attempt, flash or send, a snackbar shows "Attempt logged", "Flash logged" or "Send logged" with an Undo button. It hides on its own after 8 seconds. _Check:_ `src/pages/__tests__/Session.test.tsx` › "shows a snackbar after logging an attempt"; `src/components/__tests__/UndoSnackbar.test.tsx` › "renders message and Undo", "auto-hides after 8 s" (fake timers). Superseded by `specs/done/rework-undo/spec.md` (inline undo).
 - **R2** — Undoing an attempt, flash or send:
   - Deletes that attempt row.
   - Restores the problem's `attempts`, `flash` and `send` to their values before the action, both in the problems table and in `session.problems`.
@@ -24,9 +24,9 @@ A mis-tapped Attempt, Flash, Send, Add Problem or End Session can be taken back 
   - _Check:_ `src/utils/__tests__/undo.test.ts` › "replaces one problem in the session list"; `src/pages/__tests__/Session.test.tsx` › "undo removes the attempt and restores the problem", "undo leaves other session fields untouched"
 - **R3** — After adding a problem, a snackbar shows "Problem added" with Undo. Undo deletes the problem row and removes it from `session.problems`. _Check:_ `src/utils/__tests__/undo.test.ts` › "removes one problem from the session list"; `src/pages/__tests__/Session.test.tsx` › "undo removes an added problem"
 - **R4** — After End Session, a snackbar shows "Session ended" with Undo. Undo makes that session active again (`endTime: null`, `duration` cleared). The post-session notes field and the review show what they held at End. _Check:_ `src/pages/__tests__/Session.test.tsx` › "undo End reopens the session with its notes and review"
-- **R5** — Only the latest action can be undone. A new action replaces the snackbar. After one tap, Undo is gone, so it can't revert twice. _Check:_ `src/pages/__tests__/Session.test.tsx` › "undo after two actions reverts only the latest", "Undo can only be pressed once"
-- **R6** — If a log, add, End or undo write fails, an error snackbar shows "Couldn't save. Try again." with no Undo. `console.error` stays. _Check:_ `src/pages/__tests__/Session.test.tsx` › "shows an error when logging fails", "shows an error when undo fails"
-- **R7** — The snackbar sits above the bottom navigation and the home-indicator safe area on mobile. The Undo button has the accessible name "Undo" and is at least 48 px tall.
+- **R5** — Only the latest action can be undone. A new action replaces the snackbar. After one tap, Undo is gone, so it can't revert twice. _Check:_ `src/pages/__tests__/Session.test.tsx` › "undo after two actions reverts only the latest", "Undo can only be pressed once". Superseded by `specs/done/rework-undo/spec.md` (inline undo).
+- **R6** — If a log, add, End or undo write fails, an error snackbar shows "Couldn't save. Try again." with no Undo. `console.error` stays. _Check:_ `src/pages/__tests__/Session.test.tsx` › "shows an error when logging fails", "shows an error when undo fails". Superseded by `specs/done/rework-undo/spec.md` (inline undo).
+- **R7** — The snackbar sits above the bottom navigation and the home-indicator safe area on mobile. The Undo button has the accessible name "Undo" and is at least 48 px tall. Superseded by `specs/done/rework-undo/spec.md` (inline undo).
   - _Check:_ `src/components/__tests__/UndoSnackbar.test.tsx` › "Undo has an accessible name"
   - _Check:_ `manual: npm start → devtools at 360×640 → log an attempt → the snackbar is above the bottom nav, doesn't cover the Attempt button of the problem just logged, and Undo is easy to hit with a thumb`
 

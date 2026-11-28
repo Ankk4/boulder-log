@@ -14,6 +14,8 @@ import {
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import GradePicker from './GradePicker';
+import InlineNotice from './InlineNotice';
+import type { Notice } from './InlineNotice';
 import { useProblemsAtGrade } from '../db/index';
 import { colorRange } from '../utils/grades';
 import { autoName, gradeLabel, lastUsedGrades, summarizeLastTime } from '../utils/problemDefaults';
@@ -26,9 +28,18 @@ interface QuickLogProps {
   problems: SessionProblem[];
   onAddProblem: (problem: Omit<SessionProblem, 'id' | 'attempts'>) => void;
   onAddAttempt: (problemId: string, type: AttemptType) => void;
+  problemNotice?: Notice & { problemId: string };
+  addNotice?: Notice;
 }
 
-const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogProps) => {
+const QuickLog = ({
+  sessionId,
+  problems,
+  onAddProblem,
+  onAddAttempt,
+  problemNotice,
+  addNotice,
+}: QuickLogProps) => {
   const [isAddingProblem, setIsAddingProblem] = useState(false);
   const [newProblemName, setNewProblemName] = useState('');
   const [newFrenchGrade, setNewFrenchGrade] = useState('');
@@ -103,6 +114,11 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
           Add Problem
         </Button>
       </Stack>
+      {addNotice && (
+        <Box sx={{ mb: 2 }}>
+          <InlineNotice {...addNotice} />
+        </Box>
+      )}
 
       <List>
         {problems.map((problem) => {
@@ -148,6 +164,7 @@ const QuickLog = ({ sessionId, problems, onAddProblem, onAddAttempt }: QuickLogP
                   Send
                 </Button>
               </Stack>
+              {problemNotice?.problemId === problem.id && <InlineNotice {...problemNotice} />}
             </Paper>
           );
         })}

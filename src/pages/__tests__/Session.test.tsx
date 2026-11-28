@@ -794,12 +794,103 @@ describe('Session Page', () => {
       mockDb.sessions.get.mockResolvedValue(sessionWithProblem);
     };
 
-    it('shows a snackbar after logging an attempt', async () => {
+    const cardOf = (name: string) => {
+      const el = screen.getByText(name).closest<HTMLElement>('.MuiPaper-root');
+      if (!el) throw new Error(`No card for ${name}`);
+      return el;
+    };
+
+    const second: SessionProblem = { ...mockProblem, id: '2', name: 'Second Problem' };
+    const twoProblems = { ...sessionWithProblem, problems: [prev, second] };
+
+    it("shows an inline undo on the logged problem's card", async () => {
       setupAttempt();
+      vi.mocked(useCurrentSession).mockReturnValue(twoProblems);
+      mockDb.problems.get.mockResolvedValue(second);
       render(ui());
+      fireEvent.click(within(cardOf('Second Problem')).getByTestId('attempt-button'));
+
+      const secondCard = cardOf('Second Problem');
+      expect(await within(secondCard).findByText('Attempt logged')).toBeInTheDocument();
+      expect(within(secondCard).getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+      expect(within(cardOf('Test Problem')).queryByText('Attempt logged')).not.toBeInTheDocument();
+      expect(
+        within(cardOf('Test Problem')).queryByRole('button', { name: 'Undo' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('inline undo does not time out', async () => {
+      setupAttempt();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        render(ui());
+        fireEvent.click(screen.getByTestId('attempt-button'));
+        expect(await screen.findByText('Attempt logged')).toBeInTheDocument();
+        act(() => {
+          vi.advanceTimersByTime(60_000);
+        });
+        expect(screen.getByText('Attempt logged')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('a new action moves the inline undo', async () => {
+      setupAttempt();
+      vi.mocked(useCurrentSession).mockReturnValue(twoProblems);
+      // Each log reads the problem twice: first card A, then card B.
+      mockDb.problems.get
+        .mockResolvedValueOnce(prev)
+        .mockResolvedValueOnce(prev)
+        .mockResolvedValue(second);
+      render(ui());
+      fireEvent.click(within(cardOf('Test Problem')).getByTestId('attempt-button'));
+      expect(await within(cardOf('Test Problem')).findByText('Attempt logged')).toBeInTheDocument();
+
+      fireEvent.click(within(cardOf('Second Problem')).getByTestId('attempt-button'));
+      expect(
+        await within(cardOf('Second Problem')).findByText('Attempt logged'),
+      ).toBeInTheDocument();
+      expect(within(cardOf('Test Problem')).queryByText('Attempt logged')).not.toBeInTheDocument();
+    });
+
+    it('starting a session clears the Session ended undo', async () => {
+      vi.mocked(useCurrentSession).mockReturnValue(mockSession);
+      mockDb.sessions.put.mockResolvedValue('1');
+      mockDb.sessions.add.mockResolvedValue('2');
+      const view = render(ui());
+      finish();
+      fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
+      expect(await screen.findByText('Session ended')).toBeInTheDocument();
+      vi.mocked(useCurrentSession).mockReturnValue(null);
+      view.rerender(ui());
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Start session' }));
+      await waitFor(() => {
+        expect(mockDb.sessions.add).toHaveBeenCalled();
+      });
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Session ended')).not.toBeInTheDocument();
+    });
+
+    it('switching to History clears the inline undo', async () => {
+      setupAttempt();
+      render(
+        <MemoryRouter>
+          <Session />
+          <LocationDisplay />
+        </MemoryRouter>,
+      );
       fireEvent.click(screen.getByTestId('attempt-button'));
       expect(await screen.findByText('Attempt logged')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'History' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+      expect(screen.queryByText('Attempt logged')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
     });
 
     it.each([
@@ -857,23 +948,32 @@ describe('Session Page', () => {
       setupAttempt();
       vi.mocked(useCurrentSession).mockReturnValue(mockSession);
       mockDb.problems.add.mockResolvedValue('2');
-      render(ui());
+      const view = render(ui());
 
       fireEvent.click(screen.getByText(/add problem/i));
       fireEvent.change(screen.getByLabelText(/problem name/i), { target: { value: 'New' } });
       fireEvent.click(screen.getByRole('button', { name: '6a' }));
       fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
 
-      expect(await screen.findByText('Problem added')).toBeInTheDocument();
-      const added = mockDb.problems.add.mock.calls[0]?.[0];
+      await waitFor(() => {
+        expect(mockDb.sessions.put).toHaveBeenCalled();
+      });
+      const added = mockDb.problems.add.mock.calls[0]?.[0] as SessionProblem;
+      vi.mocked(useCurrentSession).mockReturnValue({
+        ...mockSession,
+        problems: [prev, added],
+      });
       mockDb.sessions.get.mockResolvedValue({
         ...mockSession,
-        problems: [prev, added as SessionProblem],
+        problems: [prev, added],
       });
-      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      view.rerender(ui());
+      const addedCard = cardOf('New');
+      expect(await within(addedCard).findByText('Problem added')).toBeInTheDocument();
+      fireEvent.click(within(addedCard).getByRole('button', { name: 'Undo' }));
 
       await waitFor(() => {
-        expect(mockDb.problems.delete).toHaveBeenCalledWith(added?.id);
+        expect(mockDb.problems.delete).toHaveBeenCalledWith(added.id);
       });
       await waitFor(() => {
         expect(mockDb.sessions.update).toHaveBeenCalledWith('1', { problems: [prev] });
@@ -920,7 +1020,9 @@ describe('Session Page', () => {
       render(ui());
       fireEvent.click(screen.getByTestId('attempt-button'));
 
-      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(
+        await within(cardOf('Test Problem')).findByText("Couldn't save. Try again."),
+      ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
       expect(errorSpy).toHaveBeenCalledWith('Error adding attempt:', expect.any(Error));
       errorSpy.mockRestore();
@@ -937,7 +1039,10 @@ describe('Session Page', () => {
       fireEvent.click(screen.getByRole('button', { name: '6a' }));
       fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
 
-      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("Couldn't save. Try again.");
+      const addBar = screen.getByRole('button', { name: /add problem/i }).parentElement;
+      expect(addBar?.nextElementSibling).toContainElement(alert);
       expect(errorSpy).toHaveBeenCalledWith('Error adding problem:', expect.any(Error));
       errorSpy.mockRestore();
     });
@@ -991,7 +1096,15 @@ describe('Session Page', () => {
       finish();
       fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
 
-      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("Couldn't save. Try again.");
+      const saveEnd = screen.getByRole('button', { name: 'Save & end' });
+      const back = screen.getByRole('button', { name: 'Back to climbing' });
+      // The alert sits between "Save & end" and "Back to climbing".
+      expect(
+        saveEnd.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(alert.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
       errorSpy.mockRestore();
     });
@@ -1006,7 +1119,9 @@ describe('Session Page', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save & end' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
 
-      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("Couldn't save. Try again.");
+      expect(alert.closest('.MuiPaper-root')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
       expect(errorSpy).toHaveBeenCalledWith('Error undoing action:', expect.any(Error));
       errorSpy.mockRestore();
@@ -1020,7 +1135,9 @@ describe('Session Page', () => {
       fireEvent.click(screen.getByTestId('attempt-button'));
       fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
 
-      expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument();
+      expect(
+        await within(cardOf('Test Problem')).findByText("Couldn't save. Try again."),
+      ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
       expect(errorSpy).toHaveBeenCalledWith('Error undoing action:', expect.any(Error));
       errorSpy.mockRestore();

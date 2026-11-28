@@ -33,7 +33,7 @@ Rules for every step: if a tool call or command is denied, ask the user; don't s
    - After any `npm install`, read `git diff package.json`: a package must stay in the section (`dependencies` or `devDependencies`) it was in. Install runtime packages without `-D`.
    - The `SubagentStop` hook can't stop a background agent (it has already handed back), but its pass stamp makes your `--check` instant on a green tree.
    - On failure, send the last ~40 lines of output to the same implementer with SendMessage, so it keeps its context. Wait, then verify again.
-3. `git add -A`, then spawn `reviewer`: `Task mode. Spec folder: specs/active/<feature>/. Task: T<n>. Diff: git diff --cached in <repo root>.`
+3. Stage only the task's allowed files: `git add -A -- <allowed files>` (never a bare `git add -A`, which sweeps in untracked specs), then spawn `reviewer`: `Task mode. Spec folder: specs/active/<feature>/. Task: T<n>. Diff: git diff --cached in <repo root>.`
 4. Read the implementer report, the reviewer verdict, and `git diff --cached --stat`. Do your own sanity check of the diff; you are the more capable model.
 5. On PASS, commit with message `<feature> T<n>: <summary>`, then a blank line, a body listing `covers: R…`, and the attribution trailer.
 6. On FAIL, send the numbered findings to the same implementer with SendMessage, then repeat the verify gate and review.
