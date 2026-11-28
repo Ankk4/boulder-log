@@ -11,8 +11,12 @@
 //   - `npm run verify` fails
 //   - the body or a commit message headed for the PR mentions research/ (private repo; this one is public)
 // It never merges, marks a PR ready, force-pushes, or pushes any branch but the current one.
+//
+// Inside claude-box without a GitHub token (the normal case), it runs every check above, then
+// writes the title and body to <git-dir>/claude-box-pr.json instead of pushing. The user
+// reviews the branch and pushes from the host with `tx ship` (Alt-u), which reads that file.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const args = process.argv.slice(2);
@@ -98,6 +102,15 @@ if (dryRun) {
   console.log(`would run: git ${push.join(' ')}`);
   console.log(
     `would run: gh ${create.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ')}`,
+  );
+  process.exit(0);
+}
+
+if (process.env.CLAUDE_BOX_MODE && !process.env.GH_TOKEN) {
+  const handoff = resolve(tryRun('git', ['rev-parse', '--absolute-git-dir']), 'claude-box-pr.json');
+  writeFileSync(handoff, `${JSON.stringify({ branch, base, title, body }, null, 2)}\n`);
+  console.log(
+    `Checks passed. No GitHub token in this box, so nothing was pushed. Wrote the PR title and body to ${handoff}; the user pushes and opens the draft PR from the host with Alt-u (tx ship).`,
   );
   process.exit(0);
 }

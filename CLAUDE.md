@@ -49,5 +49,6 @@ The main session (Opus) plans; Sonnet subagents in `.claude/agents/` execute. Ru
 - Retro: each shipped spec gets a `retro.md` (template in `specs/TEMPLATE/`) recording mistakes and where the fix landed; `/run-spec` §4 writes it, issues after merge are appended later.
 - `implementer` does one task and never commits. `reviewer` is read-only and returns PASS/FAIL. `researcher` writes only to `research/`.
 - `research/` is a separate **private** repo, gitignored here. This repo is public: link research notes by path, never paste competitor detail into specs, commits or PRs.
-- `/run-spec <feature> --draft-pr` pushes the branch and opens a draft PR via `.claude/hooks/lib/open-pr.mjs`, only when every task passed. Without the flag nothing is pushed.
+- `/run-spec <feature> --draft-pr` pushes the branch and opens a draft PR via `.claude/hooks/lib/open-pr.mjs`, only when every task passed. Without the flag nothing is pushed. In claude-box without a GitHub token (the normal case) it only runs the checks and leaves the PR text for the user, who pushes from the host (Alt-u).
+- In claude-box, `research/` shows up empty and read-only unless the box was started with `--with-private`. `/research` needs that flag.
 - Agent hooks: `scope-guard.mjs` limits what each agent may write, `block-inplace-edit.mjs` stops the implementer editing with `sed -i`/`perl -i`, and `log-agents.mjs` plus the verify gate log to `.claude/logs/agents.jsonl`. Batching, worktrees and the verify gate are in `/run-spec`.
