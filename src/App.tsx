@@ -2,7 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Layout from './components/Layout';
-import Home from './pages/Home';
+import Overview from './pages/Overview';
+import History from './pages/History';
+import Settings from './pages/Settings';
 import Session from './pages/Session';
 import SessionDetail from './pages/SessionDetail';
 import Workouts from './pages/Workouts';
@@ -18,14 +20,17 @@ function App() {
       <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
         <Layout>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Navigate to="/overview" replace />} />
+            <Route path="/overview" element={<Overview />} />
             <Route path="/session" element={<Session />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/sessions/:id" element={<SessionDetail />} />
             <Route path="/sessions" element={<Navigate to="/session" replace />} />
             <Route path="/problems" element={<Navigate to="/session" replace />} />
             <Route path="/workouts" element={<Workouts />} />
             <Route path="/workouts/:id/run" element={<WorkoutRun />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/overview" replace />} />
           </Routes>
         </Layout>
       </Router>
