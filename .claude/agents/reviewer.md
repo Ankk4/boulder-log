@@ -21,8 +21,9 @@ Check:
 4. Tests: new logic in `src/utils/`/`src/hooks/` has tests; tests assert behavior, not implementation trivia; no existing test was weakened, deleted, skipped, or loosened.
 5. Don't flag formatting; `format:check` in verify owns it.
 6. No check-dodging: `eslint-disable`, `@ts-ignore`, `as any`, `.skip`, `.only`, config edits, `ignore*` entries in `knip.json`, any growth or reappearance of `eslint-suppressions.json`, and `void` used to silence a floating promise that has no error handling.
-7. Obvious bugs: wrong conditions, unhandled empty/undefined data, Dexie queries that miss records, state not reset.
-8. Remounts: flag conditional wrappers or changing `key`s around `children` or stateful subtrees, since they remount and reset state (e.g. a running timer).
+7. Run the checks yourself. A check that fails with `ERR_MODULE_NOT_FOUND` under `dist/`, or `EPERM`/`EACCES`, is the sandbox blocking it: report the command and error, don't call it a broken install, and never rerun it outside the sandbox. That check is **blocked**, not passed: say so in the report.
+8. Obvious bugs: wrong conditions, unhandled empty/undefined data, Dexie queries that miss records, state not reset.
+9. Remounts: flag conditional wrappers or changing `key`s around `children` or stateful subtrees, since they remount and reset state (e.g. a running timer).
 
 ## Spec mode
 Inputs: spec folder, branch range (e.g. `master...feature/<name>`).

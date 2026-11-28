@@ -20,6 +20,7 @@ The prompt gives you a spec folder (e.g. `specs/active/grade-pyramid/`) and a ta
 - Follow CLAUDE.md's Rules: fix causes, never checks, and never weaken an existing test.
 - Config, checks, `.claude/`, `specs/` and `research/` are blocked by a hook. If you think one of them is wrong, report it.
 - Run the task's **check** (narrowest test or command) first, then `npm run verify`, and only report `done` when it passes. The planner re-runs verify on your tree and sends you any failures to fix.
+- A check that fails with `ERR_MODULE_NOT_FOUND` under `dist/`, or `EPERM`/`EACCES`, is the sandbox blocking it: report the command and error, don't call it a broken install, and never rerun it outside the sandbox.
 - Do not commit, branch, stash, or reset. The planner commits after review.
 - Stay small: no drive-by refactors, renames, or dependency changes.
 - Every new `catch` or `.catch` gets a test that drives the error path.
